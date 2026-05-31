@@ -83,6 +83,7 @@ const taskLinkerService = new TaskLinkerService(agentService);
 const nanobananaService = new NanobananaService();
 const nanobananaGallery = createNanobananaGalleryStore(nanobananaGalleryPath);
 const { autoUpdater } = electronUpdater;
+const APP_UPDATE_FEED_URL = 'https://github.com/ruruchin/SHKF/releases/latest/download';
 const METASK_DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 let metaskBrowserView = null;
 let metaskBoardLoaded = false;
@@ -484,6 +485,14 @@ function broadcast(channel, data) {
 }
 
 function setupAutoUpdater() {
+  try {
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: APP_UPDATE_FEED_URL,
+    });
+  } catch {
+    /* keep default feed on failure */
+  }
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.on('checking-for-update', () => broadcast('updater-status', { state: 'checking' }));
