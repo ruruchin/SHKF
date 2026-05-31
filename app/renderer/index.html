@@ -1,0 +1,1914 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SHKF</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="search-page.css" />
+  <link rel="stylesheet" href="demos.css" />
+  <link rel="stylesheet" href="hotkeys-ui.css" />
+  <link rel="stylesheet" href="make-it.css" />
+  <link rel="stylesheet" href="agent.css" />
+  <link rel="stylesheet" href="onboarding.css" />
+  <link rel="stylesheet" href="templates.css" />
+  <link rel="stylesheet" href="settings.css" />
+  <link rel="stylesheet" href="anime-theme.css" />
+  <link rel="stylesheet" href="manga-theme.css" />
+  <link rel="stylesheet" href="mangaplus-theme.css" />
+  <link rel="stylesheet" href="studio-theme.css" />
+  <link rel="stylesheet" href="search-ui.css" />
+  <link rel="stylesheet" href="sidebar-ui.css" />
+  <link rel="stylesheet" href="custom-themes.css" />
+  <link rel="stylesheet" href="metask.css" />
+  <link rel="stylesheet" href="mail.css" />
+  <link rel="stylesheet" href="webtab.css" />
+  <link rel="stylesheet" href="notes.css" />
+  <link rel="stylesheet" href="nanobanana.css" />
+  <link rel="stylesheet" href="banner-mockup.css" />
+  <link rel="stylesheet" href="role-picker.css" />
+  <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="character-art.css" />
+</head>
+<body>
+  <div class="auth-gate hidden" id="auth-gate">
+    <form class="auth-card" id="auth-form">
+      <div class="auth-brand">
+        <span class="auth-logo">FR</span>
+        <span>
+          <span class="auth-title">FIRURU</span>
+          <span class="auth-subtitle">Войдите в рабочий аккаунт</span>
+        </span>
+      </div>
+      <div class="auth-form">
+        <label class="auth-field">
+          Email
+          <input type="email" id="auth-email" autocomplete="username" placeholder="designer@firuru.local" />
+        </label>
+        <label class="auth-field">
+          Пароль
+          <input type="password" id="auth-password" autocomplete="current-password" placeholder="Пароль" />
+        </label>
+        <div class="auth-error" id="auth-error"></div>
+        <div class="auth-actions">
+          <span class="auth-user-chip">Supabase Auth</span>
+          <button type="submit" class="btn-play" id="auth-submit">Войти</button>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="shell">
+    <!-- PNG-персонажи — только тема Manga -->
+    <div class="manga-character-layer" aria-hidden="true">
+      <img class="manga-char manga-char-left" src="assets/manga/girl-peace.png" alt="" draggable="false" />
+      <img class="manga-char manga-char-right" src="assets/manga/girl-close.png" alt="" draggable="false" />
+    </div>
+    <!-- Anime theme decor (sakura + SVG) -->
+    <div class="anime-scene" aria-hidden="true">
+      <div class="anime-moon"></div>
+      <div class="anime-sakura-field">
+        <span class="sakura-petal"></span><span class="sakura-petal"></span><span class="sakura-petal"></span>
+        <span class="sakura-petal"></span><span class="sakura-petal"></span><span class="sakura-petal"></span>
+        <span class="sakura-petal"></span><span class="sakura-petal"></span><span class="sakura-petal"></span>
+        <span class="sakura-petal"></span><span class="sakura-petal"></span><span class="sakura-petal"></span>
+        <span class="sakura-petal"></span><span class="sakura-petal"></span><span class="sakura-petal"></span>
+      </div>
+      <div class="anime-sparkles">
+        <span class="anime-sparkle"></span><span class="anime-sparkle"></span><span class="anime-sparkle"></span>
+        <span class="anime-sparkle"></span><span class="anime-sparkle"></span>
+      </div>
+      <div class="anime-char anime-char-left">
+        <svg viewBox="0 0 200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ah1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb7d5"/><stop offset="1" stop-color="#ff6bcb"/></linearGradient>
+            <linearGradient id="ah2" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#3d1f55"/><stop offset="1" stop-color="#1a0a28"/></linearGradient>
+            <linearGradient id="askin" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffe8f0"/><stop offset="1" stop-color="#ffc8dd"/></linearGradient>
+            <linearGradient id="adress" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2d1a45"/><stop offset="1" stop-color="#4a2060"/></linearGradient>
+          </defs>
+          <path d="M60 95c-15 40-18 90-8 130 5 22 18 38 35 42 20 5 45-5 58-28 12-22 15-55 8-85-5-25-20-48-45-62-30-18-68-12-88 15-12 16-18 38-15 60 8-18 25-32 45-38 22-6 48-2 65 14" fill="url(#ah2)"/>
+          <path d="M78 175c-8 35-12 75-10 115 2 28 8 38 22 38h40c14 0 20-10 22-38 2-40-2-80-10-115-8-35-28-55-32-55s-24 20-32 55z" fill="url(#adress)"/>
+          <path d="M88 210h56l-4 80H92l-4-80z" fill="#ff6bcb" opacity=".35"/>
+          <rect x="92" y="148" width="28" height="30" rx="8" fill="url(#askin)"/>
+          <ellipse cx="106" cy="118" rx="38" ry="42" fill="url(#askin)"/>
+          <path d="M68 88c-2-28 18-52 42-58 28-6 52 8 58 32 4 18 0 38-12 52-8 10-18 8-22-2-6-14-2-32 8-42-12 8-28 12-42 8-10-4-18-14-20-28-8 12-12 28-10 42 2 14 10 24 22 28-18-2-32-16-34-32z" fill="url(#ah2)"/>
+          <ellipse cx="88" cy="118" rx="10" ry="12" fill="#2a1040"/>
+          <ellipse cx="124" cy="118" rx="10" ry="12" fill="#2a1040"/>
+          <ellipse cx="91" cy="114" rx="4" ry="5" fill="#fff"/>
+          <ellipse cx="127" cy="114" rx="4" ry="5" fill="#fff"/>
+          <ellipse cx="78" cy="128" rx="8" ry="4" fill="#ff6bcb" opacity=".25"/>
+          <ellipse cx="134" cy="128" rx="8" ry="4" fill="#ff6bcb" opacity=".25"/>
+          <path d="M98 138c4 4 12 4 16 0" stroke="#e879a8" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="145" cy="72" r="6" fill="url(#ah1)" opacity=".9"/>
+          <path d="M106 168c-12-2-20 4-22 12 2 8 12 12 22 10 10 2 20-2 22-10-2-8-10-14-22-12z" fill="#ff6bcb"/>
+        </svg>
+      </div>
+      <div class="anime-char anime-char-right">
+        <svg viewBox="0 0 200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bh1" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a5f3fc"/><stop stop-color="#ff6bcb"/></linearGradient>
+            <linearGradient id="bh2" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#5eead4"/><stop offset=".5" stop-color="#c084fc"/><stop offset="1" stop-color="#4a2060"/></linearGradient>
+            <linearGradient id="bskin" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff0f8"/><stop offset="1" stop-color="#ffd4e8"/></linearGradient>
+          </defs>
+          <path d="M55 100c-20 30-28 70-22 110 4 28 12 42 8 42-8 0-18-35-22-70-4-35 2-72 18-100" fill="url(#bh2)"/>
+          <path d="M155 100c20 30 28 70 22 110-4 28-12 42-8 42 8 0 18-35 22-70 4-35-2-72-18-100" fill="url(#bh2)"/>
+          <path d="M72 178c-5 40-8 85-5 120 2 25 10 32 28 32h46c18 0 26-7 28-32 3-35 0-80-5-120-6-38-22-58-48-58s-42 20-48 58z" fill="#2a1545"/>
+          <path d="M148 195c18-8 32-28 38-48 6-18 4-32-6-38-8-5-18 2-24 16-4 10-4 22 0 32 8-12 18-18 28-14-6 18-18 34-36 52z" fill="url(#bskin)"/>
+          <rect x="88" y="152" width="32" height="28" rx="8" fill="url(#bskin)"/>
+          <ellipse cx="104" cy="120" rx="40" ry="44" fill="url(#bskin)"/>
+          <path d="M64 95c0-30 18-55 42-60 24-5 46 10 50 35 2 14-2 28-10 38-6 8-14 6-16-4-4-16 2-34 14-44-10 6-18 16-20 28-2 12 2 24 10 32-14-6-24-20-26-38-8 10-12 24-10 38 2 14 10 26 22 32-20-4-36-20-38-42-6 14-8 30-4 44 4 14 14 24 28 28-22-6-38-24-40-46z" fill="url(#bh2)"/>
+          <ellipse cx="86" cy="122" rx="11" ry="13" fill="#1a0830"/>
+          <ellipse cx="122" cy="122" rx="11" ry="13" fill="#1a0830"/>
+          <ellipse cx="89" cy="117" rx="4.5" ry="5.5" fill="#fff"/>
+          <ellipse cx="125" cy="117" rx="4.5" ry="5.5" fill="#fff"/>
+          <ellipse cx="74" cy="132" rx="9" ry="4.5" fill="#ff6bcb" opacity=".3"/>
+          <ellipse cx="134" cy="132" rx="9" ry="4.5" fill="#ff6bcb" opacity=".3"/>
+          <path d="M94 142c5 5 15 5 20 0" stroke="#e879a8" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M104 68l3 9h9l-7 5 3 9-8-6-8 6 3-9-7-5h9z" fill="url(#bh1)" opacity=".85"/>
+        </svg>
+      </div>
+    </div>
+    <!-- Manga theme decor (B&W ink) -->
+    <div class="manga-scene" aria-hidden="true">
+      <div class="manga-speed-lines"></div>
+      <div class="manga-screentone"></div>
+      <div class="manga-ink-splash manga-ink-splash-1"></div>
+      <div class="manga-ink-splash manga-ink-splash-2"></div>
+      <div class="manga-onomatopoeia manga-fx-kira">キラッ</div>
+      <div class="manga-onomatopoeia manga-fx-don">ドン</div>
+    </div>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg class="brand-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
+            <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
+            <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
+            <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
+          </svg>
+        </div>
+        <span class="brand-name">SHKF</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-group nav-group-search">
+          <button class="nav-item" data-page="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+            Поиск
+          </button>
+        </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-group nav-group-figma" id="nav-group-figma">
+          <span class="nav-group-label" id="nav-figma-label">Figma</span>
+          <button class="nav-item active" data-page="hotkeys">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 012 2v1.07a8.001 8.001 0 015.93 5.93H21a2 2 0 010 4h-1.07A8.001 8.001 0 0114 20.93V22a2 2 0 01-4 0v-1.07A8.001 8.001 0 014.07 15H3a2 2 0 010-4h1.07A8.001 8.001 0 0110 5.07V4a2 2 0 012-2z"/></svg>
+            Хоткеи
+          </button>
+          <button class="nav-item" data-page="makeit">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z"/><circle cx="18" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
+            Make it
+          </button>
+          <button class="nav-item" data-page="templates">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+            Templates
+          </button>
+          <button class="nav-item" data-page="nanobanana">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l4-8 4 5 4-9 4 12"/><circle cx="18" cy="6" r="2" fill="currentColor" stroke="none"/></svg>
+            NanoBanana
+          </button>
+          <button class="nav-item" data-page="bannermockup">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 11h5M7 14h8"/></svg>
+            Мокап
+          </button>
+        </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-group nav-group-work" id="nav-group-work">
+          <span class="nav-group-label" id="nav-work-label">Работа</span>
+          <button class="nav-item" data-page="metask">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 15h.01M12 15h4"/></svg>
+            Канбан
+          </button>
+          <button class="nav-item" data-page="agent">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+            ИИ Агент
+          </button>
+          <button class="nav-item" data-page="mail">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+            Почта
+          </button>
+          <button class="nav-item" data-page="github">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5a10.5 10.5 0 00-3.32 20.46c.52.1.71-.22.71-.5v-1.95c-2.9.63-3.52-1.24-3.52-1.24-.48-1.2-1.16-1.52-1.16-1.52-.95-.65.07-.64.07-.64 1.05.07 1.6 1.08 1.6 1.08.93 1.6 2.45 1.14 3.05.87.09-.68.36-1.14.66-1.4-2.32-.26-4.76-1.16-4.76-5.16 0-1.14.41-2.07 1.08-2.8-.11-.27-.47-1.33.1-2.78 0 0 .88-.28 2.88 1.07a9.9 9.9 0 015.24 0c2-1.35 2.88-1.07 2.88-1.07.57 1.45.21 2.51.1 2.78.67.73 1.07 1.66 1.07 2.8 0 4.01-2.44 4.89-4.77 5.15.37.32.7.95.7 1.92v2.85c0 .28.19.61.72.5A10.5 10.5 0 0012 1.5z"/></svg>
+            GitHub
+          </button>
+          <button class="nav-item" data-page="outline">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M8 7.5h8M8 11h6"/></svg>
+            Outline
+          </button>
+          <button class="nav-item" data-page="notes">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg>
+            Записи
+          </button>
+        </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-group nav-group-system">
+          <span class="nav-group-label">Подключение</span>
+          <button class="nav-item" data-page="setup">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            Figma
+          </button>
+        </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-group nav-group-system">
+          <span class="nav-group-label">Приложение</span>
+          <button class="nav-item" data-page="settings">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            Настройки
+          </button>
+        </div>
+      </nav>
+
+      <div class="sidebar-character" aria-hidden="true">
+        <img class="sidebar-character-img" src="assets/manga/girl-peace.png" alt="" draggable="false" />
+        <video class="sidebar-character-vid" muted loop playsinline preload="metadata" poster="assets/mangaplus/sidebar-poster.jpg">
+          <source src="assets/mangaplus/sidebar-loop.mp4" type="video/mp4" />
+        </video>
+      </div>
+    </aside>
+
+    <!-- Main panel -->
+    <div class="main-wrap">
+      <main class="panel">
+        <!-- SEARCH -->
+        <section class="page" id="page-search">
+          <div class="search-page">
+            <header class="search-page-header">
+              <h1>Поиск</h1>
+              <p>Хоткеи, шаблоны, разделы, заметки и настройки</p>
+            </header>
+
+            <div class="search-page-input-wrap">
+              <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+              <input type="search" id="search-input" placeholder="Начните вводить…" autocomplete="off" spellcheck="false" />
+              <kbd class="search-kbd">Ctrl K</kbd>
+              <button type="button" class="search-clear hidden" id="search-clear" aria-label="Очистить">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <div class="search-page-filters" id="search-filters"></div>
+            <div class="search-page-meta" id="search-meta"></div>
+
+            <div class="search-page-body">
+              <div class="search-page-hint" id="search-hint"></div>
+              <div class="search-page-results" id="search-results"></div>
+              <div class="search-page-empty hidden" id="search-empty">Ничего не найдено</div>
+            </div>
+
+            <div class="search-page-footer">↑↓ навигация · Enter открыть · Esc очистить</div>
+          </div>
+        </section>
+
+        <!-- HOTKEYS -->
+        <section class="page active" id="page-hotkeys">
+          <header class="hero">
+            <div class="hero-info">
+              <div class="hero-character" aria-hidden="true">
+                <img src="assets/manga/girl-close.png" alt="" draggable="false" />
+              </div>
+              <div class="hero-icon">⌨</div>
+              <div>
+                <h1>Мои хоткеи</h1>
+                <p class="hero-meta" id="hotkey-count">0 команд</p>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn-secondary" id="btn-keyboard-map" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
+                Клавиатура
+              </button>
+              <button class="btn-play" id="btn-add-hotkey" type="button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+                Добавить
+              </button>
+            </div>
+          </header>
+
+          <div class="chips" id="filter-chips">
+            <button class="chip active" data-filter="all">Все</button>
+            <button class="chip" data-filter="Выравнивание">Выравнивание</button>
+            <button class="chip" data-filter="Размер">Размер</button>
+            <button class="chip" data-filter="Распределение">Распределение</button>
+            <button class="chip" data-filter="Стиль">Стиль</button>
+            <button class="chip" data-filter="Layout">Layout</button>
+            <button class="chip" data-filter="Создание">Создание</button>
+          </div>
+
+          <div class="list-header">
+            <span>Команда</span>
+            <span>Комбинация</span>
+            <span></span>
+          </div>
+          <div class="hotkey-list" id="hotkey-list"></div>
+          <div class="empty-state hidden" id="empty-state">
+            <div class="empty-icon">⌨</div>
+            <p>Нет хоткеев</p>
+            <button class="btn-secondary" id="btn-add-empty">Добавить первый хоткей</button>
+          </div>
+        </section>
+
+        <!-- HOTKEY DETAIL -->
+        <section class="page" id="page-hotkey-detail">
+          <button type="button" class="detail-back-link" id="detail-back">← Назад к списку</button>
+          <div class="detail-layout">
+            <div class="detail-video-wrap">
+              <div class="detail-video" id="detail-demo"></div>
+              <div class="detail-video-label">Демонстрация</div>
+            </div>
+            <aside class="detail-info">
+              <header class="detail-info-head">
+                <p class="detail-category" id="detail-category"></p>
+                <h1 class="detail-title" id="detail-title"></h1>
+                <div class="detail-combo" id="detail-combo"></div>
+              </header>
+              <div class="detail-info-body">
+                <article class="detail-section">
+                  <h3>Что делает</h3>
+                  <p id="detail-desc"></p>
+                </article>
+                <article class="detail-section">
+                  <h3>Зачем это нужно</h3>
+                  <p id="detail-why"></p>
+                </article>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <!-- FIGMA -->
+        <section class="page" id="page-setup">
+          <div class="setup-page">
+            <header class="setup-header">
+              <h1>Figma</h1>
+              <p class="setup-lead">Плагин FIRURU Bridge для глобальных хоткеев</p>
+            </header>
+
+            <div class="connect-body">
+            <button class="btn-play btn-play-lg" id="btn-connect-figma">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+              Запустить Figma
+            </button>
+            <p class="connect-status" id="connect-status">Figma не подключена</p>
+            <p class="connect-port-hint" id="plugin-port-hint">Порт плагина: 3847</p>
+
+            <div class="steps-card">
+              <div class="step"><span class="step-num">1</span> Импортируйте плагин: Figma → Plugins → Development → Import plugin from manifest → папка <code>figma-plugin</code></div>
+              <div class="step"><span class="step-num">2</span> Запустите плагин «FIRURU Bridge» в открытом файле и нажмите «Подключиться»</div>
+              <div class="step"><span class="step-num">3</span> Сверните окно плагина (не закрывайте) — статус станет зелёным</div>
+              <div class="step"><span class="step-num">4</span> Опционально: «Запустить Figma» перезапустит Figma с CDP для автофокуса</div>
+            </div>
+            <button class="btn-secondary" id="btn-open-plugin" style="margin-top:16px">Открыть папку плагина</button>
+          </div>
+          </div>
+        </section>
+
+        <!-- MAKE IT — Chat -->
+        <section class="page" id="page-makeit">
+          <div class="make-chat">
+            <div class="make-chat-bg" aria-hidden="true">
+              <img class="make-chat-bg-gif" src="assets/mangaplus/make-bg.gif" alt="" draggable="false" />
+            </div>
+            <div class="make-bg-layer" aria-hidden="true">
+              <span class="make-bg-base"></span>
+              <span class="make-bg-spotlight"></span>
+              <span class="make-bg-accent make-bg-accent--warm"></span>
+              <span class="make-bg-accent make-bg-accent--cool"></span>
+              <span class="make-bg-grid"></span>
+              <span class="make-bg-vignette"></span>
+              <span class="make-bg-noise"></span>
+            </div>
+            <header class="make-chat-header">
+              <div class="make-chat-brand">
+                <div class="make-chat-avatar">✦</div>
+                <div>
+                  <h2 class="make-chat-title">Figma Make</h2>
+                  <span class="make-chat-sub" id="make-chat-sub">AI-прототипы из текста</span>
+                </div>
+              </div>
+              <button type="button" class="make-chat-new" id="make-chat-clear" title="Новый чат">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+                Новый
+              </button>
+            </header>
+
+            <div class="make-messages" id="make-messages"></div>
+
+            <div class="make-composer-wrap">
+              <div class="make-suggestions" id="make-suggestions">
+                <button type="button" class="make-sug" data-prompt-key="onboard">Onboarding</button>
+                <button type="button" class="make-sug" data-prompt-key="dash">Dashboard</button>
+                <button type="button" class="make-sug" data-prompt-key="land">Landing</button>
+                <button type="button" class="make-sug" data-prompt-key="modal">Modal</button>
+              </div>
+              <div class="make-composer" id="make-composer">
+                <textarea id="make-prompt" class="make-composer-input" rows="1" placeholder="Опишите интерфейс для Figma Make…"></textarea>
+                <div class="make-composer-bar">
+                  <button type="button" class="make-composer-mic" id="make-mic" title="Голосовой ввод">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
+                  </button>
+                  <span class="make-mic-label" id="make-mic-status"></span>
+                  <button type="button" class="make-composer-send" id="make-send" disabled aria-label="Создать">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TEMPLATES -->
+        <section class="page" id="page-templates">
+          <div class="tpl-page">
+            <header class="tpl-header">
+              <div class="tpl-header-top">
+                <div>
+                  <h1 class="tpl-title">Templates</h1>
+                  <p class="tpl-subtitle">Готовые блоки и <strong>ваша дизайн-система</strong> из Figma · клик — вставка · <kbd class="tpl-kbd">Ctrl</kbd><span class="tpl-kbd-sep">+</span><kbd class="tpl-kbd">V</kbd></p>
+                </div>
+              </div>
+
+              <div class="tpl-header-nav">
+              <div class="tpl-library-tabs" role="tablist">
+                <button type="button" class="tpl-tab active" data-lib="all" role="tab">Все компоненты</button>
+                <button type="button" class="tpl-tab" data-lib="mine" role="tab">
+                  <span class="tpl-tab-icon">★</span> Моя библиотека
+                  <span class="tpl-tab-badge" id="tpl-user-count">0</span>
+                </button>
+                <button type="button" class="tpl-tab" data-lib="builtin" role="tab">
+                  Встроенные
+                  <span class="tpl-tab-badge tpl-tab-badge-muted" id="tpl-builtin-count">12</span>
+                </button>
+              </div>
+
+              <div class="tpl-import-banner hidden" id="tpl-import-banner">
+                <button type="button" class="tpl-import-close" id="tpl-import-close" aria-label="Закрыть подсказку">×</button>
+                <div class="tpl-import-icon" aria-hidden="true">⬡</div>
+                <div class="tpl-import-body">
+                  <div class="tpl-import-title">Импорт компонентов из Figma</div>
+                  <ol class="tpl-import-steps">
+                    <li>Выделите Component, Frame или Instance в Figma</li>
+                    <li>Откройте плагин <strong>FIRURU Bridge</strong></li>
+                    <li>Нажмите <strong>«Сохранить выделение в SHKF»</strong></li>
+                  </ol>
+                  <div class="tpl-import-status" id="tpl-plugin-status">
+                    <span class="tpl-import-dot" id="tpl-plugin-dot"></span>
+                    <span id="tpl-plugin-status-text">Плагин не подключён</span>
+                  </div>
+                </div>
+                <button type="button" class="btn-secondary tpl-import-link" id="tpl-open-setup">Настроить подключение</button>
+              </div>
+              <button type="button" class="tpl-import-reopen hidden" id="tpl-import-reopen">Как импортировать из Figma?</button>
+
+              <div class="tpl-toolbar">
+                <div class="chips" id="templates-chips"></div>
+                <span class="tpl-count" id="templates-count"></span>
+              </div>
+              </div>
+            </header>
+            <div class="templates-scroll">
+              <div class="templates-grid" id="templates-grid"></div>
+              <div class="templates-empty hidden" id="templates-empty">
+                <div class="tpl-empty-art" aria-hidden="true">▦</div>
+                <p class="tpl-empty-title" id="templates-empty-title">Нет компонентов</p>
+                <p class="tpl-empty-desc" id="templates-empty-desc">Импортируйте первый компонент из Figma через плагин FIRURU Bridge</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- NANOBANANA -->
+        <section class="page" id="page-nanobanana">
+          <div class="nb-app">
+            <div class="nb-layout">
+              <aside class="nb-panel nb-panel--engine">
+                <header class="nb-panel-head">
+                  <div>
+                    <h2 class="nb-panel-title">Prompt Engine</h2>
+                    <p class="nb-panel-sub">Генерация и редактирование изображений по промпту</p>
+                  </div>
+                  <span class="nb-credits" id="nb-credits" title="Баланс кредитов">—</span>
+                </header>
+
+                <div class="nb-ref-block">
+                  <div class="nb-ref-head">
+                    <span>Референсы</span>
+                    <span class="nb-ref-count" id="nb-ref-count">0 / 9</span>
+                  </div>
+                  <div class="nb-ref-grid" id="nb-ref-grid">
+                    <button type="button" class="nb-ref-add" id="nb-ref-add" title="Добавить изображение">
+                      <span class="nb-ref-add-icon">↑</span>
+                      <span>Добавить</span>
+                    </button>
+                  </div>
+                  <p class="nb-ref-hint">Можно вставить картинку из буфера (Ctrl+V). Для img2img нужен хотя бы один референс.</p>
+                </div>
+
+                <label class="nb-field">
+                  <span class="nb-field-label">Модель</span>
+                  <select class="nb-select" id="nb-model"></select>
+                  <span class="nb-field-meta" id="nb-model-cost"></span>
+                </label>
+
+                <div class="nb-row">
+                  <label class="nb-field nb-field--grow">
+                    <span class="nb-field-label">Соотношение сторон</span>
+                    <select class="nb-select" id="nb-aspect">
+                      <option value="auto">По умолчанию</option>
+                      <option value="1:1">1:1</option>
+                      <option value="16:9">16:9</option>
+                      <option value="9:16">9:16</option>
+                      <option value="4:3">4:3</option>
+                      <option value="3:4">3:4</option>
+                      <option value="3:2">3:2</option>
+                      <option value="2:3">2:3</option>
+                      <option value="5:4">5:4</option>
+                      <option value="4:5">4:5</option>
+                      <option value="21:9">21:9</option>
+                    </select>
+                  </label>
+                  <div class="nb-field">
+                    <span class="nb-field-label">Разрешение</span>
+                    <div class="nb-res-toggle" id="nb-resolution">
+                      <button type="button" class="nb-res-btn is-active" data-res="1K">1K</button>
+                      <button type="button" class="nb-res-btn" data-res="2K">2K</button>
+                      <button type="button" class="nb-res-btn" data-res="4K">4K</button>
+                    </div>
+                  </div>
+                </div>
+
+                <label class="nb-field">
+                  <span class="nb-field-label">Промпт</span>
+                  <textarea class="nb-prompt" id="nb-prompt" rows="5" placeholder="Опишите, какое изображение нужно сгенерировать или как изменить референс…"></textarea>
+                </label>
+
+                <div class="nb-outputs-row">
+                  <span class="nb-field-label">Количество</span>
+                  <div class="nb-stepper">
+                    <button type="button" class="nb-step-btn" id="nb-out-minus" aria-label="Меньше">−</button>
+                    <span class="nb-step-val" id="nb-out-val">1</span>
+                    <button type="button" class="nb-step-btn" id="nb-out-plus" aria-label="Больше">+</button>
+                  </div>
+                </div>
+
+                <button type="button" class="nb-generate-btn" id="nb-generate">
+                  <span class="nb-generate-icon">✦</span>
+                  <span id="nb-generate-label">Сгенерировать</span>
+                </button>
+                <p class="nb-cost-line" id="nb-cost-line">Списание кредитов зависит от модели</p>
+
+                <div class="nb-setup-banner hidden" id="nb-setup-banner">
+                  Укажите API-ключ в <button type="button" class="nb-link-btn" data-nb-open-settings>Настройки → NanoBanana</button>
+                </div>
+              </aside>
+
+              <main class="nb-panel nb-panel--gallery">
+                <header class="nb-panel-head">
+                  <div>
+                    <h2 class="nb-panel-title">Галерея</h2>
+                    <p class="nb-panel-sub">Результаты генерации (ссылки хранятся ~15 дней на сервере)</p>
+                  </div>
+                </header>
+
+                <div class="nb-alert">
+                  Сгенерированные изображения на сервере хранятся 15 дней — сохраняйте важное локально.
+                </div>
+                <div class="nb-error hidden" id="nb-error" role="alert"></div>
+                <div class="nb-warn hidden" id="nb-warn" role="status"></div>
+
+                <div class="nb-preview" id="nb-preview">
+                  <div class="nb-preview-empty" id="nb-preview-empty">
+                    <p>Готово к генерации</p>
+                    <span>Введите промпт и нажмите «Сгенерировать»</span>
+                  </div>
+                  <div class="nb-preview-loading hidden" id="nb-preview-loading">
+                    <div class="nb-gen-stage" aria-hidden="true">
+                      <div class="nb-gen-shimmer"></div>
+                      <div class="nb-gen-orbit">
+                        <span></span><span></span><span></span>
+                      </div>
+                    </div>
+                    <p class="nb-gen-title" id="nb-loading-title">Создаём изображение…</p>
+                    <div class="nb-gen-progress" aria-hidden="true">
+                      <div class="nb-gen-progress-bar"></div>
+                    </div>
+                    <span id="nb-loading-hint">Обычно 10–60 секунд</span>
+                  </div>
+                  <div class="nb-preview-result hidden" id="nb-preview-result">
+                    <button type="button" class="nb-preview-nav nb-preview-nav--prev" id="nb-prev" aria-label="Предыдущее">‹</button>
+                    <div class="nb-preview-frame">
+                      <img class="nb-preview-img" id="nb-preview-img" alt="" />
+                    </div>
+                    <button type="button" class="nb-preview-nav nb-preview-nav--next" id="nb-next" aria-label="Следующее">›</button>
+                  </div>
+                </div>
+
+                <div class="nb-meta hidden" id="nb-meta">
+                  <details class="nb-meta-prompt-wrap" id="nb-meta-prompt-wrap">
+                    <summary class="nb-meta-prompt-label">Промпт</summary>
+                    <p class="nb-meta-prompt" id="nb-meta-prompt"></p>
+                  </details>
+                  <p class="nb-meta-sub" id="nb-meta-sub"></p>
+                </div>
+
+                <div class="nb-actions hidden" id="nb-actions">
+                  <button type="button" class="nb-action nb-action--primary" id="nb-download">Скачать</button>
+                  <button type="button" class="nb-action nb-action--mockup" id="nb-to-mockup">В мокап</button>
+                  <button type="button" class="nb-action" id="nb-copy-link">Копировать ссылку</button>
+                  <button type="button" class="nb-action" id="nb-use-prompt">В промпт</button>
+                  <button type="button" class="nb-action nb-action--danger" id="nb-delete">Удалить</button>
+                </div>
+
+                <div class="nb-history">
+                  <h3 class="nb-history-title">Все результаты</h3>
+                  <div class="nb-thumb-grid" id="nb-thumb-grid"></div>
+                </div>
+              </main>
+            </div>
+          </div>
+        </section>
+
+        <!-- BANNER MOCKUP -->
+        <section class="page" id="page-bannermockup">
+          <div class="bm-app">
+            <header class="bm-topbar">
+              <div class="bm-topbar-text">
+                <h2 class="bm-title">Мокап баннера</h2>
+                <p class="bm-sub">Превью 1:1 из Figma + фото NanoBanana в слоте <strong>img</strong>. Текст — в полях слева, затем в Figma.</p>
+              </div>
+              <div class="bm-topbar-actions">
+                <button type="button" class="bm-action-btn bm-action-btn--primary" id="bm-apply-figma">Вставить в Figma</button>
+                <button type="button" class="bm-action-btn" id="bm-pull-figma-text-side">Обновить текст</button>
+                <button type="button" class="bm-action-btn bm-action-btn--ghost" id="bm-open-nanobanana">NanoBanana</button>
+                <button type="button" class="bm-action-btn bm-action-btn--ghost" id="bm-open-templates">Шаблоны</button>
+              </div>
+            </header>
+
+            <div id="bm-link-alert" class="bm-alert bm-alert--warn hidden"></div>
+            <div class="bm-status hidden" id="bm-status"></div>
+
+            <div class="bm-layout">
+              <aside class="bm-sidebar">
+                <div class="bm-card">
+                  <span class="bm-section-label">Размер баннера</span>
+                  <div class="bm-sizes" id="bm-sizes"></div>
+                </div>
+
+                <div class="bm-card">
+                  <div class="bm-section-head">
+                    <span class="bm-section-label">Текст для Figma</span>
+                    <button type="button" class="bm-link-btn" id="bm-pull-figma-text">Из Figma</button>
+                  </div>
+                  <label class="bm-field">
+                    <span id="bm-label-title">Заголовок <em class="bm-layer-hint">text-title</em></span>
+                    <input type="text" id="bm-text-title" placeholder="Новая кредитная заявка" />
+                  </label>
+                  <label class="bm-field">
+                    <span id="bm-label-subtitle">Подзаголовок <em class="bm-layer-hint">text-subtitle</em></span>
+                    <textarea id="bm-text-subtitle" rows="2" placeholder="Краткое описание"></textarea>
+                  </label>
+                  <label class="bm-field bm-field--last">
+                    <span id="bm-label-cta">Кнопка (CTA) <em class="bm-layer-hint">text-cta</em></span>
+                    <input type="text" id="bm-text-cta" placeholder="Оформить" />
+                  </label>
+                </div>
+
+                <div class="bm-card">
+                  <span class="bm-section-label">Изображение · NanoBanana</span>
+                  <div class="bm-gallery-grid" id="bm-gallery-grid"></div>
+                </div>
+
+                <details class="bm-help">
+                  <summary>Как настроить Figma</summary>
+                  <ol class="bm-hint-list">
+                    <li>Откройте файл «SHKF banners»</li>
+                    <li>Слой картинки → <strong>img</strong></li>
+                    <li>Тексты → <strong>text-title</strong>, <strong>text-subtitle</strong>, <strong>text-cta</strong></li>
+                    <li>Frame → FIRURU Bridge → «Сохранить в SHKF»</li>
+                  </ol>
+                </details>
+              </aside>
+
+              <main class="bm-main">
+                <div class="bm-preview-shell">
+                  <div class="bm-preview-toolbar">
+                    <span class="bm-preview-dim" id="bm-preview-dim">—</span>
+                    <span class="bm-preview-zoom" id="bm-preview-caption">Превью в реальных px</span>
+                  </div>
+                  <div class="bm-preview-board">
+                    <div class="bm-preview-grid" id="bm-preview-grid"></div>
+                  </div>
+                  <p class="bm-preview-note">Все размеры друг под другом · 1:1 · прокрутите при необходимости</p>
+                </div>
+              </main>
+            </div>
+          </div>
+        </section>
+
+        <!-- AI AGENT -->
+        <section class="page" id="page-agent">
+          <div class="agent-chat">
+            <div class="agent-status-banner hidden" id="agent-status-banner"></div>
+            <div class="agent-layout">
+              <aside class="agent-sidebar" aria-label="Список чатов">
+                <div class="agent-sidebar-head">
+                  <div class="agent-sidebar-brand">
+                    <span class="webtab-icon agent-sidebar-icon" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    </span>
+                    <h3 class="agent-sidebar-title">Чаты</h3>
+                  </div>
+                  <button type="button" class="agent-sidebar-new" id="agent-session-new" title="Новый чат">+ Новый</button>
+                </div>
+                <div class="agent-session-list" id="agent-session-list"></div>
+              </aside>
+              <div class="agent-main">
+            <div class="agent-shell">
+              <div class="agent-header-card">
+                <header class="agent-topbar">
+                  <div class="agent-chat-brand">
+                    <div class="agent-chat-avatar">
+                      <img class="agent-avatar-img" src="assets/agent/agent-avatar.png" alt="" width="44" height="44" />
+                    </div>
+                    <div>
+                      <h2 class="agent-chat-title">ИИ Агент</h2>
+                      <span class="agent-chat-sub" id="agent-chat-sub">GigaChat · Kanban · промпты для дизайна</span>
+                    </div>
+                  </div>
+                  <div class="agent-chat-actions">
+                    <select class="agent-model-select" id="agent-model-select" title="Модель GigaChat">
+                      <option value="GigaChat">GigaChat (Lite)</option>
+                      <option value="GigaChat-2">GigaChat-2</option>
+                      <option value="GigaChat-2-Pro">GigaChat-2-Pro</option>
+                    </select>
+                    <select class="agent-task-select" id="agent-task-select" title="Задача из Kanban">
+                      <option value="">— Без задачи —</option>
+                    </select>
+                    <button type="button" class="agent-tool-btn" id="agent-morning-brief-btn" title="Утренний бриф по задачам Kanban">Бриф</button>
+                  </div>
+                </header>
+              </div>
+
+              <div class="agent-panels">
+                <section class="agent-brief-panel hidden" id="agent-brief-panel" aria-label="Утренний бриф">
+                  <div class="agent-panel-head">
+                    <div>
+                      <h3 class="agent-panel-title">Утренний бриф</h3>
+                      <p class="agent-panel-sub" id="agent-brief-date"></p>
+                    </div>
+                    <button type="button" class="agent-panel-close" id="agent-brief-close" aria-label="Закрыть">×</button>
+                  </div>
+                  <div class="agent-brief-body" id="agent-brief-body">
+                    <p class="agent-panel-placeholder">Нажмите «Бриф» или откройте страницу — загрузим задачи из Kanban.</p>
+                  </div>
+                  <div class="agent-panel-foot">
+                    <button type="button" class="btn-ghost btn-sm" id="agent-brief-refresh">Обновить</button>
+                  </div>
+                </section>
+
+                <section class="agent-labor-panel" id="agent-labor-panel" aria-label="Вписание трудозатрат">
+                  <details class="agent-labor-details">
+                    <summary class="agent-labor-summary">Вписать время в Redmine</summary>
+                    <div class="agent-labor-form">
+                      <p class="agent-labor-hint">Часы и описание — вы сами; в задачу уйдёт только после подтверждения.</p>
+                      <label class="agent-labor-field">
+                        <span class="agent-labor-label">Часы</span>
+                        <input type="number" class="agent-labor-hours" id="agent-labor-hours" min="0.1" max="24" step="0.05" placeholder="1,40" />
+                      </label>
+                      <label class="agent-labor-field agent-labor-field--grow">
+                        <span class="agent-labor-label">Что делали</span>
+                        <textarea class="agent-labor-desc" id="agent-labor-desc" rows="3" placeholder="Верстка макета, правки по ревью…"></textarea>
+                      </label>
+                      <div class="agent-labor-preview-wrap">
+                        <span class="agent-labor-label">Предпросмотр в Redmine</span>
+                        <pre class="agent-labor-preview" id="agent-labor-preview"></pre>
+                      </div>
+                      <button type="button" class="btn-play agent-labor-submit" id="agent-labor-submit">Вписать в задачу</button>
+                    </div>
+                  </details>
+                </section>
+              </div>
+
+              <div class="agent-stage" id="agent-stage">
+                <div class="agent-messages agent-messages--idle" id="agent-messages"></div>
+              </div>
+
+              <footer class="agent-dock">
+                <div class="agent-composer-attachments hidden" id="agent-composer-attachments" aria-live="polite"></div>
+                <div class="agent-suggestions" id="agent-suggestions">
+                  <button type="button" class="agent-sug agent-sug--analyze" data-agent-action="analyze" title="Оценить задачу">
+                    <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
+                    <span class="agent-sug-label">Оценить</span>
+                  </button>
+                  <button type="button" class="agent-sug agent-sug--banner" data-agent-action="banner" title="Промпт: баннер">
+                    <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h4M7 11h10"/></svg></span>
+                    <span class="agent-sug-label">Промпт баннер</span>
+                  </button>
+                  <button type="button" class="agent-sug agent-sug--banner-nano" data-agent-action="bannerNano" title="Баннер → NanoBanana">
+                    <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><rect x="3" y="14" width="18" height="7" rx="1.5"/></svg></span>
+                    <span class="agent-sug-label">NanoBanana</span>
+                  </button>
+                  <button type="button" class="agent-sug agent-sug--landing" data-agent-action="landing" title="Промпт: лендинг">
+                    <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg></span>
+                    <span class="agent-sug-label">Промпт лендинг</span>
+                  </button>
+                  <button type="button" class="agent-sug agent-sug--make" data-agent-action="make" title="Figma Make">
+                    <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7l3-7z"/></svg></span>
+                    <span class="agent-sug-label">Figma Make</span>
+                  </button>
+                  <button type="button" class="agent-sug agent-sug--split" data-agent-action="split" title="Разбить на шаги">
+                    <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
+                    <span class="agent-sug-label">На шаги</span>
+                  </button>
+                  <button type="button" class="agent-sug agent-sug--labor" data-agent-action="labor" title="Трудозатраты">
+                    <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+                    <span class="agent-sug-label">Трудозатраты</span>
+                  </button>
+                </div>
+                <div class="agent-composer" id="agent-composer">
+                  <button type="button" class="agent-composer-attach" id="agent-attach" title="Прикрепить изображение (GigaChat-2 / 2-Pro)" aria-label="Прикрепить изображение">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                  </button>
+                  <textarea id="agent-prompt" class="agent-composer-input" rows="1" placeholder="Спросите про задачу, баннер или промпт для Make…" spellcheck="true"></textarea>
+                  <button type="button" class="agent-composer-send" id="agent-send" disabled aria-label="Отправить">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>
+                  </button>
+                </div>
+              </footer>
+            </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- KANBAN -->
+        <section class="page" id="page-metask">
+          <div class="metask-page">
+            <div class="webtab-toolbar">
+              <div class="webtab-title-wrap">
+                <span class="webtab-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 15h.01M12 15h4"/></svg>
+                </span>
+                <div>
+                  <h1>Канбан</h1>
+                  <p class="webtab-sub">Redmine · задачи и доска Kanban</p>
+                </div>
+              </div>
+              <div class="webtab-nav">
+                <button type="button" class="webtab-iconbtn" id="metask-refresh" title="Обновить" aria-label="Обновить">⟳</button>
+                <button type="button" class="btn-ghost btn-sm" id="metask-toggle-auth" title="Подключение Redmine">Подключение</button>
+                <button type="button" class="btn-secondary btn-sm" id="metask-open-board">Открыть в браузере</button>
+              </div>
+              <div class="webtab-status">
+                <span class="webtab-status-dot" id="metask-status-dot"></span>
+                <span id="metask-status-text">Не подключено</span>
+              </div>
+            </div>
+
+            <div class="metask-auth" id="metask-auth">
+              <div class="metask-auth-intro">
+                <strong>Подключение Redmine</strong>
+                <p>Укажите адрес вашего сервера и API-ключ. Логин и пароль нужны только для встроенной доски Kanban — данные хранятся локально в config SHKF на этом компьютере.</p>
+              </div>
+              <div class="metask-auth-grid">
+                <label class="metask-auth-field metask-auth-field--wide">
+                  <span class="metask-auth-label">URL сервера Redmine</span>
+                  <input type="url" id="metask-base-url" placeholder="https://redmine.example.com" autocomplete="url" />
+                </label>
+                <label class="metask-auth-field">
+                  <span class="metask-auth-label">Путь к доске</span>
+                  <input type="text" id="metask-board-path" placeholder="/kanban/board" autocomplete="off" />
+                </label>
+                <label class="metask-auth-field metask-auth-field--wide">
+                  <span class="metask-auth-label">API-ключ Redmine *</span>
+                  <input type="password" id="metask-api-key" placeholder="Из «Моя учётная запись» в Redmine" autocomplete="off" />
+                </label>
+                <label class="metask-auth-field">
+                  <span class="metask-auth-label">Логин (для доски)</span>
+                  <input type="text" id="metask-username" placeholder="Необязательно" autocomplete="username" />
+                </label>
+                <label class="metask-auth-field">
+                  <span class="metask-auth-label">Пароль (для доски)</span>
+                  <input type="password" id="metask-password" placeholder="Необязательно" autocomplete="current-password" />
+                </label>
+              </div>
+              <p class="metask-auth-hint">API-ключ: Redmine → Моя учётная запись → «Показать» в блоке API-ключ доступа. Без ключа список задач не загрузится.</p>
+              <div class="metask-auth-actions">
+                <button type="button" class="btn-play" id="metask-save-login">Подключить</button>
+              </div>
+            </div>
+
+            <div class="metask-split" id="metask-split">
+              <div class="metask-list-panel">
+                <div class="metask-list-head">
+                  <span class="metask-list-head-title">Мои задачи <span class="metask-list-count" id="metask-task-count">0</span></span>
+                  <span class="metask-list-hint">исполнитель и чеклисты</span>
+                  <button type="button" class="metask-list-collapse" id="metask-list-collapse" title="Свернуть список задач" aria-label="Свернуть список задач" aria-expanded="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                  </button>
+                </div>
+                <div class="metask-list" id="metask-list">
+                  <div class="metask-empty">Загрузка…</div>
+                </div>
+              </div>
+              <button type="button" class="metask-list-seam" id="metask-list-expand-seam" title="Показать список задач" aria-label="Показать список задач">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+                <span class="metask-list-seam-count" id="metask-list-seam-count" hidden></span>
+              </button>
+              <div class="metask-board-panel">
+                <div class="metask-board-body">
+                  <div class="metask-board-head">Доска Kanban · сессия сохраняется после входа</div>
+                  <div id="metask-board-host" class="metask-board-host"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- MAIL -->
+        <section class="page" id="page-mail">
+          <div class="mail-page">
+            <div class="webtab-toolbar">
+              <div class="webtab-title-wrap">
+                <span class="webtab-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+                </span>
+                <div>
+                  <h1>Почта</h1>
+                  <p class="webtab-sub">Zimbra · веб-почта</p>
+                </div>
+              </div>
+              <div class="webtab-nav">
+                <button type="button" class="webtab-iconbtn" id="mail-refresh" title="Обновить" aria-label="Обновить">⟳</button>
+                <button type="button" class="btn-ghost btn-sm" id="mail-toggle-auth" title="Сменить аккаунт">Аккаунт</button>
+                <button type="button" class="btn-secondary btn-sm" id="mail-open-external">В браузере</button>
+              </div>
+              <div class="webtab-status">
+                <span class="webtab-status-dot" id="mail-status-dot"></span>
+                <span id="mail-status-text">Не подключено</span>
+              </div>
+            </div>
+            <div class="mail-auth hidden" id="mail-auth">
+              <input type="url" id="mail-base-url" placeholder="https://mail.example.com" aria-label="URL Zimbra" />
+              <input type="text" id="mail-username" placeholder="Логин" autocomplete="username" />
+              <input type="password" id="mail-password" placeholder="Пароль" autocomplete="current-password" />
+              <button type="button" class="btn-secondary" id="mail-save-login">Войти</button>
+            </div>
+            <div id="mail-host" class="mail-host">
+              <webview
+                id="mail-webview"
+                class="mail-webview"
+                partition="persist:zimbra"
+                allowpopups
+                src="about:blank"
+              ></webview>
+            </div>
+          </div>
+        </section>
+
+        <!-- GITHUB -->
+        <section class="page webtab-page" id="page-github"
+          data-webtab="github"
+          data-webtab-url="https://github.com/"
+          data-webtab-partition="persist:github">
+          <div class="webtab">
+            <div class="webtab-toolbar">
+              <div class="webtab-title-wrap">
+                <span class="webtab-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.5a10.5 10.5 0 00-3.32 20.46c.52.1.71-.22.71-.5v-1.95c-2.9.63-3.52-1.24-3.52-1.24-.48-1.2-1.16-1.52-1.16-1.52-.95-.65.07-.64.07-.64 1.05.07 1.6 1.08 1.6 1.08.93 1.6 2.45 1.14 3.05.87.09-.68.36-1.14.66-1.4-2.32-.26-4.76-1.16-4.76-5.16 0-1.14.41-2.07 1.08-2.8-.11-.27-.47-1.33.1-2.78 0 0 .88-.28 2.88 1.07a9.9 9.9 0 015.24 0c2-1.35 2.88-1.07 2.88-1.07.57 1.45.21 2.51.1 2.78.67.73 1.07 1.66 1.07 2.8 0 4.01-2.44 4.89-4.77 5.15.37.32.7.95.7 1.92v2.85c0 .28.19.61.72.5A10.5 10.5 0 0012 1.5z"/></svg>
+                </span>
+                <div>
+                  <h1>GitHub</h1>
+                  <p class="webtab-sub">Репозитории, PR, code review</p>
+                </div>
+              </div>
+              <div class="webtab-nav">
+                <button type="button" class="webtab-iconbtn" data-webtab-back title="Назад" aria-label="Назад">‹</button>
+                <button type="button" class="webtab-iconbtn" data-webtab-forward title="Вперёд" aria-label="Вперёд">›</button>
+                <button type="button" class="webtab-iconbtn" data-webtab-refresh title="Обновить" aria-label="Обновить">⟳</button>
+                <button type="button" class="btn-ghost btn-sm" data-webtab-home>Домой</button>
+                <button type="button" class="btn-ghost btn-sm" data-webtab-logout title="Выйти из аккаунта">Выход</button>
+                <button type="button" class="btn-secondary btn-sm" data-webtab-external>В браузере</button>
+              </div>
+              <div class="webtab-status">
+                <span class="webtab-status-dot" data-webtab-dot></span>
+                <span data-webtab-status>Не загружено</span>
+              </div>
+            </div>
+            <div class="webtab-host">
+              <webview
+                id="github-webview"
+                class="webtab-webview"
+                partition="persist:github"
+                allowpopups
+                src="about:blank"
+              ></webview>
+            </div>
+          </div>
+        </section>
+
+        <!-- OUTLINE -->
+        <section class="page webtab-page" id="page-outline"
+          data-webtab="outline"
+          data-webtab-url="https://outline.cinet.ru/"
+          data-webtab-partition="persist:outline">
+          <div class="webtab">
+            <div class="webtab-toolbar">
+              <div class="webtab-title-wrap">
+                <span class="webtab-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M8 7.5h8M8 11h6"/></svg>
+                </span>
+                <div>
+                  <h1>Outline</h1>
+                  <p class="webtab-sub">База знаний · документация команды</p>
+                </div>
+              </div>
+              <div class="webtab-nav">
+                <button type="button" class="webtab-iconbtn" data-webtab-back title="Назад" aria-label="Назад">‹</button>
+                <button type="button" class="webtab-iconbtn" data-webtab-forward title="Вперёд" aria-label="Вперёд">›</button>
+                <button type="button" class="webtab-iconbtn" data-webtab-refresh title="Обновить" aria-label="Обновить">⟳</button>
+                <button type="button" class="btn-ghost btn-sm" data-webtab-home>Домой</button>
+                <button type="button" class="btn-ghost btn-sm" data-webtab-logout title="Выйти из аккаунта">Выход</button>
+                <button type="button" class="btn-secondary btn-sm" data-webtab-external>В браузере</button>
+              </div>
+              <div class="webtab-status">
+                <span class="webtab-status-dot" data-webtab-dot></span>
+                <span data-webtab-status>Не загружено</span>
+              </div>
+            </div>
+            <div class="webtab-host">
+              <webview
+                id="outline-webview"
+                class="webtab-webview"
+                partition="persist:outline"
+                allowpopups
+                src="about:blank"
+              ></webview>
+            </div>
+          </div>
+        </section>
+
+        <!-- NOTES -->
+        <section class="page" id="page-notes">
+          <div class="notes-page">
+            <div class="webtab-toolbar">
+              <div class="webtab-title-wrap">
+                <span class="webtab-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg>
+                </span>
+                <div>
+                  <h1>Записи</h1>
+                  <p class="webtab-sub">Заметки с форматированием · закладки с ссылками</p>
+                </div>
+              </div>
+              <div class="webtab-nav">
+                <input type="search" id="notes-filter" class="notes-search" placeholder="Поиск…" aria-label="Поиск записей" />
+              </div>
+            </div>
+
+            <div class="notes-body">
+              <aside class="notes-sidebar">
+                <div class="notes-mode-tabs">
+                  <button type="button" class="notes-mode-tab active" data-mode="notes">Заметки</button>
+                  <button type="button" class="notes-mode-tab" data-mode="bookmarks">Закладки</button>
+                </div>
+                <div class="notes-list-head">
+                  <span id="notes-list-label">Заметки</span>
+                  <span id="notes-list-count">0</span>
+                </div>
+                <div class="notes-list" id="notes-list"></div>
+                <button type="button" class="btn-secondary btn-sm" id="notes-add-btn">+ Заметка</button>
+              </aside>
+
+              <div class="notes-main">
+                <div class="notes-empty-state" id="notes-empty-state">
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                  <p>Выберите запись или создайте новую</p>
+                </div>
+
+                <div class="notes-editor" id="notes-editor">
+                  <div class="notes-editor-head">
+                    <input type="text" class="notes-editor-title" id="notes-editor-title" placeholder="Название" />
+                    <input type="text" class="notes-editor-tags" id="notes-editor-tags" placeholder="теги, через запятую" aria-label="Теги" />
+                    <div class="notes-editor-actions">
+                      <button type="button" class="btn-ghost btn-sm notes-rt-btn" id="notes-pin-btn" title="Закрепить">📌</button>
+                      <button type="button" class="btn-ghost btn-sm" id="notes-open-url" title="Открыть ссылку">↗</button>
+                      <button type="button" class="btn-ghost btn-sm" id="notes-delete-btn" title="Удалить">🗑</button>
+                    </div>
+                  </div>
+
+                  <div class="notes-bookmark-fields hidden" id="notes-bookmark-panel">
+                    <input type="url" class="notes-bookmark-url" id="notes-bookmark-url" placeholder="https://…" aria-label="URL закладки" />
+                  </div>
+
+                  <div class="notes-richtoolbar" id="notes-richtoolbar">
+                    <div class="notes-richtoolbar-group">
+                      <button type="button" class="notes-rt-btn" data-cmd="bold" title="Жирный"><b>B</b></button>
+                      <button type="button" class="notes-rt-btn" data-cmd="italic" title="Курсив"><em>I</em></button>
+                      <button type="button" class="notes-rt-btn" data-cmd="underline" title="Подчёркнутый"><u>U</u></button>
+                      <button type="button" class="notes-rt-btn" data-cmd="strikeThrough" title="Зачёркнутый"><s>S</s></button>
+                    </div>
+                    <span class="notes-richtoolbar-sep"></span>
+                    <div class="notes-richtoolbar-group">
+                      <button type="button" class="notes-rt-btn" data-cmd="formatBlock" data-value="h2" title="Заголовок">H2</button>
+                      <button type="button" class="notes-rt-btn" data-cmd="formatBlock" data-value="h3" title="Подзаголовок">H3</button>
+                      <button type="button" class="notes-rt-btn" data-cmd="formatBlock" data-value="p" title="Абзац">¶</button>
+                    </div>
+                    <span class="notes-richtoolbar-sep"></span>
+                    <div class="notes-richtoolbar-group">
+                      <button type="button" class="notes-rt-btn" data-cmd="insertUnorderedList" title="Маркированный список">•≡</button>
+                      <button type="button" class="notes-rt-btn" data-cmd="insertOrderedList" title="Нумерованный список">1.</button>
+                      <button type="button" class="notes-rt-btn" data-cmd="formatBlock" data-value="blockquote" title="Цитата">❝</button>
+                    </div>
+                    <span class="notes-richtoolbar-sep"></span>
+                    <div class="notes-richtoolbar-group">
+                      <button type="button" class="notes-rt-btn" data-cmd="createLink" title="Ссылка">🔗</button>
+                      <button type="button" class="notes-rt-btn" data-cmd="removeFormat" title="Сбросить формат">✕</button>
+                    </div>
+                    <span class="notes-richtoolbar-sep"></span>
+                    <div class="notes-color-swatches" id="notes-color-swatches"></div>
+                  </div>
+
+                  <div class="notes-content" id="notes-content" contenteditable="true" data-placeholder="Начните писать…"></div>
+                  <div class="notes-save-hint" id="notes-save-hint"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SETTINGS -->
+        <section class="page" id="page-settings">
+          <div class="settings-page">
+            <header class="settings-page-header">
+              <h1>Настройки</h1>
+              <p>Внешний вид, хоткеи, Figma, окно и дополнительные параметры</p>
+            </header>
+            <div class="settings-scroll">
+
+              <div class="settings-section">
+                <div class="settings-section-title">Аккаунт и роль</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Рабочий аккаунт</div>
+                      <div class="settings-hint" id="settings-role-hint">Роль назначается аккаунту в Supabase.</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <span class="auth-user-chip" id="settings-auth-chip">Проверяем вход...</span>
+                      <button type="button" class="btn-secondary btn-sm" id="settings-auth-logout">Выйти</button>
+                    </div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Роль</div>
+                      <div class="settings-hint">По роли открываются нужные разделы интерфейса.</div>
+                    </div>
+                    <div class="settings-control">
+                      <span class="settings-select" id="settings-role-label">—</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Внешний вид</div>
+                <div class="settings-list">
+                    <div class="settings-item settings-item--stack settings-item--themes">
+                      <div class="settings-item-info">
+                        <div class="settings-label">Тема оформления</div>
+                        <div class="settings-hint">Выберите встроенную тему или создайте свою с цветами и медиа</div>
+                      </div>
+                      <div class="theme-grid" id="theme-picker"></div>
+                    <div id="custom-themes-host"></div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Размер текста</div>
+                      <div class="settings-hint">Масштаб интерфейса приложения</div>
+                    </div>
+                    <div class="settings-control settings-segmented" id="seg-font-size">
+                      <button type="button" class="settings-seg" data-value="small">Мелкий</button>
+                      <button type="button" class="settings-seg" data-value="medium">Средний</button>
+                      <button type="button" class="settings-seg" data-value="large">Крупный</button>
+                    </div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Компактный режим</div>
+                      <div class="settings-hint">Меньше отступов на страницах</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-compact" /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Нижняя панель статуса</div>
+                      <div class="settings-hint">Строка с логом и индикаторами Figma</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-player-bar" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Анимации</div>
+                      <div class="settings-hint">Переходы и появление элементов</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-animations" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Хоткеи и сервер</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Глобальные хоткеи</div>
+                      <div class="settings-hint">Слушать клавиши, когда приложение в фоне</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="toggle-server" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Уведомления о действиях</div>
+                      <div class="settings-hint">Показывать результат выполнения хоткея</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-notify-action" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Лог в нижней панели</div>
+                      <div class="settings-hint">Записывать события в строку статуса</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-log-footer" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Порт плагина</div>
+                      <div class="settings-hint">WebSocket для FIRURU Bridge (3847)</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <input type="number" id="set-plugin-port" class="w-wide" min="1024" max="65535" />
+                      <button type="button" class="btn-secondary btn-sm" id="set-plugin-port-save">Сохранить</button>
+                    </div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Порт CDP</div>
+                      <div class="settings-hint">Порт отладки Figma Desktop (9222)</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <input type="number" id="set-cdp-port" class="w-wide" min="1024" max="65535" />
+                      <button type="button" class="btn-secondary btn-sm" id="set-cdp-port-save">Сохранить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Обновления</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Версия приложения</div>
+                      <div class="settings-hint" id="set-updater-status">Проверка обновлений выполняется автоматически в установленной сборке.</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <button type="button" class="btn-secondary btn-sm" id="set-updater-check">Проверить</button>
+                      <button type="button" class="btn-play btn-sm hidden" id="set-updater-install">Установить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Figma и Make</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Подключаться при запуске</div>
+                      <div class="settings-hint">Попытка связи с Figma при старте приложения</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-auto-connect" /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Auto-Submit в Make</div>
+                      <div class="settings-hint">Автоматически нажимать Submit через CDP</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-make-submit" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Фокус на Figma</div>
+                      <div class="settings-hint">Переключать окно Figma после отправки Make</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-make-focus" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Figma Desktop для Make</div>
+                      <div class="settings-hint">Открывать ссылку Make в приложении, не в браузере</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-make-desktop" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Make it — чат</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Быстрые подсказки</div>
+                      <div class="settings-hint">Чипы Onboarding, Dashboard, Landing…</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-make-suggestions" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Очищать поле после отправки</div>
+                      <div class="settings-hint">Сбрасывать текст промпта после Create</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-make-clear" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">История чата</div>
+                      <div class="settings-hint">Сохранять сообщения до «Новый чат»</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-make-history" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Язык голосового ввода</div>
+                      <div class="settings-hint" id="set-speech-lang-hint">Windows Speech — только установленные в системе языки</div>
+                    </div>
+                    <select class="settings-select settings-control" id="set-speech-lang">
+                      <option value="ru-RU">Русский</option>
+                      <option value="en-US">English (US)</option>
+                      <option value="uk-UA">Українська</option>
+                      <option value="de-DE">Deutsch</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section" id="settings-agent">
+                <div class="settings-section-title">ИИ Агент (GigaChat)</div>
+                <div class="settings-list">
+                  <div class="settings-item settings-item-stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Ключ Authorization (Base64)</div>
+                      <div class="settings-hint">Бесплатный tier ~1 млн токенов/год — получите на <a href="#" id="set-agent-docs-link">developers.sber.ru/studio</a> → GigaChat API → скопируйте ключ авторизации</div>
+                    </div>
+                    <div class="settings-control settings-stack">
+                      <input type="password" id="set-agent-credentials" class="w-full" placeholder="Base64 Authorization key" autocomplete="off" />
+                      <div class="settings-inline">
+                        <select id="set-agent-model" class="settings-select">
+                          <option value="GigaChat">GigaChat (Lite)</option>
+                          <option value="GigaChat-2">GigaChat-2</option>
+                          <option value="GigaChat-2-Pro">GigaChat-2-Pro</option>
+                        </select>
+                        <button type="button" class="btn-secondary btn-sm" id="set-agent-test">Проверить</button>
+                        <button type="button" class="btn-play btn-sm" id="set-agent-save">Сохранить</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Контекст задачи Kanban</div>
+                      <div class="settings-hint">Передавать выбранную задачу в запрос</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-agent-task-context" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">История чата</div>
+                      <div class="settings-hint">Сохранять сообщения до «Новый чат»</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-agent-history" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Очищать поле после отправки</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-agent-clear" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section" id="settings-nanobanana">
+                <div class="settings-section-title">NanoBanana</div>
+                <div class="settings-list">
+                  <div class="settings-item settings-item-stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">API-ключ</div>
+                      <div class="settings-hint">Создайте на <a href="#" id="set-nb-docs-link">nananobanana.com</a> → Настройки → API Keys. <a href="#" id="set-nb-api-docs">Документация API</a></div>
+                    </div>
+                    <div class="settings-row">
+                      <input type="password" id="set-nb-api-key" class="settings-input settings-input--wide" placeholder="nb_…" autocomplete="off" />
+                      <button type="button" class="btn-play btn-sm" id="set-nb-save">Сохранить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Templates</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Toast при копировании</div>
+                      <div class="settings-hint">Уведомление «скопирован — Ctrl+V»</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-template-toast" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Канбан (Redmine)</div>
+                <div class="settings-list">
+                  <div class="settings-item settings-item--stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Подключение</div>
+                      <div class="settings-hint">URL сервера, API-ключ и доступ к доске Kanban — те же поля, что на странице «Канбан»</div>
+                    </div>
+                    <div class="metask-settings-fields">
+                      <label class="metask-settings-field metask-settings-field--wide">
+                        <span>URL Redmine</span>
+                        <input type="url" id="set-kanban-url" placeholder="https://redmine.example.com" autocomplete="off" />
+                      </label>
+                      <label class="metask-settings-field">
+                        <span>Путь к доске</span>
+                        <input type="text" id="set-kanban-board-path" placeholder="/kanban/board" autocomplete="off" />
+                      </label>
+                      <label class="metask-settings-field metask-settings-field--wide">
+                        <span>API-ключ</span>
+                        <input type="password" id="set-kanban-api-key" placeholder="Redmine → Моя учётная запись" autocomplete="off" />
+                      </label>
+                      <label class="metask-settings-field">
+                        <span>Логин (доска)</span>
+                        <input type="text" id="set-kanban-username" autocomplete="off" />
+                      </label>
+                      <label class="metask-settings-field">
+                        <span>Пароль (доска)</span>
+                        <input type="password" id="set-kanban-password" autocomplete="off" />
+                      </label>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <button type="button" class="btn-play btn-sm" id="set-kanban-save">Сохранить подключение</button>
+                    </div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Уведомления об изменениях</div>
+                      <div class="settings-hint">Всплывающие уведомления в приложении при обновлении задач</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-kanban-notify" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Интервал проверки</div>
+                      <div class="settings-hint">Как часто опрашивать Redmine (минуты, мин. 2)</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <input type="number" id="set-kanban-poll" class="w-wide" min="2" max="120" />
+                      <button type="button" class="btn-secondary btn-sm" id="set-kanban-poll-save">Сохранить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Окно и запуск</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Сворачивать в трей</div>
+                      <div class="settings-hint">При закрытии окна — в системный трей, не выход</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-close-tray" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Запуск свёрнутым</div>
+                      <div class="settings-hint">Старт только в трее, без показа окна</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-start-minimized" /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Сервер хоткеев при запуске</div>
+                      <div class="settings-hint">Автоматически включать прослушивание клавиш</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-start-server" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Splash-экран</div>
+                      <div class="settings-hint">Заставка при запуске приложения</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-show-splash" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Длительность splash</div>
+                      <div class="settings-hint">Миллисекунды (1000–5000)</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <input type="number" id="set-splash-ms" class="w-wide" min="0" max="8000" step="100" />
+                      <button type="button" class="btn-secondary btn-sm" id="set-splash-ms-save">Сохранить</button>
+                    </div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Размер окна</div>
+                      <div class="settings-hint">Ширина и высота главного окна</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <input type="number" id="set-win-width" class="w-wide" min="960" max="2560" placeholder="W" />
+                      <span style="color:var(--text-muted)">×</span>
+                      <input type="number" id="set-win-height" class="w-wide" min="640" max="1600" placeholder="H" />
+                      <button type="button" class="btn-secondary btn-sm" id="btn-apply-window-size">Применить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Поиск</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Макс. результатов</div>
+                      <div class="settings-hint">Сколько пунктов показывать в Ctrl+K</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <input type="number" id="set-search-max" class="w-wide" min="4" max="30" />
+                      <button type="button" class="btn-secondary btn-sm" id="set-search-max-save">Сохранить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Дополнительно</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Подробные логи</div>
+                      <div class="settings-hint">Больше технических сообщений в консоли</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-verbose-logs" /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-actions-row">
+                    <button type="button" class="btn-secondary btn-sm" id="btn-open-config">Папка config</button>
+                    <button type="button" class="btn-secondary btn-sm" id="btn-open-plugin">Папка плагина</button>
+                    <button type="button" class="btn-ghost btn-sm" id="btn-reset-onboarding">Сбросить онбординг</button>
+                    <button type="button" class="btn-ghost btn-sm" id="btn-export-config">Экспорт config</button>
+                    <button type="button" class="btn-ghost btn-sm" id="btn-import-config">Импорт config</button>
+                    <button type="button" class="btn-ghost btn-sm" id="btn-reset-settings">Сброс настроек</button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Bottom bar -->
+      <footer class="player-bar">
+        <div class="player-left">
+          <div class="player-thumb" id="bar-icon">⌨</div>
+          <div class="player-info">
+            <div class="player-title" id="bar-title">SHKF</div>
+            <div class="player-sub" id="log-text">Готово</div>
+          </div>
+        </div>
+        <div class="player-center">
+          <div class="status-pills">
+            <span class="pill" id="pill-hotkeys"><span class="dot-sm" id="dot-server"></span> Хоткеи</span>
+            <span class="pill" id="pill-figma"><span class="dot-sm" id="dot-figma"></span> Figma</span>
+          </div>
+        </div>
+        <div class="player-right">
+          <button class="icon-btn" id="btn-quick-connect" title="Подключить Figma">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Role picker -->
+  <div class="role-picker hidden" id="role-picker">
+    <div class="rp-bg" aria-hidden="true">
+      <div class="rp-gradient"></div>
+      <div class="rp-grid"></div>
+      <div class="rp-orb rp-orb-1"></div>
+      <div class="rp-orb rp-orb-2"></div>
+      <div class="rp-orb rp-orb-3"></div>
+    </div>
+    <div class="role-picker-shell">
+      <div class="role-picker-head">
+        <span class="role-picker-badge">SHKF</span>
+        <h1 class="role-picker-title">Выберите роль</h1>
+        <p class="role-picker-sub">SHKF покажет только нужные инструменты: Figma для дизайнеров, канбан и почта для разработчиков и PM.</p>
+      </div>
+      <div class="role-grid" id="role-grid"></div>
+      <div class="role-picker-actions">
+        <button type="button" class="role-picker-confirm" id="role-picker-confirm" disabled>
+          <span class="role-picker-confirm-text">Продолжить</span>
+          <span class="role-picker-confirm-arrow" aria-hidden="true">→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding — fullscreen -->
+  <div class="onboarding hidden" id="onboarding">
+    <div class="ob-bg">
+      <div class="ob-gradient"></div>
+      <div class="ob-grid"></div>
+      <div class="ob-orb ob-orb-1"></div>
+      <div class="ob-orb ob-orb-2"></div>
+      <div class="ob-orb ob-orb-3"></div>
+    </div>
+    <div class="ob-shell">
+      <header class="ob-header">
+        <div class="ob-brand">
+          <span class="ob-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
+              <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
+              <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
+              <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
+            </svg>
+          </span>
+          SHKF
+        </div>
+        <button type="button" class="onboarding-skip" id="onboarding-skip">Пропустить</button>
+      </header>
+      <div class="ob-progress-track">
+        <div class="ob-progress-fill" id="ob-progress-fill"></div>
+      </div>
+      <div class="ob-stage" id="onboarding-slides">
+        <div class="ob-slide active" data-step="0">
+          <div class="ob-slide-visual">
+            <div class="ob-visual ob-visual-welcome">
+              <div class="ob-orbit ob-orbit-1"></div>
+              <div class="ob-orbit ob-orbit-2"></div>
+              <div class="ob-logo-ring">
+                <div class="ob-logo" aria-hidden="true">
+                  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
+                    <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
+                    <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
+                    <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
+                  </svg>
+                </div>
+              </div>
+              <span class="ob-float-keys">Alt+B</span>
+              <span class="ob-float-keys">Ctrl K</span>
+              <span class="ob-float-keys">Make ✦</span>
+            </div>
+          </div>
+          <div class="ob-slide-content">
+            <span class="ob-tag">Добро пожаловать</span>
+            <h2>Суперсила для Figma</h2>
+            <p>Хоткеи, AI-прототипы и готовые компоненты — всё в одном приложении, которое работает поверх Figma.</p>
+            <ul class="ob-features">
+              <li>Глобальные шорткаты без переключения окон</li>
+              <li>Make it — промпты в Figma Make одним кликом</li>
+              <li>Библиотека шаблонов UI</li>
+            </ul>
+          </div>
+        </div>
+        <div class="ob-slide" data-step="1">
+          <div class="ob-slide-visual">
+            <div class="ob-visual ob-visual-hotkeys">
+              <div class="ob-key-row">
+                <div class="ob-key">Alt</div>
+                <span class="ob-key-plus">+</span>
+                <div class="ob-key ob-key-main">B</div>
+                <span class="ob-key-label">→ Центр в родителе</span>
+              </div>
+              <div class="ob-key-row">
+                <div class="ob-key">Alt</div>
+                <span class="ob-key-plus">+</span>
+                <div class="ob-key">F</div>
+                <span class="ob-key-label">→ Заполнить фрейм</span>
+              </div>
+              <div class="ob-key-row">
+                <div class="ob-key">Alt</div>
+                <span class="ob-key-plus">+</span>
+                <div class="ob-key">Shift</div>
+                <span class="ob-key-plus">+</span>
+                <div class="ob-key">J</div>
+                <span class="ob-key-label">→ Распределить</span>
+              </div>
+            </div>
+          </div>
+          <div class="ob-slide-content">
+            <span class="ob-tag">Хоткеи</span>
+            <h2>Действия без меню</h2>
+            <p>Кастомные комбинации, которых нет в Figma — центрирование, auto layout, swap fill/stroke и другие.</p>
+            <ul class="ob-features">
+              <li>Работают глобально — Figma может быть в фоне</li>
+              <li>Настраиваемые комбинации и подсказки</li>
+              <li>Демо каждой команды прямо в приложении</li>
+            </ul>
+          </div>
+        </div>
+        <div class="ob-slide" data-step="2">
+          <div class="ob-slide-visual">
+            <div class="ob-chat-demo">
+              <div class="ob-bubble ob-bubble-user">Landing для SaaS-продукта</div>
+              <div class="ob-bubble ob-bubble-ai">✦ Открываю Figma Make с вашим промптом…</div>
+              <div class="ob-bubble ob-bubble-typing"><span></span><span></span><span></span></div>
+            </div>
+          </div>
+          <div class="ob-slide-content">
+            <span class="ob-tag">Make it</span>
+            <h2>AI-прототипы из текста</h2>
+            <p>Опишите интерфейс в чате или голосом — приложение сформирует промпт и откроет Figma Make.</p>
+            <ul class="ob-features">
+              <li>Голосовой ввод через микрофон</li>
+              <li>Быстрые подсказки для старта</li>
+              <li>Авто-Submit через CDP</li>
+            </ul>
+          </div>
+        </div>
+        <div class="ob-slide" data-step="3">
+          <div class="ob-slide-visual">
+            <div class="ob-visual-templates">
+              <div class="ob-tpl-mini"></div>
+              <div class="ob-tpl-mini"></div>
+              <div class="ob-tpl-mini"></div>
+              <div class="ob-tpl-mini"></div>
+            </div>
+          </div>
+          <div class="ob-slide-content">
+            <span class="ob-tag">Templates</span>
+            <h2>Готовые компоненты</h2>
+            <p>Кнопки, карточки, навбары, модалки — кликните, компонент скопируется в буфер. В Figma нажмите Ctrl+V.</p>
+            <ul class="ob-features">
+              <li>12 готовых UI-блоков</li>
+              <li>Копирование в один клик — без плагина</li>
+              <li>Вставка Ctrl+V прямо в файл Figma</li>
+            </ul>
+          </div>
+        </div>
+        <div class="ob-slide" data-step="4">
+          <div class="ob-slide-visual">
+            <div class="ob-visual ob-visual-figma">
+              <div class="ob-figma-window">
+                <div class="ob-figma-titlebar">
+                  <span class="ob-figma-dot"></span>
+                  <span class="ob-figma-dot"></span>
+                  <span class="ob-figma-dot"></span>
+                </div>
+                <div class="ob-figma-body">
+                  <div class="ob-plugin-card">
+                    <span class="ob-plugin-dot on"></span>
+                    <span>FIRURU Bridge — подключён</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="ob-slide-content">
+            <span class="ob-tag">Подключение</span>
+            <h2>Один раз настроить — всегда работает</h2>
+            <p>Установите плагин-мост в Figma. Он выполняет хоткеи и вставляет шаблоны прямо в открытый файл.</p>
+            <ul class="ob-features">
+              <li>Plugins → Development → Import from manifest</li>
+              <li>Нажмите «Подключиться» и сверните окно</li>
+              <li>Раздел «Figma» в sidebar — статус подключения</li>
+            </ul>
+          </div>
+        </div>
+        <div class="ob-slide" data-step="5">
+          <div class="ob-slide-visual">
+            <div style="width:100%;max-width:340px;display:flex;flex-direction:column;align-items:center">
+              <div class="ob-search-demo">
+                <span class="ob-search-icon">⌕</span>
+                <span>центр в родителе</span>
+                <kbd>Ctrl K</kbd>
+              </div>
+              <div class="ob-search-results">
+                <div class="ob-search-hit"><strong>Alt+B</strong> — Центр в родительском фрейме</div>
+                <div class="ob-search-hit"><strong>Templates</strong> — Primary Button</div>
+              </div>
+            </div>
+          </div>
+          <div class="ob-slide-content">
+            <span class="ob-tag">Поиск</span>
+            <h2>Всё под рукой</h2>
+            <p>Ctrl+K — умный поиск по хоткеям, шаблонам, настройкам и промптам Make. Начните печатать — найдёте за секунду.</p>
+            <ul class="ob-features">
+              <li>Fuzzy-поиск по всем разделам</li>
+              <li>Стрелки + Enter для навигации</li>
+              <li>Быстрый переход к любой функции</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <footer class="ob-footer">
+        <span class="ob-step-counter" id="ob-step-counter"><span>01</span> / 06</span>
+        <div class="ob-actions">
+          <button type="button" class="btn-secondary ob-back hidden" id="ob-back">Назад</button>
+          <button type="button" class="btn-play ob-next" id="ob-next">Далее</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Custom cursor -->
+  <div class="custom-cursor hidden" id="custom-cursor" aria-hidden="true">
+    <div class="cursor-circle">
+      <svg class="cursor-arrow" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">Новый хоткей</h2>
+        <button class="icon-btn" id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <label class="field">
+          <span class="field-label">Название</span>
+          <input type="text" id="edit-name" placeholder="Центр в родительском фрейме" />
+        </label>
+        <label class="field">
+          <span class="field-label">Действие</span>
+          <select id="edit-action"></select>
+        </label>
+        <label class="field">
+          <span class="field-label">Комбинация</span>
+          <div class="record-row">
+            <div class="combo-display" id="combo-display">Не назначено</div>
+            <button class="btn-secondary" id="btn-record">Записать</button>
+          </div>
+          <div class="conflict hidden" id="conflict-msg"></div>
+        </label>
+        <label class="field">
+          <span class="field-label">Подсказка</span>
+          <input type="text" id="edit-hint" placeholder="Alt+B — центр в родителе" />
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" id="modal-cancel">Отмена</button>
+        <button class="btn-play btn-sm" id="modal-save" disabled>Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="metask-toast-stack" id="metask-toast-stack" aria-live="polite"></div>
+
+  <script src="make-prompts.js"></script>
+  <script src="search.js"></script>
+  <script src="demos.js"></script>
+  <script src="make-it.js"></script>
+  <script src="nanobanana.js"></script>
+  <script src="banner-mockup.js"></script>
+  <script src="agent.js"></script>
+  <script src="templates.js"></script>
+  <script src="kanban-notify.js"></script>
+  <script src="metask.js"></script>
+  <script src="mail.js"></script>
+  <script src="webtab.js"></script>
+  <script src="notes.js"></script>
+  <script src="onboarding.js"></script>
+  <script src="themes.js"></script>
+  <script src="custom-theme-engine.js"></script>
+  <script src="custom-themes-ui.js"></script>
+  <script src="role-nav.js"></script>
+  <script src="auth.js"></script>
+  <script src="settings.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

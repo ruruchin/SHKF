@@ -1,0 +1,14 @@
+window.APP_THEMES = [
+  { id: 'dark', label: 'Тёмная', swatch: 'dark' },
+  { id: 'light', label: 'Светлая', swatch: 'light' },
+  { id: 'system', label: 'Система', swatch: 'system' },
+  { id: 'midnight', label: 'Midnight', swatch: 'midnight' },
+  { id: 'nord', label: 'Nord', swatch: 'nord' },
+  { id: 'forest', label: 'Лес', swatch: 'forest' },
+  { id: 'sunset', label: 'Закат', swatch: 'sunset' },
+  { id: 'dracula', label: 'Dracula', swatch: 'dracula' },
+  { id: 'anime', label: 'Anime', swatch: 'anime' },
+  { id: 'manga', label: 'Manga', swatch: 'manga' },
+  { id: 'mangaplus', label: 'MangaPlus', swatch: 'mangaplus' },
+  { id: 'studio', label: 'Studio', swatch: 'studio' },
+];

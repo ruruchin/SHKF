@@ -1,0 +1,295 @@
+/* ===== FIRURU MANGA THEME — monochrome ink & screentone ===== */
+
+[data-theme="manga"] body {
+  background:
+    radial-gradient(ellipse 100% 70% at 50% 0%, rgba(255, 255, 255, 0.04), transparent 55%),
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 255, 255, 0.012) 2px,
+      rgba(255, 255, 255, 0.012) 3px
+    ),
+    var(--shell);
+}
+
+[data-theme="manga"] .shell {
+  position: relative;
+}
+
+.manga-scene {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+[data-theme="manga"] .manga-scene {
+  display: block;
+}
+
+[data-theme="manga"] .sidebar,
+[data-theme="manga"] .main-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+/* Speed lines */
+.manga-speed-lines {
+  position: absolute;
+  inset: -20%;
+  background:
+    repeating-conic-gradient(
+      from 0deg at 50% 45%,
+      transparent 0deg 3deg,
+      rgba(255, 255, 255, 0.035) 3deg 3.6deg
+    );
+  opacity: 0.55;
+  animation: manga-speed-spin 28s linear infinite;
+}
+
+@keyframes manga-speed-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Halftone screentone overlay */
+.manga-screentone {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.14) 1px, transparent 1px);
+  background-size: 5px 5px;
+  opacity: 0.22;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 50%, black 20%, transparent 72%);
+}
+
+.manga-ink-splash {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.07) 0%, transparent 68%);
+  filter: blur(1px);
+}
+
+.manga-ink-splash-1 {
+  width: 320px;
+  height: 320px;
+  top: -80px;
+  right: 12%;
+}
+
+.manga-ink-splash-2 {
+  width: 240px;
+  height: 240px;
+  bottom: 8%;
+  left: 18%;
+  opacity: 0.6;
+}
+
+/* Manga SFX text */
+.manga-onomatopoeia {
+  position: absolute;
+  font-family: 'Segoe UI', 'Yu Gothic UI', 'Meiryo', sans-serif;
+  font-weight: 900;
+  font-size: 28px;
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transform: rotate(-12deg) scale(0.85);
+  animation: manga-sfx-pop 5s ease-in-out infinite;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.manga-fx-kira {
+  top: 14%;
+  right: 28%;
+  animation-delay: 0s;
+}
+
+.manga-fx-don {
+  bottom: 22%;
+  left: 32%;
+  font-size: 34px;
+  transform: rotate(8deg) scale(0.9);
+  animation-delay: 2.4s;
+}
+
+@keyframes manga-sfx-pop {
+  0%, 78%, 100% { opacity: 0; transform: rotate(-12deg) scale(0.75); }
+  82%, 92% { opacity: 0.75; transform: rotate(-8deg) scale(1.05); }
+}
+
+.manga-fx-don {
+  animation-name: manga-sfx-pop-don;
+}
+
+@keyframes manga-sfx-pop-don {
+  0%, 78%, 100% { opacity: 0; transform: rotate(8deg) scale(0.8); }
+  82%, 92% { opacity: 0.7; transform: rotate(5deg) scale(1.08); }
+}
+
+html[data-no-anim] .manga-speed-lines,
+html[data-no-anim] .manga-onomatopoeia {
+  animation: none !important;
+}
+
+html[data-no-anim] .manga-onomatopoeia {
+  opacity: 0.45;
+}
+
+/* UI chrome — ink panel frames */
+[data-theme="manga"] .panel {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 3px,
+      rgba(255, 255, 255, 0.015) 3px,
+      rgba(255, 255, 255, 0.015) 4px
+    ),
+    var(--panel);
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    4px 4px 0 rgba(0, 0, 0, 0.85);
+}
+
+[data-theme="manga"] .sidebar {
+  background:
+    url("data:image/svg+xml,%3Csvg width='8' height='8' viewBox='0 0 8 8' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='0.75' fill='%23ffffff' fill-opacity='0.08'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 50%),
+    var(--sidebar);
+  border-right: 2px solid rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="manga"] .brand-mark {
+  color: #fff;
+}
+
+[data-theme="manga"] .brand-name {
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  -webkit-text-stroke: 0.4px rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="manga"] .nav-item.active {
+  background: #fff;
+  color: #0a0a0a;
+  border: 2px solid #fff;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.9);
+  font-weight: 700;
+}
+
+[data-theme="manga"] .nav-item.active svg {
+  color: #0a0a0a;
+}
+
+[data-theme="manga"] .nav-item:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+[data-theme="manga"] .search-page-input-wrap {
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="manga"] .search-page-input-wrap.is-focused,
+[data-theme="manga"] .search-page-input-wrap:focus-within {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15), 3px 3px 0 rgba(0, 0, 0, 0.8);
+}
+
+[data-theme="manga"] .chip.active {
+  background: #fff;
+  color: #0a0a0a;
+  border: 2px solid #fff;
+  font-weight: 600;
+}
+
+[data-theme="manga"] .combo-badge {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.45);
+}
+
+[data-theme="manga"] .btn-play,
+[data-theme="manga"] .settings-seg.active {
+  background: #fff;
+  color: #0a0a0a;
+  border: 2px solid #fff;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.85);
+  font-weight: 700;
+}
+
+[data-theme="manga"] .player-bar {
+  background: var(--elevated);
+  border-top: 2px solid rgba(255, 255, 255, 0.5);
+}
+
+[data-theme="manga"] .player-thumb {
+  background: #fff;
+  border: 2px solid #0a0a0a;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="manga"] .pill {
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="manga"] .hotkey-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  outline: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+[data-theme="manga"] .toggle input:checked + .toggle-slider {
+  background: #fff;
+  border-color: #fff;
+}
+
+[data-theme="manga"] .toggle input:checked + .toggle-slider::before {
+  background: #0a0a0a;
+}
+
+[data-theme="manga"] .theme-card.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px #fff, 4px 4px 0 rgba(0, 0, 0, 0.85);
+}
+
+[data-theme="manga"] .settings-list,
+[data-theme="manga"] .settings-item {
+  background: rgba(12, 12, 12, 0.92);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-theme="manga"] .hero-title,
+[data-theme="manga"] .page-title {
+  letter-spacing: 0.04em;
+}
+
+[data-theme="manga"] ::selection {
+  background: rgba(255, 255, 255, 0.35);
+  color: #000;
+}
+
+[data-theme="manga"] .btn-primary {
+  background: #fff;
+  color: #0a0a0a;
+  border: 2px solid #fff;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.85);
+  font-weight: 700;
+}
+
+[data-theme="manga"] .btn-primary:hover {
+  background: #e8e8e8;
+}
+
+[data-theme="manga"] .status-dot.on {
+  background: #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+}

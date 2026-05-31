@@ -1,0 +1,395 @@
+import https from 'https';
+import { randomUUID } from 'crypto';
+import { AGENT_SYSTEM_PROMPT, buildTaskContextBlock, parseAgentResponse } from '../shared/agent-prompts.js';
+import {
+  GIGACHAT_VISION_HINT,
+  isGigaChatVisionModel,
+  MAX_AGENT_IMAGE_BYTES,
+  MAX_AGENT_IMAGES_PER_MESSAGE,
+} from '../shared/gigachat-vision.js';
+
+const OAUTH_URL = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
+const CHAT_URL = 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions';
+const FILES_URL = 'https://gigachat.devices.sberbank.ru/api/v1/files';
+const EMBEDDINGS_URL = 'https://gigachat.devices.sberbank.ru/api/v1/embeddings';
+
+export { isGigaChatVisionModel, GIGACHAT_VISION_HINT };
+
+function httpsRequest(url, { method = 'GET', headers = {}, body = null, rejectUnauthorized = false } = {}) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const req = https.request(
+      {
+        hostname: parsed.hostname,
+        port: parsed.port || 443,
+        path: `${parsed.pathname}${parsed.search}`,
+        method,
+        headers,
+        rejectUnauthorized,
+      },
+      (res) => {
+        let data = '';
+        res.on('data', (chunk) => { data += chunk; });
+        res.on('end', () => {
+          let json = null;
+          try {
+            json = data ? JSON.parse(data) : null;
+          } catch {
+            json = null;
+          }
+          resolve({ status: res.statusCode, json, text: data });
+        });
+      },
+    );
+    req.on('error', reject);
+    if (body) req.write(body);
+    req.end();
+  });
+}
+
+function httpsJson(url, options) {
+  return httpsRequest(url, options);
+}
+
+function buildMultipartBody(boundary, fields, file) {
+  const chunks = [];
+  const crlf = '\r\n';
+  for (const [name, value] of Object.entries(fields)) {
+    chunks.push(
+      Buffer.from(
+        `--${boundary}${crlf}Content-Disposition: form-data; name="${name}"${crlf}${crlf}${value}${crlf}`,
+        'utf8',
+      ),
+    );
+  }
+  const safeName = String(file.filename || 'image.png').replace(/"/g, '');
+  chunks.push(
+    Buffer.from(
+      `--${boundary}${crlf}Content-Disposition: form-data; name="file"; filename="${safeName}"${crlf}Content-Type: ${file.mimeType}${crlf}${crlf}`,
+      'utf8',
+    ),
+  );
+  chunks.push(file.buffer);
+  chunks.push(Buffer.from(`${crlf}--${boundary}--${crlf}`, 'utf8'));
+  return Buffer.concat(chunks);
+}
+
+export function parseAgentImagePayload(image) {
+  if (!image) return null;
+  if (image.buffer && image.mimeType) {
+    return {
+      buffer: Buffer.isBuffer(image.buffer) ? image.buffer : Buffer.from(image.buffer),
+      mimeType: image.mimeType,
+      filename: image.filename || 'image.png',
+    };
+  }
+  const dataUrl = String(image.dataUrl || image.url || '').trim();
+  const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);
+  if (!match) return null;
+  const buffer = Buffer.from(match[2], 'base64');
+  if (buffer.length > MAX_AGENT_IMAGE_BYTES) {
+    throw new Error('Изображение больше 15 МБ — уменьшите размер файла');
+  }
+  const ext = match[1].includes('jpeg') || match[1].includes('jpg') ? 'jpg' : 'png';
+  return {
+    buffer,
+    mimeType: match[1],
+    filename: image.filename || `image.${ext}`,
+  };
+}
+
+export class AgentService {
+  constructor() {
+    this.settings = {
+      provider: 'gigachat',
+      credentials: '',
+      scope: 'GIGACHAT_API_PERS',
+      model: 'GigaChat-2-Pro',
+      ignoreTls: true,
+    };
+    this._token = null;
+    this._tokenExpiresAt = 0;
+  }
+
+  configure(settings = {}) {
+    this.settings = {
+      ...this.settings,
+      ...settings,
+      credentials: (settings.credentials || '').trim(),
+      scope: settings.scope || 'GIGACHAT_API_PERS',
+      model: settings.model || 'GigaChat-2-Pro',
+    };
+    if (settings.credentials && settings.credentials !== this._lastCredentials) {
+      this._token = null;
+      this._tokenExpiresAt = 0;
+    }
+    this._lastCredentials = this.settings.credentials;
+  }
+
+  isConfigured() {
+    return this.settings.provider === 'gigachat' && !!this.settings.credentials;
+  }
+
+  getStatus() {
+    return {
+      configured: this.isConfigured(),
+      provider: this.settings.provider,
+      model: this.settings.model,
+      scope: this.settings.scope,
+      visionCapable: isGigaChatVisionModel(this.settings.model),
+    };
+  }
+
+  async getAccessToken() {
+    if (!this.isConfigured()) {
+      throw new Error('Укажите ключ GigaChat в настройках → ИИ Агент');
+    }
+    const now = Date.now();
+    if (this._token && now < this._tokenExpiresAt - 60_000) {
+      return this._token;
+    }
+
+    const rejectUnauthorized = !this.settings.ignoreTls;
+    const body = new URLSearchParams({ scope: this.settings.scope }).toString();
+    const res = await httpsJson(OAUTH_URL, {
+      method: 'POST',
+      rejectUnauthorized,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        Authorization: `Basic ${this.settings.credentials}`,
+        RqUID: randomUUID(),
+      },
+      body,
+    });
+
+    if (res.status !== 200 || !res.json?.access_token) {
+      const msg = res.json?.message || res.json?.error || res.text?.slice(0, 200) || `OAuth ${res.status}`;
+      throw new Error(`GigaChat: не удалось получить токен — ${msg}`);
+    }
+
+    this._token = res.json.access_token;
+    const expiresIn = Number(res.json.expires_at || res.json.expires_in || 1800);
+    this._tokenExpiresAt = expiresIn > 1e12 ? expiresIn : now + expiresIn * 1000;
+    return this._token;
+  }
+
+  async uploadImageFile({ buffer, filename, mimeType }) {
+    const token = await this.getAccessToken();
+    const boundary = `----WebKitFormBoundary${randomUUID().replace(/-/g, '')}`;
+    const body = buildMultipartBody(
+      boundary,
+      { purpose: 'general' },
+      { buffer, filename, mimeType: mimeType || 'image/png' },
+    );
+
+    const res = await httpsRequest(FILES_URL, {
+      method: 'POST',
+      rejectUnauthorized: !this.settings.ignoreTls,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json',
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': String(body.length),
+      },
+      body,
+    });
+
+    if (res.status !== 200 || !res.json?.id) {
+      const msg = res.json?.message || res.json?.error || res.text?.slice(0, 200) || `HTTP ${res.status}`;
+      throw new Error(`GigaChat: не удалось загрузить изображение — ${msg}`);
+    }
+
+    return String(res.json.id);
+  }
+
+  async uploadImages(images = []) {
+    const fileIds = [];
+    for (const img of images.slice(0, MAX_AGENT_IMAGES_PER_MESSAGE)) {
+      const parsed = parseAgentImagePayload(img);
+      if (!parsed) continue;
+      const id = await this.uploadImageFile(parsed);
+      fileIds.push(id);
+    }
+    return fileIds;
+  }
+
+  buildMessages({
+    message,
+    history = [],
+    task = null,
+    systemPrompt = AGENT_SYSTEM_PROMPT,
+    allowFollowups = false,
+    attachmentFileIds = [],
+  }) {
+    let system = systemPrompt;
+    if (!allowFollowups) {
+      system = `${systemPrompt}\n\n---\nСейчас разговор не про работу над задачей. Не добавляй блок FOLLOWUPS. Не привязывай ответ к задаче, если пользователь о ней не спрашивал.`;
+    }
+    if (task?.id) {
+      system = `${system}\n\n---\nКонтекст задачи (используй только если пользователь спрашивает про задачу):\n${buildTaskContextBlock(task)}`;
+    }
+    const messages = [{ role: 'system', content: system.slice(0, 28000) }];
+    for (const item of history.slice(-10)) {
+      if (!item?.role) continue;
+      if (item.role === 'system') continue;
+      const content = String(item.content || '').slice(0, 8000);
+      if (!content && !item.attachments?.length) continue;
+      const entry = { role: item.role, content: content || ' ' };
+      if (item.role === 'user' && Array.isArray(item.attachments) && item.attachments.length) {
+        entry.attachments = item.attachments.slice(0, MAX_AGENT_IMAGES_PER_MESSAGE);
+      }
+      messages.push(entry);
+    }
+
+    const userContent = String(message || '').trim().slice(0, 4000) || 'Опиши приложенное изображение.';
+    const userMsg = { role: 'user', content: userContent };
+    if (attachmentFileIds.length) {
+      userMsg.attachments = attachmentFileIds.slice(0, MAX_AGENT_IMAGES_PER_MESSAGE);
+    }
+    messages.push(userMsg);
+    return messages;
+  }
+
+  async chat({
+    message,
+    history = [],
+    task = null,
+    systemPrompt,
+    allowFollowups = false,
+    images = [],
+  }) {
+    const hasImages = Array.isArray(images) && images.length > 0;
+    if (!String(message || '').trim() && !hasImages) {
+      return { ok: false, message: 'Пустое сообщение' };
+    }
+    if (hasImages && !isGigaChatVisionModel(this.settings.model)) {
+      return { ok: false, message: GIGACHAT_VISION_HINT };
+    }
+    if (!this.isConfigured()) {
+      return {
+        ok: false,
+        message: 'Подключите GigaChat: Настройки → ИИ Агент → ключ Authorization (Base64) с developers.sber.ru/studio',
+      };
+    }
+
+    try {
+      const token = await this.getAccessToken();
+      let attachmentFileIds = [];
+      if (hasImages) {
+        attachmentFileIds = await this.uploadImages(images);
+        if (!attachmentFileIds.length) {
+          return { ok: false, message: 'Не удалось подготовить изображение для отправки' };
+        }
+      }
+
+      const payload = JSON.stringify({
+        model: this.settings.model,
+        messages: this.buildMessages({
+          message,
+          history,
+          task,
+          systemPrompt,
+          allowFollowups,
+          attachmentFileIds,
+        }),
+        temperature: 0.78,
+        max_tokens: 4096,
+      });
+
+      const res = await httpsJson(CHAT_URL, {
+        method: 'POST',
+        rejectUnauthorized: !this.settings.ignoreTls,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: payload,
+      });
+
+      if (res.status !== 200) {
+        const errMsg = res.json?.message || res.json?.error?.message || res.text?.slice(0, 300) || `HTTP ${res.status}`;
+        if (res.status === 401) {
+          this._token = null;
+          this._tokenExpiresAt = 0;
+        }
+        return { ok: false, message: errMsg };
+      }
+
+      const raw = res.json?.choices?.[0]?.message?.content?.trim();
+      if (!raw) {
+        return { ok: false, message: 'Пустой ответ от модели' };
+      }
+
+      const { content, followups } = parseAgentResponse(raw);
+      if (!content) {
+        return { ok: false, message: 'Пустой ответ от модели' };
+      }
+
+      return {
+        ok: true,
+        content,
+        followups,
+        model: res.json?.model || this.settings.model,
+        usage: res.json?.usage || null,
+        attachmentFileIds,
+      };
+    } catch (err) {
+      return { ok: false, message: err.message || String(err) };
+    }
+  }
+
+  /**
+   * Векторные представления текстов через GigaChat Embeddings.
+   * Возвращает массив векторов (number[][]) в порядке входных строк
+   * либо null при ошибке (вызывающая сторона откатится на TF-IDF).
+   */
+  async embed(texts = []) {
+    const list = (Array.isArray(texts) ? texts : [])
+      .map((t) => String(t || '').slice(0, 3500))
+      .filter((t) => t.trim());
+    if (!list.length || !this.isConfigured()) return null;
+
+    try {
+      const token = await this.getAccessToken();
+      const vectors = [];
+      const CHUNK = 50; // ограничение размера запроса
+      for (let i = 0; i < list.length; i += CHUNK) {
+        const chunk = list.slice(i, i + CHUNK);
+        const res = await httpsJson(EMBEDDINGS_URL, {
+          method: 'POST',
+          rejectUnauthorized: !this.settings.ignoreTls,
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ model: 'Embeddings', input: chunk }),
+        });
+        if (res.status === 401) {
+          this._token = null;
+          this._tokenExpiresAt = 0;
+        }
+        if (res.status !== 200 || !Array.isArray(res.json?.data)) return null;
+        const sorted = [...res.json.data].sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+        for (const item of sorted) {
+          if (!Array.isArray(item.embedding)) return null;
+          vectors.push(item.embedding);
+        }
+      }
+      return vectors.length === list.length ? vectors : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async testConnection() {
+    const result = await this.chat({
+      message: 'Ответь одним словом: «готов».',
+      history: [],
+      task: null,
+    });
+    return result;
+  }
+}

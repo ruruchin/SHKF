@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --shell: #E8E6E1;
+      --panel: #FAFAF8;
+      --elevated: #FFFFFF;
+      --panel-hover: #F0EFEB;
+      --border: rgba(28, 28, 30, 0.09);
+      --text: #1C1C1E;
+      --text-2: rgba(28, 28, 30, 0.62);
+      --text-3: rgba(28, 28, 30, 0.42);
+      --ink: #1C1C1E;
+      --accent: #F97316;
+      --accent-hover: #EA580C;
+      --accent-dim: rgba(249, 115, 22, 0.12);
+      --accent-border: rgba(249, 115, 22, 0.22);
+      --green: #16A34A;
+      --orange: #F97316;
+      --red: #DC2626;
+      --radius: 14px;
+      --radius-lg: 18px;
+      --shadow-sm: 0 1px 3px rgba(28, 28, 30, 0.05);
+      --shadow: 0 1px 2px rgba(28, 28, 30, 0.04), 0 8px 24px rgba(28, 28, 30, 0.06);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: 'Segoe UI', Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 12px;
+      line-height: 1.45;
+      letter-spacing: -0.01em;
+      color: var(--text);
+      background: var(--shell);
+    }
+
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
+      padding: 12px;
+      background: var(--shell);
+    }
+
+    .shell {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 18px 14px;
+      gap: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .hero-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .hero-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      flex-shrink: 0;
+    }
+
+    .hero h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      color: var(--ink);
+      line-height: 1.15;
+    }
+
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 3px;
+      font-size: 12px;
+      color: var(--text-2);
+    }
+
+    .hero-meta-sep { color: var(--text-3); }
+
+    .hero-status.connected { color: var(--green); font-weight: 600; }
+    .hero-status.connecting { color: var(--accent); font-weight: 600; }
+    .hero-status.error { color: var(--red); font-weight: 600; }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-play,
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, opacity 0.12s, transform 0.08s;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+
+    .btn-play {
+      padding: 10px 20px;
+      border: none;
+      background: var(--ink);
+      color: #FAFAF8;
+      font-size: 14px;
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-play:hover { background: #2C2C2E; }
+    .btn-play:active { transform: scale(0.98); }
+    .btn-play:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-play svg {
+      flex-shrink: 0;
+      display: block;
+    }
+
+    .btn-secondary {
+      padding: 8px 16px;
+      background: var(--elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: none;
+    }
+
+    .btn-secondary:hover {
+      background: #FFFFFF;
+      border-color: rgba(28, 28, 30, 0.14);
+    }
+
+    .btn-secondary svg {
+      flex-shrink: 0;
+      display: block;
+      opacity: 0.85;
+    }
+
+    .connect-bar .btn-play {
+      padding: 8px 16px;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .connect-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 10px 12px;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      flex-shrink: 0;
+    }
+
+    .connect-bar-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+      font-size: 11px;
+      color: var(--text-2);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--text-3);
+      flex-shrink: 0;
+    }
+
+    .connect-bar.connected .status-dot { background: var(--green); }
+    .connect-bar.connecting .status-dot { background: var(--accent); }
+    .connect-bar.error .status-dot { background: var(--red); }
+
+    .connect-bar-port {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .connect-bar-port label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-3);
+    }
+
+    .connect-bar-port input {
+      width: 72px;
+      padding: 6px 8px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      outline: none;
+    }
+
+    .connect-bar-port input:focus {
+      border-color: rgba(28, 28, 30, 0.18);
+      background: #FFFFFF;
+    }
+
+    .chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex-shrink: 0;
+    }
+
+    .chip {
+      padding: 6px 13px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--elevated);
+      color: var(--text-2);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+
+    .chip:hover { color: var(--text); }
+
+    .chip.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #FAFAF8;
+    }
+
+    .hotkeys-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .list-header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 0 2px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-3);
+      flex-shrink: 0;
+    }
+
+    .list-header.hidden { display: none; }
+
+    .hotkeys-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 2px 4px 2px 0;
+      margin-right: -2px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(28, 28, 30, 0.16) transparent;
+    }
+
+    .hotkeys-list::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .hotkeys-list::-webkit-scrollbar-track {
+      background: transparent;
+      margin: 6px 0;
+    }
+
+    .hotkeys-list::-webkit-scrollbar-thumb {
+      background: rgba(28, 28, 30, 0.1);
+      border-radius: 999px;
+    }
+
+    .hotkeys-list::-webkit-scrollbar-thumb:hover {
+      background: rgba(28, 28, 30, 0.2);
+    }
+
+    .hotkeys-list:hover::-webkit-scrollbar-thumb {
+      background: rgba(28, 28, 30, 0.16);
+    }
+
+    .hk-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    .hk-row:hover {
+      background: #FFFFFF;
+      border-color: rgba(28, 28, 30, 0.12);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .row-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .row-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 11px;
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .row-text { min-width: 0; }
+
+    .hk-name {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .hk-hint {
+      font-size: 10px;
+      color: var(--text-3);
+      margin-top: 2px;
+      line-height: 1.35;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .combo-badge {
+      display: inline-flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 3px;
+      max-width: 130px;
+    }
+
+    .combo-badge kbd {
+      display: inline-block;
+      padding: 3px 7px;
+      border-radius: 8px;
+      background: var(--panel-hover);
+      border: 1px solid var(--border);
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 9px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .empty-state {
+      padding: 20px 12px;
+      text-align: center;
+      color: var(--text-3);
+      font-size: 11px;
+      line-height: 1.5;
+      border: 1px dashed rgba(28, 28, 30, 0.12);
+      border-radius: 12px;
+      background: var(--panel);
+    }
+
+    .empty-state strong {
+      display: block;
+      color: var(--text-2);
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .footer {
+      padding: 10px 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 10px;
+      color: var(--text-3);
+      line-height: 1.55;
+      flex-shrink: 0;
+    }
+
+    .footer strong { color: var(--text-2); font-weight: 600; }
+
+    .library-hero {
+      position: relative;
+      overflow: hidden;
+      padding: 16px;
+      border-radius: 20px;
+      background: linear-gradient(145deg, #1C1C1E 0%, #101010 100%);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: var(--shadow);
+      flex-shrink: 0;
+    }
+
+    .library-hero::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -20px;
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(249, 115, 22, 0.22) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .library-hero-top {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .library-hero-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(249, 115, 22, 0.14);
+      border: 1px solid rgba(249, 115, 22, 0.24);
+      display: grid;
+      place-items: center;
+      color: #FDBA74;
+      flex-shrink: 0;
+    }
+
+    .library-hero-copy {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .library-hero-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.42);
+      margin-bottom: 4px;
+    }
+
+    .library-hero-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.35px;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+    }
+
+    .library-hero-sub {
+      font-size: 11px;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.62);
+    }
+
+    .library-hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .library-hero-tag {
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .library-hero-btn {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 16px;
+      border: none;
+      border-radius: 999px;
+      background: #FAFAF8;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s, transform 0.12s, opacity 0.12s;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+    }
+
+    .library-hero-btn:hover:not(:disabled) {
+      background: #FFFFFF;
+    }
+
+    .library-hero-btn:active:not(:disabled) {
+      transform: scale(0.99);
+    }
+
+    .library-hero-btn:disabled {
+      opacity: 0.42;
+      cursor: not-allowed;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .library-hero-status {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 10px;
+      line-height: 1.4;
+      color: rgba(255, 255, 255, 0.48);
+    }
+
+    .library-hero-status::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.28);
+      flex-shrink: 0;
+    }
+
+    .library-hero-status.ok {
+      color: #86EFAC;
+    }
+
+    .library-hero-status.ok::before {
+      background: var(--green);
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.18);
+    }
+
+    .last-action {
+      width: 100%;
+      margin-top: 2px;
+      font-size: 10px;
+      color: var(--green);
+      display: none;
+    }
+
+    .last-action.visible { display: block; }
+
+    .library-wrap {
+      flex-shrink: 0;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="shell">
+      <header class="hero">
+        <div class="hero-info">
+          <div class="hero-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+              <rect x="2" y="6" width="20" height="12" rx="2.5"/>
+              <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/>
+            </svg>
+          </div>
+          <div>
+            <h1>Мои хоткеи</h1>
+            <p class="hero-meta">
+              <span id="hero-count">0 команд</span>
+              <span class="hero-meta-sep">·</span>
+              <span class="hero-status" id="hero-status">Не подключено</span>
+            </p>
+          </div>
+        </div>
+        <div class="hero-actions">
+          <button class="btn-secondary" id="minimize" type="button" title="Свернуть в фон — хоткеи продолжат работать">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
+            Клавиатура
+          </button>
+          <button class="btn-play" id="save-library" type="button" disabled title="Сохранить выделение в SHKF">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+            Добавить
+          </button>
+        </div>
+      </header>
+
+      <div class="connect-bar" id="connect-bar">
+        <div class="connect-bar-status">
+          <span class="status-dot" id="dot"></span>
+          <span id="status-sub">Запустите SHKF на компьютере</span>
+        </div>
+        <div class="connect-bar-port">
+          <label for="port">Порт</label>
+          <input id="port" type="number" value="3847" min="1024" max="65535" aria-label="Порт сервера" />
+        </div>
+        <button class="btn-play" id="connect" type="button">Подключиться</button>
+      </div>
+      <div class="last-action" id="last-action"></div>
+
+      <div class="library-wrap">
+        <div class="library-hero">
+          <div class="library-hero-top">
+            <div class="library-hero-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M12 5v14M5 12h14"/>
+              </svg>
+            </div>
+            <div class="library-hero-copy">
+              <div class="library-hero-label">Библиотека SHKF</div>
+              <div class="library-hero-title">Сохранить в SHKF</div>
+              <p class="library-hero-sub">Выделите Frame или Component в Figma и нажмите кнопку ниже — баннер попадёт в Templates и Мокап.</p>
+              <div class="library-hero-tags">
+                <span class="library-hero-tag">Component</span>
+                <span class="library-hero-tag">Frame</span>
+                <span class="library-hero-tag">Instance</span>
+              </div>
+            </div>
+          </div>
+          <button class="library-hero-btn" id="save-library-inline" type="button" disabled title="Сохранить выделение в SHKF">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Сохранить выделение в SHKF
+          </button>
+          <p class="library-hero-status" id="library-hint">Подключитесь к SHKF, чтобы импортировать компоненты</p>
+        </div>
+      </div>
+
+      <div class="chips" id="filter-chips">
+        <button class="chip active" type="button" data-filter="all">Все</button>
+        <button class="chip" type="button" data-filter="Выравнивание">Выравнивание</button>
+        <button class="chip" type="button" data-filter="Размер">Размер</button>
+        <button class="chip" type="button" data-filter="Распределение">Распределение</button>
+        <button class="chip" type="button" data-filter="Стиль">Стиль</button>
+        <button class="chip" type="button" data-filter="Layout">Layout</button>
+        <button class="chip" type="button" data-filter="Создание">Создание</button>
+      </div>
+
+      <div class="hotkeys-panel">
+        <div class="list-header hidden" id="list-header">
+          <span>Команда</span>
+          <span>Комбинация</span>
+        </div>
+        <div class="hotkeys-list" id="actions-list">
+          <div class="empty-state" id="empty-state">
+            <strong>Хоткеи появятся после подключения</strong>
+            SHKF отправит список команд автоматически
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <strong>Как пользоваться:</strong> оставьте плагин запущенным и сверните окно.
+        Глобальные комбинации работают, пока открыт Figma и SHKF.
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const connectBar = document.getElementById('connect-bar');
+    const heroStatus = document.getElementById('hero-status');
+    const heroCount = document.getElementById('hero-count');
+    const statusSub = document.getElementById('status-sub');
+    const portInput = document.getElementById('port');
+    const actionsList = document.getElementById('actions-list');
+    const listHeader = document.getElementById('list-header');
+    const connectBtn = document.getElementById('connect');
+    const lastActionEl = document.getElementById('last-action');
+    const saveLibraryBtn = document.getElementById('save-library');
+    const saveLibraryInlineBtn = document.getElementById('save-library-inline');
+    const libraryHint = document.getElementById('library-hint');
+    const filterChips = document.getElementById('filter-chips');
+
+    const ACTION_CATEGORY = {
+      centerInFrame: 'Выравнивание',
+      centerInFrameX: 'Выравнивание',
+      centerInFrameY: 'Выравнивание',
+      centerInViewport: 'Выравнивание',
+      fillParentFrame: 'Размер',
+      matchParentSize: 'Размер',
+      distributeHorizontal: 'Распределение',
+      distributeVertical: 'Распределение',
+      swapFillStroke: 'Стиль',
+      toggleAutoLayout: 'Layout',
+      setupDesktopFrame: 'Создание',
+      createMobileFrame: 'Создание',
+      createTabletFrame: 'Создание',
+      createButton: 'Создание',
+      createCard: 'Создание',
+      createInput: 'Создание',
+      createNavbar: 'Создание',
+      createHeroSection: 'Создание',
+      createFeatureRow: 'Создание',
+      createMegaLandingPage: 'Создание',
+    };
+
+    const CATEGORY_ICONS = {
+      'Выравнивание': '⊕',
+      'Размер': '⤢',
+      'Распределение': '⇹',
+      'Стиль': '◑',
+      'Layout': '▦',
+    };
+
+    let ws = null;
+    let reconnectTimer = null;
+    let shouldReconnect = false;
+    let isConnected = false;
+    let allHotkeys = [];
+    let activeFilter = 'all';
+
+    const STATUS = {
+      idle: {
+        cls: '',
+        hero: 'Не подключено',
+        sub: 'Запустите SHKF на компьютере',
+        btn: 'Подключиться',
+      },
+      connecting: {
+        cls: 'connecting',
+        hero: 'Подключение…',
+        sub: 'Ожидание сервера на localhost',
+        btn: 'Подключение…',
+      },
+      connected: {
+        cls: 'connected',
+        hero: 'Подключено',
+        sub: 'Хоткеи активны — можно свернуть окно',
+        btn: 'Переподключить',
+      },
+      error: {
+        cls: 'error',
+        hero: 'Нет связи',
+        sub: 'Проверьте, что SHKF запущен и порт верный',
+        btn: 'Повторить',
+      },
+    };
+
+    function plural(n, one, few, many) {
+      const m = n % 10;
+      const h = n % 100;
+      if (h >= 11 && h <= 19) return many;
+      if (m === 1) return one;
+      if (m >= 2 && m <= 4) return few;
+      return many;
+    }
+
+    function updateHeroCount() {
+      const total = allHotkeys.length;
+      heroCount.textContent = total + ' ' + plural(total, 'команда', 'команды', 'команд');
+    }
+
+    function getFilteredHotkeys() {
+      if (activeFilter === 'all') return allHotkeys;
+      return allHotkeys.filter((hk) => ACTION_CATEGORY[hk.action] === activeFilter);
+    }
+
+    function setStatus(state) {
+      const s = STATUS[state] || STATUS.idle;
+      connectBar.className = 'connect-bar ' + s.cls;
+      heroStatus.textContent = s.hero;
+      heroStatus.className = 'hero-status ' + s.cls;
+      statusSub.textContent = s.sub;
+      connectBtn.textContent = s.btn;
+      connectBtn.disabled = state === 'connecting';
+      isConnected = state === 'connected';
+      if (saveLibraryBtn) saveLibraryBtn.disabled = !isConnected;
+      if (saveLibraryInlineBtn) saveLibraryInlineBtn.disabled = !isConnected;
+      if (libraryHint) {
+        if (state === 'connected') {
+          libraryHint.textContent = 'Готово — выделите frame и нажмите «Сохранить выделение в SHKF»';
+          libraryHint.className = 'library-hero-status ok';
+        } else {
+          libraryHint.textContent = 'Подключитесь к SHKF, чтобы импортировать компоненты';
+          libraryHint.className = 'library-hero-status';
+        }
+      }
+    }
+
+    function resetLibraryExportButtons() {
+      if (saveLibraryBtn) saveLibraryBtn.disabled = !isConnected;
+      if (saveLibraryInlineBtn) saveLibraryInlineBtn.disabled = !isConnected;
+    }
+
+    function exportSelectionToLibrary() {
+      if (!isConnected || !ws) return;
+      if (saveLibraryInlineBtn) saveLibraryInlineBtn.disabled = true;
+      if (saveLibraryBtn) saveLibraryBtn.disabled = true;
+      if (libraryHint) {
+        libraryHint.textContent = 'Экспортируем…';
+        libraryHint.className = 'library-hero-status';
+      }
+      parent.postMessage({ pluginMessage: { type: 'export-to-library' } }, '*');
+    }
+
+    function flashAction(action) {
+      lastActionEl.textContent = 'Последняя команда: ' + action;
+      lastActionEl.classList.add('visible');
+    }
+
+    function connect() {
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+      clearTimeout(reconnectTimer);
+      const port = portInput.value || '3847';
+      shouldReconnect = true;
+      setStatus('connecting');
+
+      ws = new WebSocket('ws://localhost:' + port);
+
+      ws.onopen = () => {
+        setStatus('connected');
+        ws.send(JSON.stringify({ type: 'register', client: 'figma-plugin' }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'action') {
+            flashAction(msg.action);
+            parent.postMessage({ pluginMessage: { type: 'run-action', action: msg.action } }, '*');
+          } else if (msg.type === 'config') {
+            renderActions(msg.hotkeys || []);
+          } else if (msg.type === 'insert-user-template') {
+            parent.postMessage({
+              pluginMessage: {
+                type: 'insert-user-template',
+                template: msg.template,
+                requestId: msg.requestId,
+              },
+            }, '*');
+          } else if (msg.type === 'apply-banner-mockup') {
+            parent.postMessage({
+              pluginMessage: {
+                type: 'apply-banner-mockup',
+                payload: msg.payload,
+                requestId: msg.requestId,
+              },
+            }, '*');
+          } else if (msg.type === 'read-banner-texts') {
+            parent.postMessage({
+              pluginMessage: {
+                type: 'read-banner-texts',
+                payload: msg.payload,
+                requestId: msg.requestId,
+              },
+            }, '*');
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      ws.onclose = () => {
+        ws = null;
+        if (shouldReconnect) {
+          setStatus('error');
+          reconnectTimer = setTimeout(connect, 3000);
+        } else {
+          setStatus('idle');
+        }
+      };
+
+      ws.onerror = () => {
+        setStatus('error');
+      };
+    }
+
+    function renderActions(hotkeys) {
+      allHotkeys = hotkeys || [];
+      updateHeroCount();
+      const list = getFilteredHotkeys();
+
+      if (!list.length) {
+        listHeader.classList.add('hidden');
+        if (!allHotkeys.length) {
+          actionsList.innerHTML =
+            '<div class="empty-state">' +
+            '<strong>Хоткеи появятся после подключения</strong>' +
+            'SHKF отправит список команд автоматически' +
+            '</div>';
+        } else {
+          actionsList.innerHTML =
+            '<div class="empty-state">' +
+            '<strong>Нет команд в этой категории</strong>' +
+            'Выберите другой фильтр или «Все»' +
+            '</div>';
+        }
+        return;
+      }
+
+      listHeader.classList.remove('hidden');
+      actionsList.innerHTML = '';
+      for (const hk of list) {
+        const cat = ACTION_CATEGORY[hk.action] || '';
+        const icon = CATEGORY_ICONS[cat] || '⌨';
+        const row = document.createElement('div');
+        row.className = 'hk-row';
+        const keys = hk.keys.map((k) => '<kbd>' + formatKey(k) + '</kbd>').join('');
+        const sub = hk.hint || cat;
+        const hint = sub ? '<div class="hk-hint">' + escapeHtml(sub) + '</div>' : '';
+        row.innerHTML =
+          '<div class="row-main">' +
+            '<div class="row-icon">' + icon + '</div>' +
+            '<div class="row-text"><div class="hk-name">' + escapeHtml(hk.name) + '</div>' + hint + '</div>' +
+          '</div>' +
+          '<div class="combo-badge">' + keys + '</div>';
+        actionsList.appendChild(row);
+      }
+    }
+
+    function formatKey(key) {
+      const map = {
+        'LEFT CTRL': 'Ctrl', 'RIGHT CTRL': 'Ctrl',
+        'LEFT ALT': 'Alt', 'RIGHT ALT': 'Alt',
+        'LEFT SHIFT': 'Shift', 'RIGHT SHIFT': 'Shift',
+        'LEFT META': 'Win', 'RIGHT META': 'Win',
+        'SPACE': 'Space', 'ENTER': 'Enter',
+        'BACKSPACE': 'Bksp', 'DELETE': 'Del',
+        'TAB': 'Tab', 'ESCAPE': 'Esc',
+      };
+      return map[key] || key;
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    connectBtn.onclick = connect;
+
+    filterChips.querySelectorAll('.chip').forEach((chip) => {
+      chip.onclick = () => {
+        activeFilter = chip.dataset.filter || 'all';
+        filterChips.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c === chip));
+        renderActions(allHotkeys);
+      };
+    });
+
+    saveLibraryBtn.onclick = exportSelectionToLibrary;
+    if (saveLibraryInlineBtn) saveLibraryInlineBtn.onclick = exportSelectionToLibrary;
+
+    document.getElementById('minimize').onclick = () => {
+      parent.postMessage({ pluginMessage: { type: 'resize', width: 1, height: 1 } }, '*');
+    };
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+      if (msg.type === 'library-export-failed') {
+        resetLibraryExportButtons();
+        if (libraryHint) {
+          libraryHint.textContent = msg.error || 'Не удалось экспортировать';
+          libraryHint.className = 'library-hero-status';
+        }
+        return;
+      }
+      if (msg.type === 'library-export-ready' && ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({ type: 'user-template-export', ...msg.payload }));
+        resetLibraryExportButtons();
+        if (libraryHint) {
+          libraryHint.textContent = '«' + (msg.payload.name || 'Компонент') + '» сохранён в SHKF';
+          libraryHint.className = 'library-hero-status ok';
+        }
+      }
+      if (msg.type === 'template-result' && ws && ws.readyState === 1) {
+        ws.send(JSON.stringify({
+          type: 'template-result',
+          requestId: msg.requestId,
+          ok: msg.ok,
+          error: msg.error,
+        }));
+      }
+      if (msg.type === 'notify') {
+        if (msg.level === 'success') {
+          setStatus('connected');
+          statusSub.textContent = msg.text;
+        } else if (msg.level === 'error') {
+          setStatus('error');
+          statusSub.textContent = msg.text;
+        }
+      }
+    };
+
+    setStatus('idle');
+    connect();
+  </script>
+</body>
+</html>

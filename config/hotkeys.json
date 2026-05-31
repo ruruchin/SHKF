@@ -1,0 +1,345 @@
+{
+  "port": 3847,
+  "figmaCdpPort": 9222,
+  "theme": "studio",
+  "_comment": "Прямое подключение к Figma через CDP (без плагина). Alt+B/X/Y/F/M — свободны.",
+  "hotkeys": [
+    {
+      "id": "center-in-frame",
+      "name": "Центр в родительском фрейме",
+      "hint": "Alt+B — B = центр (Balance) внутри родителя",
+      "keys": [
+        "LEFT ALT",
+        "B"
+      ],
+      "action": "centerInFrame"
+    },
+    {
+      "id": "center-x-in-frame",
+      "name": "Центр по X в родительском фрейме",
+      "hint": "Alt+X — только горизонтальная ось",
+      "keys": [
+        "LEFT ALT",
+        "X"
+      ],
+      "action": "centerInFrameX"
+    },
+    {
+      "id": "center-y-in-frame",
+      "name": "Центр по Y в родительском фрейме",
+      "hint": "Alt+Y — только вертикальная ось",
+      "keys": [
+        "LEFT ALT",
+        "Y"
+      ],
+      "action": "centerInFrameY"
+    },
+    {
+      "id": "fill-parent-frame",
+      "name": "Заполнить родительский фрейм",
+      "hint": "Alt+F — F = Fill, растянуть на весь фрейм",
+      "keys": [
+        "LEFT ALT",
+        "F"
+      ],
+      "action": "fillParentFrame"
+    },
+    {
+      "id": "match-parent-size",
+      "name": "Размер как у родительского фрейма",
+      "hint": "Alt+M — M = Match, подогнать ширину и высоту",
+      "keys": [
+        "LEFT ALT",
+        "M"
+      ],
+      "action": "matchParentSize"
+    },
+    {
+      "id": "distribute-horizontal",
+      "name": "Распределить равномерно по горизонтали",
+      "hint": "Alt+Shift+J — J = Jump, между крайними объектами",
+      "keys": [
+        "LEFT ALT",
+        "LEFT SHIFT",
+        "J"
+      ],
+      "action": "distributeHorizontal"
+    },
+    {
+      "id": "distribute-vertical",
+      "name": "Распределить равномерно по вертикали",
+      "hint": "Alt+Shift+K — K = stack, между верхним и нижним",
+      "keys": [
+        "LEFT ALT",
+        "LEFT SHIFT",
+        "K"
+      ],
+      "action": "distributeVertical"
+    },
+    {
+      "id": "swap-fill-stroke",
+      "name": "Поменять заливку и обводку",
+      "hint": "Alt+Shift+W — W = swap, не путать со Shift+X в Figma",
+      "keys": [
+        "LEFT ALT",
+        "LEFT SHIFT",
+        "W"
+      ],
+      "action": "swapFillStroke"
+    },
+    {
+      "id": "toggle-auto-layout",
+      "name": "Вкл / выкл Auto Layout",
+      "hint": "Alt+Shift+L — L = Layout, не путать со Shift+A в Figma",
+      "keys": [
+        "LEFT ALT",
+        "LEFT SHIFT",
+        "L"
+      ],
+      "action": "toggleAutoLayout"
+    },
+    {
+      "id": "center-in-viewport",
+      "name": "Центр на экране (viewport)",
+      "hint": "Alt+Shift+O — O = On screen, переместить к центру экрана",
+      "keys": [
+        "LEFT ALT",
+        "LEFT SHIFT",
+        "O"
+      ],
+      "action": "centerInViewport"
+    },
+    {
+      "id": "create-mobile-frame",
+      "name": "Mobile фрейм 390×844",
+      "hint": "Alt+Ctrl+Shift+M — фрейм смартфона",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "M"
+      ],
+      "action": "createMobileFrame"
+    },
+    {
+      "id": "create-tablet-frame",
+      "name": "Tablet фрейм 834×1194",
+      "hint": "Alt+Ctrl+Shift+T — фрейм планшета",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "T"
+      ],
+      "action": "createTabletFrame"
+    },
+    {
+      "id": "create-button",
+      "name": "Создать кнопку",
+      "hint": "Alt+Ctrl+Shift+B — primary pill-кнопка",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "B"
+      ],
+      "action": "createButton"
+    },
+    {
+      "id": "create-card",
+      "name": "Создать карточку",
+      "hint": "Alt+Ctrl+Shift+C — card с заголовком",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "C"
+      ],
+      "action": "createCard"
+    },
+    {
+      "id": "create-input",
+      "name": "Создать поле ввода",
+      "hint": "Alt+Ctrl+Shift+I — label + input",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "I"
+      ],
+      "action": "createInput"
+    },
+    {
+      "id": "create-navbar",
+      "name": "Создать навбар",
+      "hint": "Alt+Ctrl+Shift+N — header с CTA",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "N"
+      ],
+      "action": "createNavbar"
+    },
+    {
+      "id": "create-hero-section",
+      "name": "Создать Hero-секцию",
+      "hint": "Alt+Ctrl+Shift+H — hero + 2 кнопки",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "H"
+      ],
+      "action": "createHeroSection"
+    },
+    {
+      "id": "create-feature-row",
+      "name": "Создать ряд фич",
+      "hint": "Alt+Ctrl+Shift+F — 3 feature-карточки",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "F"
+      ],
+      "action": "createFeatureRow"
+    },
+    {
+      "id": "create-mega-landing",
+      "name": "🌐 Mega: адаптивный лендинг",
+      "hint": "Alt+Ctrl+Shift+P — Desktop + Tablet + Mobile целиком",
+      "keys": [
+        "LEFT ALT",
+        "LEFT CTRL",
+        "LEFT SHIFT",
+        "P"
+      ],
+      "action": "createMegaLandingPage"
+    },
+    {
+      "id": "setup-desktop-frame",
+      "name": "Desktop 1920×1080 + сетка",
+      "action": "setupDesktopFrame",
+      "keys": [
+        "NUMPAD 7"
+      ],
+      "hint": "Alt+Shift+G — G = Grid, фрейм Full HD, сетка 10px, белый фон"
+    },
+    {
+      "id": "hk-mppkksrxqmj2",
+      "name": "создание фрейма",
+      "action": "setupDesktopFrame",
+      "keys": [
+        "NUMPAD7"
+      ],
+      "hint": "NUM 7"
+    },
+    {
+      "id": "hk-mppklsul4b4t",
+      "name": "выключение автолэйаута",
+      "action": "toggleAutoLayout",
+      "keys": [
+        "NUMPAD8"
+      ],
+      "hint": "Num 8"
+    },
+    {
+      "id": "hk-mppkn04z614x",
+      "name": "Центр в родительском фрейме",
+      "action": "toggleAutoLayout",
+      "keys": [
+        "LEFT ALT",
+        "NUMPAD8"
+      ],
+      "hint": "Alt + NUMPAD8 — Вкл / выкл Auto Layout"
+    }
+  ],
+  "onboardingCompleted": true,
+  "settings": {
+    "appearance": {
+      "fontSize": "medium",
+      "compactLayout": false,
+      "showPlayerBar": false,
+      "animationsEnabled": true,
+      "customThemes": []
+    },
+    "hotkeys": {
+      "serverEnabled": true,
+      "notifyOnAction": true,
+      "logToFooter": true
+    },
+    "connection": {
+      "pluginPort": 3847,
+      "cdpPort": 9222
+    },
+    "figma": {
+      "autoConnectOnStart": true,
+      "makeAutoSubmit": true,
+      "makeAutoFocus": true,
+      "preferDesktopApp": true
+    },
+    "make": {
+      "showSuggestions": true,
+      "clearInputAfterSend": true,
+      "keepChatHistory": true,
+      "speechLanguage": "en-US"
+    },
+    "agent": {
+      "provider": "gigachat",
+      "credentials": "MDE5ZTcwZWEtYTE1Mi03YTk3LThhNjctM2ZkMGY0NzIwYmMxOjZhZjE4YzllLWUwYzQtNDc4ZS04YzQ0LWVhMTBhNWMwMzQ2OA==",
+      "scope": "GIGACHAT_API_PERS",
+      "model": "GigaChat",
+      "ignoreTls": true,
+      "keepChatHistory": true,
+      "clearInputAfterSend": true,
+      "useTaskContext": true
+    },
+    "nanobanana": {
+      "apiKey": "nb_960364c408581f323ff09df76467df052ad8a1b1b57bc33c727ba566f561b8bf",
+      "baseUrl": "https://www.nananobanana.com",
+      "defaultModel": "nanobanan-2",
+      "defaultAspectRatio": "1:1",
+      "defaultResolution": "2K",
+      "requestMode": "sync",
+      "numOutputs": 1
+    },
+    "templates": {
+      "showCopyToast": true,
+      "showImportBanner": false
+    },
+    "metask": {
+      "baseUrl": "https://rm.cinet.ru",
+      "boardPath": "/kanban/board",
+      "username": "k.zorenko",
+      "password": "",
+      "apiKey": "1facf864f38b7a4f35e0be197551a276832906af",
+      "notifyOnUpdate": true,
+      "pollIntervalMinutes": 5
+    },
+    "zimbra": {
+      "baseUrl": "https://zimbra.cinet.ru",
+      "username": "k.zorenko@cinet.ru",
+      "password": "fkmjpGiOKVcF"
+    },
+    "window": {
+      "closeToTray": true,
+      "startMinimized": false,
+      "startServerOnLaunch": true,
+      "showSplash": true,
+      "splashDurationMs": 2400,
+      "width": 1180,
+      "height": 720
+    },
+    "search": {
+      "maxResults": 12
+    },
+    "advanced": {
+      "verboseLogs": false
+    },
+    "user": {
+      "role": "designer",
+      "roleSelectedAt": "2026-05-31T12:30:08.650Z"
+    }
+  }
+}

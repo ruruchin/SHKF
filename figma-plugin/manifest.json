@@ -1,0 +1,19 @@
+{
+  "name": "FIRURU Bridge",
+  "id": "firuru-bridge-v2",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "networkAccess": {
+    "allowedDomains": [
+      "ws://localhost:3847"
+    ],
+    "devAllowedDomains": [
+      "ws://localhost:3847",
+      "http://localhost:3847"
+    ],
+    "reasoning": "Плагин подключается к локальному приложению FIRURU на компьютере пользователя через WebSocket (порт 3847 по умолчанию)."
+  }
+}

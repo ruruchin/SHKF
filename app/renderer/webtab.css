@@ -1,0 +1,171 @@
+/* ===== GENERIC WEBVIEW TABS (GitHub, Outline) ===== */
+.webtab-page {
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.webtab-page.active {
+  display: flex;
+  flex: 1;
+}
+
+.webtab {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.webtab-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
+.webtab-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.webtab-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--input-bg, #fff);
+}
+
+.webtab-title-wrap h1 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.webtab-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.webtab-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.webtab-iconbtn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--input-bg, #fff);
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.webtab-iconbtn:hover:not(:disabled) {
+  border-color: var(--accent, #ff7a2f);
+  color: var(--accent, #ff7a2f);
+}
+
+.webtab-iconbtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.webtab-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: min(320px, 40vw);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.webtab-status.is-online {
+  border-color: var(--border);
+  background: var(--elevated, rgba(0, 0, 0, 0.03));
+}
+
+.webtab-status strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.webtab-status span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.webtab-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.webtab-status-dot.on {
+  background: var(--green, #22c55e);
+  opacity: 1;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green, #22c55e) 22%, transparent);
+}
+
+.webtab-host {
+  flex: 1;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  background: #eef1f4;
+  position: relative;
+  overflow: hidden;
+}
+
+.webtab-webview {
+  flex: 1;
+  width: 100%;
+  min-height: 400px;
+  border: none;
+  background: #eef1f4;
+}
+
+@media (max-width: 900px) {
+  .webtab-host {
+    min-height: 320px;
+  }
+  .webtab-status {
+    max-width: 140px;
+  }
+}

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="studio">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SHKF — Клавиатура</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="studio-theme.css" />
+  <link rel="stylesheet" href="keyboard.css" />
+</head>
+<body class="kb-body">
+  <header class="kb-header">
+    <div class="kb-header-copy">
+      <h1 class="kb-title">Клавиатура</h1>
+      <p class="kb-sub">Выберите модификаторы и нажмите клавишу — назначьте действие для Figma</p>
+    </div>
+    <div class="kb-modifiers" id="kb-modifiers">
+      <button type="button" class="kb-mod" data-mod="ctrl">Ctrl</button>
+      <button type="button" class="kb-mod active" data-mod="alt">Alt</button>
+      <button type="button" class="kb-mod" data-mod="shift">Shift</button>
+    </div>
+  </header>
+
+  <main class="kb-main">
+    <div class="kb-board-wrap">
+      <div class="kb-board" id="kb-board" aria-label="Раскладка клавиатуры"></div>
+      <p class="kb-hint">Оранжевая точка — клавиша занята · наведите для названия</p>
+    </div>
+
+    <aside class="kb-panel" id="kb-panel">
+      <div class="kb-panel-empty" id="kb-panel-empty">
+        <div class="kb-panel-empty-icon" aria-hidden="true">⌨</div>
+        <p>Нажмите клавишу на раскладке, чтобы назначить или изменить хоткей</p>
+      </div>
+      <form class="kb-panel-form hidden" id="kb-panel-form">
+        <div class="kb-panel-combo" id="kb-panel-combo">Alt + B</div>
+        <label class="kb-field">
+          <span class="kb-field-label">Действие</span>
+          <select id="kb-action"></select>
+        </label>
+        <label class="kb-field">
+          <span class="kb-field-label">Название</span>
+          <input type="text" id="kb-name" placeholder="Центр в родительском фрейме" />
+        </label>
+        <label class="kb-field">
+          <span class="kb-field-label">Подсказка</span>
+          <input type="text" id="kb-hint-input" placeholder="Alt+B — центр в родителе" />
+        </label>
+        <div class="kb-conflict hidden" id="kb-conflict"></div>
+        <div class="kb-panel-actions">
+          <button type="button" class="btn-ghost" id="kb-cancel">Отмена</button>
+          <button type="button" class="btn-secondary" id="kb-clear">Снять</button>
+          <button type="button" class="btn-play btn-sm" id="kb-save" disabled>Сохранить</button>
+        </div>
+      </form>
+    </aside>
+  </main>
+
+  <script src="keyboard-layout.js"></script>
+  <script src="keyboard.js"></script>
+</body>
+</html>

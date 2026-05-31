@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="splash.css" />
+</head>
+<body>
+  <!-- Видео: app/renderer/assets/keyboard/keyboard-loader.mp4 -->
+  <div class="splash">
+    <video
+      id="splash-video"
+      class="splash-video"
+      autoplay
+      muted
+      playsinline
+      loop
+      preload="auto"
+      aria-hidden="true"
+    >
+      <source src="assets/keyboard/keyboard-loader.mp4" type="video/mp4" />
+      <source src="assets/keyboard/keyboard-loader.webm" type="video/webm" />
+    </video>
+
+    <div class="splash-fallback" id="splash-fallback">
+      <div class="splash-inner">
+        <div class="splash-logo splash-logo-keyboard" aria-hidden="true">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <rect x="2" y="6" width="20" height="12" rx="2.5"/>
+            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/>
+          </svg>
+        </div>
+
+        <h1 class="splash-title">Клавиатура</h1>
+        <p class="splash-sub" id="splash-step">Загрузка раскладки</p>
+
+        <div class="splash-progress" aria-hidden="true">
+          <div class="splash-progress-bar"></div>
+        </div>
+
+        <div class="splash-dots" aria-hidden="true">
+          <span class="splash-dot"></span>
+          <span class="splash-dot"></span>
+          <span class="splash-dot"></span>
+          <span class="splash-dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const video = document.getElementById('splash-video');
+    const fallback = document.getElementById('splash-fallback');
+    const steps = ['Загрузка раскладки', 'Чтение хоткеев', 'Подключение', 'Готово'];
+    let i = 0;
+    const sub = document.getElementById('splash-step');
+
+    function showFallback() {
+      if (video) video.hidden = true;
+      if (fallback) fallback.hidden = false;
+    }
+
+    function showVideo() {
+      if (fallback) fallback.hidden = true;
+      if (video) video.hidden = false;
+    }
+
+    if (video) {
+      video.addEventListener('loadeddata', showVideo);
+      video.addEventListener('error', showFallback);
+      video.play().then(showVideo).catch(showFallback);
+    } else {
+      showFallback();
+    }
+
+    const tick = setInterval(() => {
+      if (!sub) return;
+      i = Math.min(i + 1, steps.length - 1);
+      sub.textContent = steps[i];
+      sub.dataset.step = String(i);
+      if (i >= steps.length - 1) clearInterval(tick);
+    }, 520);
+  </script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "slotNames": {
+    "image": ["img", "slot-image", "image", "photo", "bg-photo"],
+    "title": ["text-title", "title", "heading", "заголовок"],
+    "subtitle": ["text-subtitle", "subtitle", "description", "подзаголовок"],
+    "cta": ["text-cta", "cta", "button-text", "кнопка"]
+  },
+  "presets": [
+    {
+      "id": "banner-1200x400",
+      "label": "Main 1200×400",
+      "width": 1200,
+      "height": 400
+    },
+    {
+      "id": "banner-1200x560",
+      "label": "1200×560",
+      "width": 1200,
+      "height": 560,
+      "imageLayout": "center"
+    },
+    {
+      "id": "banner-360x488",
+      "label": "360×488",
+      "width": 360,
+      "height": 488,
+      "imageLayout": "center"
+    },
+    {
+      "id": "banner-388x203",
+      "label": "388×203",
+      "width": 388,
+      "height": 203,
+      "imageLayout": "center"
+    },
+    {
+      "id": "banner-354x168",
+      "label": "Mobile 354×168",
+      "width": 354,
+      "height": 168
+    }
+  ]
+}

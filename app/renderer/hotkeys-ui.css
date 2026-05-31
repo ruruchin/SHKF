@@ -1,0 +1,217 @@
+/* Hotkeys page & detail — motion polish */
+:root {
+  --hk-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --hk-ease-snap: cubic-bezier(0.2, 0, 0, 1);
+}
+
+#page-hotkeys .hero {
+  animation: hkHeroIn 0.5s var(--hk-ease-out) both;
+}
+
+#page-hotkeys .hero-actions,
+#page-hotkeys .chips {
+  animation: hkHeroIn 0.5s var(--hk-ease-out) 0.05s both;
+}
+
+#page-hotkeys .list-header {
+  animation: hkFadeUp 0.42s var(--hk-ease-out) 0.1s both;
+}
+
+@keyframes hkHeroIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hkFadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.hotkey-row {
+  transition:
+    background 0.18s var(--hk-ease-snap),
+    border-color 0.18s var(--hk-ease-snap),
+    box-shadow 0.22s var(--hk-ease-out),
+    transform 0.22s var(--hk-ease-out);
+}
+
+.hotkey-row--enter {
+  animation: hkRowIn 0.44s var(--hk-ease-out) both;
+  animation-delay: calc(var(--row-i, 0) * 42ms);
+}
+
+@keyframes hkRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.hotkey-list.is-filtering {
+  pointer-events: none;
+}
+
+.hotkey-list.is-filtering .hotkey-row--enter {
+  animation: hkRowFilter 0.26s var(--hk-ease-out) both;
+  animation-delay: calc(var(--row-i, 0) * 28ms);
+}
+
+@keyframes hkRowFilter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+[data-theme="studio"] .hotkey-row:hover {
+  transform: translateY(-1px);
+}
+
+[data-theme="studio"] .hotkey-row:active {
+  transform: translateY(0) scale(0.998);
+}
+
+.chip {
+  transition:
+    background 0.2s var(--hk-ease-snap),
+    border-color 0.2s var(--hk-ease-snap),
+    color 0.2s var(--hk-ease-snap),
+    transform 0.15s var(--hk-ease-out),
+    box-shadow 0.2s var(--hk-ease-out);
+}
+
+.chip:active {
+  transform: scale(0.96);
+}
+
+.chip.active {
+  box-shadow: 0 2px 8px rgba(28, 28, 30, 0.12);
+}
+
+#hotkey-count {
+  display: inline-block;
+  transition: opacity 0.2s ease, transform 0.25s var(--hk-ease-out);
+}
+
+#hotkey-count.is-updating {
+  animation: hkCountTick 0.35s var(--hk-ease-out);
+}
+
+@keyframes hkCountTick {
+  0% { opacity: 0.5; transform: translateY(2px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.combo-badge {
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.2s var(--hk-ease-out);
+}
+
+.hotkey-row:hover .combo-badge {
+  transform: scale(1.03);
+}
+
+.row-icon {
+  transition: transform 0.22s var(--hk-ease-out), background 0.18s ease;
+}
+
+.hotkey-row:hover .row-icon {
+  transform: scale(1.04);
+}
+
+.icon-btn {
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s var(--hk-ease-out);
+}
+
+.icon-btn:active {
+  transform: scale(0.9);
+}
+
+/* Detail page enter */
+#page-hotkey-detail.is-entering .detail-back-link {
+  animation: hkFadeUp 0.38s var(--hk-ease-out) both;
+}
+
+#page-hotkey-detail.is-entering .detail-layout {
+  animation: hkDetailIn 0.48s var(--hk-ease-out) 0.04s both;
+}
+
+#page-hotkey-detail.is-entering .detail-video {
+  animation: hkDemoPanelIn 0.52s var(--hk-ease-out) 0.08s both;
+}
+
+#page-hotkey-detail.is-entering .detail-info-head {
+  animation: hkDetailBlockIn 0.46s var(--hk-ease-out) 0.12s both;
+}
+
+#page-hotkey-detail.is-entering .detail-info-body .detail-section:nth-child(1) {
+  animation: hkDetailBlockIn 0.44s var(--hk-ease-out) 0.16s both;
+}
+
+#page-hotkey-detail.is-entering .detail-info-body .detail-section:nth-child(2) {
+  animation: hkDetailBlockIn 0.44s var(--hk-ease-out) 0.2s both;
+}
+
+@keyframes hkDetailIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hkDemoPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes hkDetailBlockIn {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.detail-combo-key {
+  transition: transform 0.18s var(--hk-ease-out), box-shadow 0.18s ease;
+}
+
+#page-hotkey-detail.is-entering .detail-combo-key {
+  animation: hkKeyPop 0.4s var(--hk-ease-out) both;
+}
+
+#page-hotkey-detail.is-entering .detail-combo-key:nth-child(2) {
+  animation-delay: 0.06s;
+}
+
+#page-hotkey-detail.is-entering .detail-combo-key:nth-child(4) {
+  animation-delay: 0.12s;
+}
+
+@keyframes hkKeyPop {
+  from { opacity: 0; transform: translateY(6px) scale(0.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hotkey-row--enter,
+  #page-hotkeys .hero,
+  #page-hotkeys .hero-actions,
+  #page-hotkeys .chips,
+  #page-hotkeys .list-header,
+  #page-hotkey-detail.is-entering .detail-layout,
+  #page-hotkey-detail.is-entering .detail-video,
+  #page-hotkey-detail.is-entering .detail-info-head,
+  #page-hotkey-detail.is-entering .detail-info-body .detail-section,
+  #page-hotkey-detail.is-entering .detail-combo-key {
+    animation: none !important;
+  }
+}

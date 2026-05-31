@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" href="splash.css" />
+</head>
+<body>
+  <!-- Видео запуска приложения: app/renderer/assets/splash/splash.mp4 -->
+  <div class="splash">
+    <video
+      id="splash-video"
+      class="splash-video"
+      autoplay
+      muted
+      playsinline
+      loop
+      preload="auto"
+      aria-hidden="true"
+    >
+      <source src="assets/splash/splash.mp4" type="video/mp4" />
+      <source src="assets/splash/splash.webm" type="video/webm" />
+    </video>
+
+    <div class="splash-fallback" id="splash-fallback">
+      <div class="splash-inner">
+        <div class="splash-logo" aria-hidden="true">
+          <svg class="logo-mark" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect class="logo-part" x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
+            <rect class="logo-part" x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
+            <rect class="logo-part" x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
+            <rect class="logo-part" x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
+          </svg>
+        </div>
+
+        <h1 class="splash-title">SHKF</h1>
+        <p class="splash-sub" id="splash-step">Запуск</p>
+
+        <div class="splash-progress" aria-hidden="true">
+          <div class="splash-progress-bar"></div>
+        </div>
+
+        <div class="splash-dots" aria-hidden="true">
+          <span class="splash-dot"></span>
+          <span class="splash-dot"></span>
+          <span class="splash-dot"></span>
+          <span class="splash-dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const video = document.getElementById('splash-video');
+    const fallback = document.getElementById('splash-fallback');
+    const steps = ['Запуск', 'Загрузка модулей', 'Подключение сервисов', 'Готово'];
+    let i = 0;
+    const sub = document.getElementById('splash-step');
+
+    function showFallback() {
+      if (video) video.hidden = true;
+      if (fallback) fallback.hidden = false;
+    }
+
+    function showVideo() {
+      if (fallback) fallback.hidden = true;
+      if (video) video.hidden = false;
+    }
+
+    if (video) {
+      video.addEventListener('loadeddata', showVideo);
+      video.addEventListener('error', showFallback);
+      video.play().then(showVideo).catch(showFallback);
+    } else {
+      showFallback();
+    }
+
+    const tick = setInterval(() => {
+      if (!sub) return;
+      i = Math.min(i + 1, steps.length - 1);
+      sub.textContent = steps[i];
+      sub.dataset.step = String(i);
+      if (i >= steps.length - 1) clearInterval(tick);
+    }, 520);
+  </script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+/* ===== FIRURU MANGA PLUS — flat manga + solid accent fills ===== */
+
+[data-theme="mangaplus"] body {
+  background: var(--shell);
+}
+
+[data-theme="mangaplus"] .shell {
+  position: relative;
+}
+
+/* Без speed-lines / SFX — только чистый UI */
+[data-theme="mangaplus"] .manga-scene {
+  display: none;
+}
+
+[data-theme="mangaplus"] .sidebar,
+[data-theme="mangaplus"] .main-wrap {
+  position: relative;
+  z-index: 1;
+}
+
+[data-theme="mangaplus"] .panel {
+  background: var(--panel);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+  box-shadow: 4px 4px 0 #000;
+}
+
+[data-theme="mangaplus"] .sidebar {
+  background: var(--sidebar);
+  border-right: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="mangaplus"] .brand-mark {
+  color: #fff;
+}
+
+[data-theme="mangaplus"] .brand-name {
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+[data-theme="mangaplus"] .nav-item.active {
+  background: #fff;
+  color: #0a0a0a;
+  border: 2px solid #fff;
+  box-shadow: 3px 3px 0 #000;
+  font-weight: 700;
+}
+
+[data-theme="mangaplus"] .nav-item.active svg {
+  color: #0a0a0a;
+}
+
+[data-theme="mangaplus"] .nav-item:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+[data-theme="mangaplus"] .search-page-input-wrap {
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="mangaplus"] .search-page-input-wrap.is-focused,
+[data-theme="mangaplus"] .search-page-input-wrap:focus-within {
+  border-color: #fff;
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="mangaplus"] .chip.active {
+  background: var(--mp-coral);
+  color: #0a0a0a;
+  border: 2px solid var(--mp-coral);
+  font-weight: 600;
+}
+
+[data-theme="mangaplus"] .combo-badge {
+  background: var(--mp-sky);
+  border: 2px solid var(--mp-sky);
+  color: #0a0a0a;
+}
+
+[data-theme="mangaplus"] .btn-play,
+[data-theme="mangaplus"] .settings-seg.active {
+  background: var(--mp-coral);
+  color: #0a0a0a;
+  border: 2px solid var(--mp-coral);
+  box-shadow: 2px 2px 0 #000;
+  font-weight: 700;
+}
+
+[data-theme="mangaplus"] .player-bar {
+  background: var(--elevated);
+  border-top: 2px solid rgba(255, 255, 255, 0.35);
+}
+
+[data-theme="mangaplus"] .player-thumb {
+  background: var(--mp-coral);
+  border: 2px solid #000;
+  box-shadow: 2px 2px 0 #000;
+}
+
+[data-theme="mangaplus"] .pill {
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="mangaplus"] .hotkey-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+  outline: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="mangaplus"] .toggle input:checked + .toggle-slider {
+  background: var(--mp-mint);
+  border-color: var(--mp-mint);
+}
+
+[data-theme="mangaplus"] .toggle input:checked + .toggle-slider::before {
+  background: #0a0a0a;
+}
+
+[data-theme="mangaplus"] .theme-card.active {
+  border-color: var(--mp-coral);
+  box-shadow: 0 0 0 2px var(--mp-coral), 4px 4px 0 #000;
+}
+
+[data-theme="mangaplus"] .settings-list,
+[data-theme="mangaplus"] .settings-item {
+  background: var(--elevated);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+[data-theme="mangaplus"] .hero-title,
+[data-theme="mangaplus"] .page-title {
+  letter-spacing: 0.04em;
+}
+
+[data-theme="mangaplus"] ::selection {
+  background: var(--mp-coral);
+  color: #000;
+}
+
+[data-theme="mangaplus"] .btn-primary {
+  background: var(--mp-coral);
+  color: #0a0a0a;
+  border: 2px solid var(--mp-coral);
+  box-shadow: 3px 3px 0 #000;
+  font-weight: 700;
+}
+
+[data-theme="mangaplus"] .btn-primary:hover {
+  background: #ff8aa3;
+  border-color: #ff8aa3;
+}
+
+[data-theme="mangaplus"] .status-dot.on {
+  background: var(--mp-mint);
+}
+
+[data-theme="mangaplus"] .hero-character {
+  display: block;
+  border: 2px solid #fff;
+  box-shadow: 2px 2px 0 #000;
+}

@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "bookmarks": [
+    {
+      "id": "bm-7bda33bc0c38",
+      "title": "Новая закладка",
+      "url": "",
+      "tags": [],
+      "createdAt": "2026-05-27T23:32:01.929Z",
+      "updatedAt": "2026-05-27T23:32:01.929Z"
+    }
+  ],
+  "notes": [
+    {
+      "id": "note-360ffd889450",
+      "title": "Я не могу не писать музыку",
+      "contentHtml": "<h3><h3><ol><li><span style=\"text-align: center;\">знаю, что накроет ночью, я готовлюсь с вечера</span></li></ol><ol><li><font face=\"YSMusic Headline, sans-serif\"><span style=\"font-size: 32px; letter-spacing: -0.08px;\">зажигаю свечки и мы потихоньку лечимся</span></font></li></ol><ol><li>становится легче, когда все по-человечески</li></ol><ol><li>снял свой лучший день на камеру, хотел глянуть - там все засвечено</li></ol><ol><li>как спать, сука как побороть страх</li></ol><ol><li>стать тем, кем не хотел стать</li></ol><ol><li>пока я понял, что мне нужно лишь замедлить шаг</li></ol><ol><li>пока я понял только что</li></ol><ol><li>я не могу не писать музыку</li></ol><ol><li>(record, frequency, problem, you)</li></ol><ol><li>я не могу не писать музыку</li></ol><ol><li>(try again)</li></ol><ol><li>я не могу не писать музыку</li></ol><ol><li>как бы не хотелось завязать иногда</li></ol><ol><li>я не могу не писать музыку</li></ol><ol><li>как бы не хотелось завязать</li></ol><ol><li>я уже описывал дым в окно</li></ol><ol><li>как, задыхаясь, я считал до трех</li></ol><ol><li>я уже рассказывал про любовь</li></ol><ol><li>я уже рассказывал, что со мной что-то не так</li></ol><ol><li>я не могу не писать музыку</li></ol><ol><li>я не могу не писать музыку</li></ol><ol><li>(try again)</li></ol><ol><li>я не могу не писать музыку</li></ol><ol><li>как бы не хотелось завязать иногда</li></ol><ol><li>я не могу не писать музыку</li></ol><ol><li>как бы не хотелось завязать иногда</li></ol><ol><li>я не могу не писать музыку</li></ol></h3></h3>",
+      "tags": [
+        "сука"
+      ],
+      "pinned": true,
+      "createdAt": "2026-05-27T23:31:10.854Z",
+      "updatedAt": "2026-05-27T23:34:37.394Z"
+    },
+    {
+      "id": "note-5dd44d0d82d7",
+      "title": "Оладушки prod. by SPIDAGI, CURLYGOTCHA, TRA1LAND",
+      "contentHtml": "<span class=\"_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR PageHeaderTitle_font_long__q9Leq PageHeaderTitle_title__caKyB\" style=\"background-repeat: no-repeat; font-family: &quot;YSMusic Headline&quot;, sans-serif; font-weight: 700; line-height: 28px; font-size: 26px; color: rgb(230, 230, 230); display: inline; hyphens: auto; background-color: rgb(26, 26, 26);\">Оладушки</span><span class=\"_MWOVuZRvUQdXKTMcOPx Ai2iRN9elHpk_u5splD6 _3_Mxw7Si7j2g4kWjlpR PageHeaderTitle_font_long__q9Leq PageHeaderTitle_version__g5BeO\" data-test-id=\"ENTITY_VERSION\" style=\"background-repeat: no-repeat; font-family: &quot;YSMusic Headline&quot;, sans-serif; font-weight: 700; line-height: 28px; font-size: 26px; color: rgba(255, 255, 255, 0.5); display: inline; background-color: rgb(26, 26, 26);\">&nbsp;prod. by SPIDAGI, CURLYGOTCHA, TRA1LAND</span>",
+      "tags": [],
+      "pinned": false,
+      "createdAt": "2026-05-27T23:38:24.025Z",
+      "updatedAt": "2026-05-27T23:38:44.681Z"
+    },
+    {
+      "id": "note-ddc75c1c6f67",
+      "title": "Новая заметка",
+      "contentHtml": "",
+      "tags": [],
+      "pinned": false,
+      "createdAt": "2026-05-31T12:04:50.743Z",
+      "updatedAt": "2026-05-31T12:04:50.743Z"
+    }
+  ]
+}

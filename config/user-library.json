@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "user-d74e53e53d00",
+      "name": "360X488 ",
+      "category": "Мои компоненты",
+      "description": "Из Figma · SHKF banners",
+      "source": "figma",
+      "user": true,
+      "createdAt": "2026-05-29T19:22:14.611Z",
+      "updatedAt": "2026-05-29T19:22:14.611Z",
+      "preview": "user-d74e53e53d00",
+      "figma": {
+        "fileName": "SHKF banners",
+        "nodeId": "1:241",
+        "nodeType": "FRAME",
+        "componentKey": "",
+        "width": 420,
+        "height": 488
+      },
+      "assets": {
+        "svg": "user-d74e53e53d00.svg",
+        "thumb": "user-d74e53e53d00.png"
+      },
+      "bannerSlots": {
+        "image": {
+          "x": 0.002272251674107143,
+          "y": 0.4112266165311219,
+          "w": 0.994941638764881,
+          "h": 0.5887733834688781,
+          "layerName": "img"
+        }
+      }
+    },
+    {
+      "id": "user-caba41966716",
+      "name": "Mobile banner 354X160",
+      "category": "Баннеры",
+      "description": "Из Figma · SHKF banners",
+      "source": "figma",
+      "user": true,
+      "createdAt": "2026-05-29T19:21:59.889Z",
+      "updatedAt": "2026-05-29T19:21:59.889Z",
+      "preview": "user-caba41966716",
+      "figma": {
+        "fileName": "SHKF banners",
+        "nodeId": "1:265",
+        "nodeType": "FRAME",
+        "componentKey": "",
+        "width": 354,
+        "height": 160.12062072753906
+      },
+      "assets": {
+        "svg": "user-caba41966716.svg",
+        "thumb": "user-caba41966716.png"
+      },
+      "bannerSlots": {
+        "image": {
+          "x": 0.48897750768284337,
+          "y": -7.100074756459091e-16,
+          "w": 0.5110224923171566,
+          "h": 0.9999999047044098,
+          "layerName": "img"
+        },
+        "title": {
+          "x": 0.05649717514124294,
+          "y": 0.09992466883591196,
+          "w": 0.6666666666666666,
+          "h": 0.32475517371671386,
+          "layerName": "text-title",
+          "defaultText": "Кредит без документов",
+          "fontSize": 22,
+          "color": "rgb(30,30,31)",
+          "fontWeight": 700,
+          "fontFamily": "Inter",
+          "fontStyle": "Semi Bold",
+          "lineHeight": 26.400001049041748
+        }
+      }
+    },
+    {
+      "id": "user-f77f05dd4ac0",
+      "name": "1200x560",
+      "category": "Мои компоненты",
+      "description": "Из Figma · SHKF banners",
+      "source": "figma",
+      "user": true,
+      "createdAt": "2026-05-29T19:21:57.561Z",
+      "updatedAt": "2026-05-29T19:21:57.561Z",
+      "preview": "user-f77f05dd4ac0",
+      "figma": {
+        "fileName": "SHKF banners",
+        "nodeId": "1:244",
+        "nodeType": "FRAME",
+        "componentKey": "",
+        "width": 1200,
+        "height": 560
+      },
+      "assets": {
+        "svg": "user-f77f05dd4ac0.svg",
+        "thumb": "user-f77f05dd4ac0.png"
+      },
+      "bannerSlots": {
+        "image": {
+          "x": -0.000697021484375,
+          "y": 0.002553885323660714,
+          "w": 1.0008050537109374,
+          "h": 0.9974461146763393,
+          "layerName": "img"
+        }
+      }
+    },
+    {
+      "id": "user-7c5f955b00ce",
+      "name": "388X203 (\"Удобный\")сезонный",
+      "category": "Мои компоненты",
+      "description": "Из Figma · SHKF banners",
+      "source": "figma",
+      "user": true,
+      "createdAt": "2026-05-29T19:21:55.518Z",
+      "updatedAt": "2026-05-29T19:21:55.518Z",
+      "preview": "user-7c5f955b00ce",
+      "figma": {
+        "fileName": "SHKF banners",
+        "nodeId": "1:248",
+        "nodeType": "FRAME",
+        "componentKey": "",
+        "width": 388,
+        "height": 203
+      },
+      "assets": {
+        "svg": "user-7c5f955b00ce.svg",
+        "thumb": "user-7c5f955b00ce.png"
+      },
+      "bannerSlots": {
+        "image": {
+          "x": 0.0005291810969716494,
+          "y": -0.00243960225523399,
+          "w": 1.0021790180009664,
+          "h": 1.0033548289331897,
+          "layerName": "img"
+        }
+      }
+    },
+    {
+      "id": "user-c44a2cfcf461",
+      "name": "1200x400",
+      "category": "Мои компоненты",
+      "description": "Из Figma · SHKF banners",
+      "source": "figma",
+      "user": true,
+      "createdAt": "2026-05-29T18:06:18.077Z",
+      "updatedAt": "2026-05-29T18:06:18.077Z",
+      "preview": "user-c44a2cfcf461",
+      "figma": {
+        "fileName": "SHKF banners",
+        "nodeId": "1:264",
+        "nodeType": "FRAME",
+        "componentKey": "",
+        "width": 1200,
+        "height": 440
+      },
+      "assets": {
+        "svg": "user-c44a2cfcf461.svg",
+        "thumb": "user-c44a2cfcf461.png"
+      },
+      "bannerSlots": {
+        "image": {
+          "x": 2.960594732333751e-18,
+          "y": 0,
+          "w": 1,
+          "h": 1,
+          "layerName": "img"
+        },
+        "title": {
+          "x": 0.07333333333333333,
+          "y": 0.29772727272727273,
+          "w": 0.45416666666666666,
+          "h": 0.1159090909090909,
+          "layerName": "text-title",
+          "defaultText": "Новая кредитная заявка"
+        },
+        "subtitle": {
+          "x": 0.07333333333333333,
+          "y": 0.45,
+          "w": 0.37833333333333335,
+          "h": 0.04772727272727273,
+          "layerName": "text-subtitle",
+          "defaultText": "Кредит на любые цели — простая анкета, быстрое решение!"
+        },
+        "cta": {
+          "x": 0.27666666666666667,
+          "y": 0.615909090909091,
+          "w": 0.12666666666666668,
+          "h": 0.04090909090909091,
+          "layerName": "text-cta",
+          "defaultText": "Подробнее"
+        }
+      }
+    },
+    {
+      "id": "user-c3e0b240649c",
+      "name": "button",
+      "category": "Кнопки",
+      "description": "Из Figma · Untitled",
+      "source": "figma",
+      "user": true,
+      "createdAt": "2026-05-27T20:27:10.018Z",
+      "updatedAt": "2026-05-27T20:27:10.018Z",
+      "preview": "user-c3e0b240649c",
+      "figma": {
+        "fileName": "Untitled",
+        "nodeId": "62:29",
+        "nodeType": "FRAME",
+        "componentKey": "",
+        "width": 192,
+        "height": 58
+      },
+      "assets": {
+        "svg": "user-c3e0b240649c.svg",
+        "thumb": "user-c3e0b240649c.png"
+      }
+    },
+    {
+      "id": "user-e768131c1207",
+      "name": "button",
+      "category": "Кнопки",
+      "description": "Из Figma · Untitled",
+      "source": "figma",
+      "user": true,
+      "createdAt": "2026-05-27T20:22:30.432Z",
+      "updatedAt": "2026-05-27T20:22:30.432Z",
+      "preview": "user-e768131c1207",
+      "figma": {
+        "fileName": "Untitled",
+        "nodeId": "60:21",
+        "nodeType": "FRAME",
+        "componentKey": "",
+        "width": 192,
+        "height": 58
+      },
+      "assets": {
+        "svg": "user-e768131c1207.svg",
+        "thumb": "user-e768131c1207.png"
+      }
+    }
+  ],
+  "customCategories": [
+    "Мои компоненты",
+    "Кнопки",
+    "Баннеры"
+  ]
+}

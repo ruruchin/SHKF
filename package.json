@@ -1,0 +1,108 @@
+{
+  "name": "firuru",
+  "version": "1.1.0",
+  "description": "FIRURU — hotkeys, Make and templates for Figma",
+  "type": "module",
+  "main": "app/main.js",
+  "author": "FIRURU",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ruruchin/SHKF.git"
+  },
+  "scripts": {
+    "start": "electron .",
+    "build": "node scripts/electron-build.js nsis",
+    "build:portable": "node scripts/electron-build.js portable",
+    "build:all": "node scripts/electron-build.js all",
+    "server": "node server/index.js",
+    "seed:supabase": "node supabase/seed-users.mjs"
+  },
+  "build": {
+    "appId": "app.firuru",
+    "productName": "FIRURU",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ruruchin",
+        "repo": "SHKF"
+      }
+    ],
+    "files": [
+      "app/**/*",
+      "server/**/*",
+      "shared/**/*",
+      "config/**/*",
+      "supabase/migrations/**/*",
+      "scripts/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/node-global-key-listener/bin/**/*",
+      "scripts/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "figma-plugin",
+        "to": "figma-plugin",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "config",
+        "to": "config-default",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "scripts",
+        "to": "scripts",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "FIRURU-Setup-${version}.exe",
+      "signAndEditExecutable": false
+    },
+    "portable": {
+      "artifactName": "FIRURU-${version}-portable.exe"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "FIRURU",
+      "artifactName": "FIRURU-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
+    "dotenv": "^17.4.2",
+    "electron-updater": "^6.8.3",
+    "lz-string": "^1.5.0",
+    "node-global-key-listener": "^0.3.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^26.0.12"
+  }
+}
