@@ -90,6 +90,8 @@ let metaskBoardAttached = false;
 let metaskLoginBusy = false;
 let metaskPendingLogin = false;
 let lastMetaskBounds = null;
+let updaterPollTimer = null;
+let updaterCheckInFlight = false;
 
 function getMetaskBrowserView() {
   if (metaskBrowserView && !metaskBrowserView.webContents.isDestroyed()) {
@@ -483,24 +485,44 @@ function broadcast(channel, data) {
 
 function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
   autoUpdater.on('checking-for-update', () => broadcast('updater-status', { state: 'checking' }));
   autoUpdater.on('update-available', (info) => broadcast('updater-status', { state: 'available', info }));
   autoUpdater.on('update-not-available', (info) => broadcast('updater-status', { state: 'not-available', info }));
   autoUpdater.on('download-progress', (progress) => broadcast('updater-status', { state: 'downloading', progress }));
-  autoUpdater.on('update-downloaded', (info) => broadcast('updater-status', { state: 'downloaded', info }));
+  autoUpdater.on('update-downloaded', (info) => {
+    broadcast('updater-status', {
+      state: 'downloaded',
+      info,
+      message: 'Обновление скачано и будет установлено автоматически после закрытия приложения.',
+    });
+  });
   autoUpdater.on('error', (err) => broadcast('updater-status', { state: 'error', message: err?.message || String(err) }));
 }
 
-function checkForUpdates() {
+function checkForUpdates({ silent = false } = {}) {
+  if (updaterCheckInFlight) return { state: 'busy' };
   if (!app.isPackaged) {
     const payload = { state: 'disabled', message: 'Обновления доступны только в установленной сборке.' };
-    broadcast('updater-status', payload);
+    if (!silent) broadcast('updater-status', payload);
     return payload;
   }
+  updaterCheckInFlight = true;
   autoUpdater.checkForUpdates().catch((err) => {
     broadcast('updater-status', { state: 'error', message: err?.message || String(err) });
+  }).finally(() => {
+    updaterCheckInFlight = false;
   });
   return { state: 'checking' };
+}
+
+function startUpdaterPolling() {
+  if (updaterPollTimer) clearInterval(updaterPollTimer);
+  updaterPollTimer = null;
+  if (!app.isPackaged) return;
+  updaterPollTimer = setInterval(() => {
+    checkForUpdates({ silent: true });
+  }, 2 * 60 * 1000);
 }
 
 service.on('status', (s) => broadcast('status', s));
@@ -697,6 +719,7 @@ app.whenReady().then(() => {
   createWindow();
   createTray();
   setupAutoUpdater();
+  startUpdaterPolling();
   scheduleMetaskPolling();
   zimbraService.configure(service.config.settings?.zimbra || {});
   agentService.configure(service.config.settings?.agent || {});

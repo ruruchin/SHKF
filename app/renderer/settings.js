@@ -221,7 +221,10 @@
       else if (state === 'available') status.textContent = `Доступно обновление ${payload.info?.version || ''}`.trim();
       else if (state === 'downloading') status.textContent = `Скачиваем обновление: ${Math.round(payload.progress?.percent || 0)}%`;
       else if (state === 'downloaded') {
-        status.textContent = `Обновление ${payload.info?.version || ''} скачано. Перезапустите приложение для установки.`.trim();
+        status.textContent = (
+          payload.message
+          || `Обновление ${payload.info?.version || ''} скачано. Оно установится автоматически после закрытия приложения.`
+        ).trim();
         installBtn?.classList.remove('hidden');
       } else if (state === 'not-available') status.textContent = 'Установлена актуальная версия.';
       else if (state === 'disabled') status.textContent = payload.message || 'Обновления доступны только в установленной сборке.';
