@@ -430,10 +430,81 @@ function bindEvents() {
 
   $('#btn-connect-figma').onclick = () => connectFigma($('#btn-connect-figma'));
   $('#btn-quick-connect').onclick = () => connectFigma(null);
+  bindSidebarUpdater();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     if ((config.theme || 'dark') === 'system') applyTheme('system');
   });
+}
+
+function bindSidebarUpdater() {
+  const btn = $('#sidebar-update-btn');
+  const status = $('#sidebar-update-status');
+  if (!btn || !status) return;
+
+  function setStatus(payload = {}) {
+    const state = payload.state;
+    if (state === 'checking') {
+      status.textContent = 'Проверяем обновления...';
+      btn.disabled = true;
+      btn.textContent = 'Проверка...';
+      return;
+    }
+    if (state === 'busy') {
+      status.textContent = 'Проверка уже выполняется...';
+      btn.disabled = true;
+      btn.textContent = 'Проверка...';
+      return;
+    }
+    if (state === 'available') {
+      status.textContent = `Найдена версия ${payload.info?.version || ''}. Скачиваем...`.trim();
+      btn.disabled = true;
+      btn.textContent = 'Скачиваем...';
+      return;
+    }
+    if (state === 'downloading') {
+      status.textContent = `Скачиваем: ${Math.round(payload.progress?.percent || 0)}%`;
+      btn.disabled = true;
+      btn.textContent = 'Скачиваем...';
+      return;
+    }
+    if (state === 'downloaded') {
+      status.textContent = 'Обновление скачано. Перезапускаем и устанавливаем...';
+      btn.disabled = true;
+      btn.textContent = 'Устанавливаем...';
+      window.api.updaterInstallNow?.();
+      return;
+    }
+    if (state === 'not-available') {
+      status.textContent = 'Уже последняя версия.';
+      btn.disabled = false;
+      btn.textContent = 'Обновить приложение';
+      return;
+    }
+    if (state === 'disabled') {
+      status.textContent = 'Обновления доступны только в установленной версии.';
+      btn.disabled = false;
+      btn.textContent = 'Обновить приложение';
+      return;
+    }
+    if (state === 'error') {
+      status.textContent = `Ошибка: ${payload.message || 'неизвестно'}`;
+      btn.disabled = false;
+      btn.textContent = 'Повторить обновление';
+      return;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Обновить приложение';
+  }
+
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = 'Проверка...';
+    const result = await window.api.updaterCheckNow?.();
+    setStatus(result || {});
+  });
+
+  window.api.onUpdaterStatus?.(setStatus);
 }
 
 function openModal(id) {

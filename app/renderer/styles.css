@@ -378,6 +378,26 @@ body {
   letter-spacing: 0.14em;
 }
 
+.sidebar-update-wrap {
+  padding: 0 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-update-btn {
+  width: 100%;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.sidebar-update-status {
+  min-height: 14px;
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.25;
+}
+
 /* ===== SIDEBAR SEARCH (legacy — moved to search-page.css) ===== */
 
 /* ===== NAV ===== */
