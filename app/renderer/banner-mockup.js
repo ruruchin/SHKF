@@ -7,6 +7,7 @@
   let layerHints = { title: 'text-title', subtitle: 'text-subtitle', cta: 'text-cta' };
   let applying = false;
   let pulling = false;
+  const resolvedImageUrlCache = new Map();
 
   function $(id) {
     return document.getElementById(id);
@@ -31,6 +32,32 @@
   function getImageUrl() {
     const item = getSelectedGalleryItem();
     return item?.imageUrls?.[0] || '';
+  }
+
+  async function resolveImageUrl(rawUrl, galleryItem = null) {
+    const src = String(rawUrl || '').trim();
+    if (!src) return '';
+    if (src.startsWith('data:image/')) return src;
+    const key = `${galleryItem?.id || ''}|${galleryItem?.generationId || ''}|${src}`;
+    if (resolvedImageUrlCache.has(key)) return resolvedImageUrlCache.get(key);
+    let resolved = src;
+    try {
+      const prepared = await window.api.nanobananaResolveImageDataUrl?.({
+        url: src,
+        generationId: galleryItem?.generationId || null,
+      });
+      if (prepared?.ok && prepared.dataUrl) resolved = prepared.dataUrl;
+    } catch {
+      /* fallback to source URL */
+    }
+    resolvedImageUrlCache.set(key, resolved);
+    return resolved;
+  }
+
+  async function getResolvedSelectedImageUrl() {
+    const item = getSelectedGalleryItem();
+    const raw = item?.imageUrls?.[0] || '';
+    return resolveImageUrl(raw, item);
   }
 
   function setStatus(message, kind) {
@@ -211,7 +238,11 @@
 
   function resolveCenteredOverlay(preset, { overlayUrl, isNoImg, imageUrl }) {
     if (!overlayUrl || !imageUrl || !isCenteredImageBanner(preset)) {
-      return { url: overlayUrl, clip: overlayClipStyle(preset, imageUrl) };
+      const clip = overlayClipStyle(preset, imageUrl);
+      // Некоторые "withoutImg" превью экспортируются непрозрачными и полностью
+      // перекрывают фото. Если безопасной клип-области нет — не рисуем оверлей.
+      if (isNoImg && !clip) return { url: '', clip: '' };
+      return { url: overlayUrl, clip };
     }
     if (isNoImg) {
       return { url: overlayUrl, clip: textUiOverlayClip(preset, 1) || '' };
@@ -220,7 +251,8 @@
     if (textClip) {
       return { url: overlayUrl, clip: textClip };
     }
-    // Полный PNG перекрывает фото по центру — показываем только картинку
+    // Для centered без текстового клипа "noImg" оверлей часто непрозрачный:
+    // не накрываем картинку, оставляем только фото.
     return { url: '', clip: '' };
   }
 
@@ -482,19 +514,7 @@
     }
     const imageUrlRaw = item?.imageUrls?.[0] || '';
     if (!imageUrlRaw) return [];
-
-    let imageUrl = imageUrlRaw;
-    if (!String(imageUrlRaw).startsWith('data:image/')) {
-      try {
-        const prepared = await window.api.nanobananaResolveImageDataUrl?.({
-          url: imageUrlRaw,
-          generationId: item?.generationId || null,
-        });
-        if (prepared?.ok && prepared.dataUrl) imageUrl = prepared.dataUrl;
-      } catch {
-        /* fallback to raw url */
-      }
-    }
+    const imageUrl = await resolveImageUrl(imageUrlRaw, item);
 
     const linkedPresets = presets.filter((p) => p.linked);
     const targets = linkedPresets.length ? linkedPresets : presets;
@@ -561,7 +581,7 @@
     const selected = getSelectedPreset();
     if (!grid) return;
 
-    const imageUrl = getImageUrl();
+    const imageUrl = await getResolvedSelectedImageUrl();
 
     if (dimEl) {
       const linked = presets.filter((p) => p.linked).length;
@@ -651,7 +671,7 @@
 
   async function applyToFigma() {
     const preset = getSelectedPreset();
-    const imageUrl = getImageUrl();
+    const imageUrl = await getResolvedSelectedImageUrl();
     if (!preset?.templateId) {
       setStatus('Сначала экспортируйте этот размер баннера в SHKF через FIRURU Bridge', 'error');
       return;
