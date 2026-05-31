@@ -497,7 +497,14 @@ function setupAutoUpdater() {
       message: 'Обновление скачано и будет установлено автоматически после закрытия приложения.',
     });
   });
-  autoUpdater.on('error', (err) => broadcast('updater-status', { state: 'error', message: err?.message || String(err) }));
+  autoUpdater.on('error', (err) => {
+    const raw = String(err?.message || err || '');
+    const knownLatestNotFound = /unable to find latest version|releases\/latest|httperror:\s*404|httperror:\s*406/i.test(raw);
+    const message = knownLatestNotFound
+      ? 'Релиз обновления не опубликован. Нужен GitHub Release (не draft) для текущего тега версии.'
+      : raw;
+    broadcast('updater-status', { state: 'error', message });
+  });
 }
 
 function checkForUpdates({ silent = false } = {}) {
