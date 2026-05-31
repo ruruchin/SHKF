@@ -245,7 +245,11 @@
       return { url: overlayUrl, clip };
     }
     if (isNoImg) {
-      return { url: overlayUrl, clip: textUiOverlayClip(preset, 1) || '' };
+      const textClip = textUiOverlayClip(preset, 1) || '';
+      // Для centered размеров без текстовых слоёв noImg-оверлей часто "глухой".
+      // В этом случае оставляем только фото, иначе оно скрывается.
+      if (!textClip) return { url: '', clip: '' };
+      return { url: overlayUrl, clip: textClip };
     }
     const textClip = textUiOverlayClip(preset, 1);
     if (textClip) {
