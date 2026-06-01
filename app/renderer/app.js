@@ -438,72 +438,53 @@ function bindEvents() {
 }
 
 function bindSidebarUpdater() {
+  const wrap = $('#sidebar-update-wrap');
   const btn = $('#sidebar-update-btn');
   const status = $('#sidebar-update-status');
-  if (!btn || !status) return;
+  const label = $('#sidebar-update-label');
+  if (!wrap || !btn) return;
+
+  let installing = false;
+
+  // Кнопка появляется ТОЛЬКО когда обновление точно скачано и готово к установке.
+  function hideUpdate() {
+    if (installing) return;
+    wrap.classList.add('hidden');
+    wrap.classList.remove('is-ready');
+  }
+
+  function showUpdateReady(version) {
+    wrap.classList.remove('hidden');
+    wrap.classList.add('is-ready');
+    btn.disabled = false;
+    btn.classList.remove('is-installing');
+    if (label) label.textContent = 'Обновить приложение';
+    if (status) {
+      status.textContent = version
+        ? `Версия ${version} готова к установке`
+        : 'Обновление готово к установке';
+    }
+  }
 
   function setStatus(payload = {}) {
-    const state = payload.state;
-    if (state === 'checking') {
-      status.textContent = 'Проверяем обновления...';
-      btn.disabled = true;
-      btn.textContent = 'Проверка...';
+    if (payload.state === 'downloaded') {
+      showUpdateReady(payload.info?.version);
       return;
     }
-    if (state === 'busy') {
-      status.textContent = 'Проверка уже выполняется...';
-      btn.disabled = true;
-      btn.textContent = 'Проверка...';
-      return;
-    }
-    if (state === 'available') {
-      status.textContent = `Найдена версия ${payload.info?.version || ''}. Скачиваем...`.trim();
-      btn.disabled = true;
-      btn.textContent = 'Скачиваем...';
-      return;
-    }
-    if (state === 'downloading') {
-      status.textContent = `Скачиваем: ${Math.round(payload.progress?.percent || 0)}%`;
-      btn.disabled = true;
-      btn.textContent = 'Скачиваем...';
-      return;
-    }
-    if (state === 'downloaded') {
-      status.textContent = 'Обновление скачано. Перезапускаем и устанавливаем...';
-      btn.disabled = true;
-      btn.textContent = 'Устанавливаем...';
-      window.api.updaterInstallNow?.();
-      return;
-    }
-    if (state === 'not-available') {
-      status.textContent = 'Уже последняя версия.';
-      btn.disabled = false;
-      btn.textContent = 'Обновить приложение';
-      return;
-    }
-    if (state === 'disabled') {
-      status.textContent = 'Обновления доступны только в установленной версии.';
-      btn.disabled = false;
-      btn.textContent = 'Обновить приложение';
-      return;
-    }
-    if (state === 'error') {
-      status.textContent = `Ошибка: ${payload.message || 'неизвестно'}`;
-      btn.disabled = false;
-      btn.textContent = 'Повторить обновление';
-      return;
-    }
-    btn.disabled = false;
-    btn.textContent = 'Обновить приложение';
+    hideUpdate();
   }
 
   btn.addEventListener('click', async () => {
+    if (installing) return;
+    installing = true;
     btn.disabled = true;
-    btn.textContent = 'Проверка...';
-    const result = await window.api.updaterCheckNow?.();
-    setStatus(result || {});
+    btn.classList.add('is-installing');
+    if (label) label.textContent = 'Перезапуск…';
+    if (status) status.textContent = 'Устанавливаем обновление…';
+    await window.api.updaterInstallNow?.();
   });
 
+  hideUpdate();
   window.api.onUpdaterStatus?.(setStatus);
 }
 

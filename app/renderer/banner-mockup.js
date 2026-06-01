@@ -168,9 +168,41 @@
   function defaultImageSlot(preset) {
     const w = preset?.width || 1200;
     const h = preset?.height || 400;
-    if (w / h > 1.8) return { x: 0.52, y: 0, w: 0.48, h: 1 };
+    // Широкий баннер (напр. 1200×400): текст слева, картинка справа ~560px (≈47%).
+    if (w / h > 1.8) return { x: 0.5333, y: 0, w: 0.4667, h: 1 };
     if (h / w > 1.15) return { x: 0, y: 0.38, w: 1, h: 0.62 };
     return { x: 0.5, y: 0, w: 0.5, h: 1 };
+  }
+
+  /**
+   * Дизайн-зона картинки для centered-размеров, когда Figma-шаблон НЕ подключён.
+   * Широкие — справа, высокие — блоком снизу, чтобы фото не растягивалось на весь кадр.
+   */
+  function defaultCenteredImageRegion(preset) {
+    const w = preset?.templateWidth || preset?.width || 1200;
+    const h = preset?.templateHeight || preset?.height || 400;
+    const ratio = w / h;
+    if (ratio > 1.6) {
+      // Широкий: картинка справа, как в 1200×400.
+      return { x: 0.5333, y: 0, w: 0.4667, h: 1 };
+    }
+    if (h / w > 1.15) {
+      // Высокий (напр. 360×488): картинка блоком снизу (~34% высоты).
+      return { x: 0, y: 0.66, w: 1, h: 0.34 };
+    }
+    // Близко к квадрату: нижняя половина.
+    return { x: 0, y: 0.5, w: 1, h: 0.5 };
+  }
+
+  /** Слот картинки для centered-размера без шаблона: реальный img из Figma → из текста → дефолт. */
+  function getCenteredNoTemplateSlot(preset) {
+    const raw = preset?.bannerSlots?.image;
+    if (raw && !isFullBleedImageSlot(raw)) return raw;
+    const slots = getEffectiveBannerSlots(preset);
+    const fromText = slots
+      ? deriveImageSlotFromText({ ...preset, bannerSlots: slots })
+      : null;
+    return fromText || defaultCenteredImageRegion(preset);
   }
 
   /** Если img на весь frame — зона картинки не заходит на текстовые слои. */
@@ -281,8 +313,13 @@
     let html = '<div class="bm-preview-base"></div>';
 
     if (imageUrl) {
-      if (centered) {
+      if (centered && effectiveOverlay) {
+        // Шаблон подключён: фото на весь кадр, видно через «окно» оверлея.
         html += `<div class="bm-preview-photo-wrap bm-preview-photo-wrap--bg"><img class="bm-preview-photo bm-preview-photo--center" src="${escapeHtml(imageUrl)}" alt="" /></div>`;
+      } else if (centered) {
+        // Без шаблона: фото в дизайн-зоне (справа/снизу), а не на весь кадр.
+        const region = getCenteredNoTemplateSlot(preset);
+        html += `<div class="bm-preview-photo-wrap" style="${slotStyle(region)}"><img class="bm-preview-photo" src="${escapeHtml(imageUrl)}" alt="" /></div>`;
       } else {
         const imgSlot = getImageDisplaySlot(preset);
         if (imgSlot) {
@@ -471,10 +508,12 @@
     if (imageUrl) {
       const image = await loadImageSafe(imageUrl);
       if (image) {
-        if (centered) {
+        if (centered && effectiveOverlay) {
           drawImageCover(ctx, image, 0, 0, width, height);
         } else {
-          const slot = getImageDisplaySlot(preset);
+          const slot = centered
+            ? getCenteredNoTemplateSlot(preset)
+            : getImageDisplaySlot(preset);
           const x = (Number(slot?.x) || 0) * width;
           const y = (Number(slot?.y) || 0) * height;
           const w = Math.max(1, (Number(slot?.w) || 1) * width);
