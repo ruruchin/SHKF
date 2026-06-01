@@ -84,7 +84,7 @@
   function finishAuth(result) {
     if (result?.config) {
       window.__APP_CONFIG__ = result.config;
-      window.applyTheme?.(result.config.theme || 'dark');
+      window.applyTheme?.(result.config.theme || 'light');
       window.applyAppSettings?.(result.config.settings);
       window.RoleNav?.applyRoleNav?.(result.config.settings?.user?.role || result.profile?.role);
     }
@@ -164,9 +164,25 @@
     }
   }
 
+  function bindPasswordEye() {
+    const eye = $('auth-eye');
+    const input = $('auth-password');
+    if (!eye || !input) return;
+    eye.addEventListener('click', () => {
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      eye.classList.toggle('is-on', show);
+      input.focus();
+    });
+  }
+
   async function initAuthGate() {
     $('auth-step-login')?.addEventListener('submit', submitLogin);
     $('auth-step-changepw')?.addEventListener('submit', submitChangePassword);
+    bindPasswordEye();
+    $('auth-forgot')?.addEventListener('click', () => {
+      setError('auth-error', 'Пароль выдаёт администратор — обратитесь к нему для сброса.');
+    });
     $('settings-auth-logout')?.addEventListener('click', async () => {
       await window.api.authLogout?.();
       location.reload();

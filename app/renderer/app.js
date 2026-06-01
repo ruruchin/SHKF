@@ -26,7 +26,7 @@ async function init() {
   actions = await window.api.getActions();
   actionMeta = await window.api.getActionMeta();
   window.customThemeEngine?.injectCustomThemeStyles(config);
-  applyTheme(config.theme || 'dark');
+  applyTheme(config.theme || 'light');
   window.applyAppSettings?.(config.settings);
   await window.initRoleNav?.(config, { requirePicker: !auth?.profile });
   updateStatus(await window.api.getStatus());
@@ -433,7 +433,7 @@ function bindEvents() {
   bindSidebarUpdater();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if ((config.theme || 'dark') === 'system') applyTheme('system');
+    if ((config.theme || 'light') === 'system') applyTheme('system');
   });
 }
 

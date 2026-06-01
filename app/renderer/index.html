@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="dark">
+<html lang="ru" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -57,8 +57,14 @@
           </label>
           <label class="auth-field">
             Пароль
-            <input type="password" id="auth-password" autocomplete="current-password" placeholder="Пароль" />
+            <span class="auth-input">
+              <input type="password" id="auth-password" autocomplete="current-password" placeholder="Введите пароль" />
+              <button type="button" class="auth-eye" id="auth-eye" aria-label="Показать пароль" tabindex="-1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </span>
           </label>
+          <button type="button" class="auth-forgot" id="auth-forgot">Не помню пароль</button>
           <div class="auth-error" id="auth-error"></div>
           <button type="submit" class="auth-submit" id="auth-submit">Войти</button>
           <div class="auth-hint">Аккаунты создаёт администратор. Самостоятельная регистрация недоступна.</div>

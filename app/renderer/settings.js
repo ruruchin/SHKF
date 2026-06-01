@@ -178,7 +178,7 @@
         <span class="theme-card-label">${t.label}</span>
       </button>
     `).join('');
-    syncThemePicker(cfg?.theme || config?.theme || 'dark');
+    syncThemePicker(cfg?.theme || config?.theme || 'light');
     bindThemeCards();
   }
 
@@ -474,7 +474,7 @@
       const roleLabel = $('settings-role-label');
       if (roleLabel) roleLabel.textContent = window.getAuthState?.()?.profile?.role || c.settings?.user?.role || '—';
       fillNanobananaFromConfig();
-      syncThemePicker(c.theme || 'dark');
+      syncThemePicker(c.theme || 'light');
       window.refreshCustomThemesUi?.(c);
       window.customThemeEngine?.injectCustomThemeStyles(c);
     });
