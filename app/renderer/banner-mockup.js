@@ -317,13 +317,15 @@
         // Шаблон подключён: фото на весь кадр, видно через «окно» оверлея.
         html += `<div class="bm-preview-photo-wrap bm-preview-photo-wrap--bg"><img class="bm-preview-photo bm-preview-photo--center" src="${escapeHtml(imageUrl)}" alt="" /></div>`;
       } else if (centered) {
-        // Без шаблона: фото в дизайн-зоне (справа/снизу), а не на весь кадр.
+        // Без шаблона: фото в дизайн-зоне (справа/снизу) и целиком, без обрезки.
         const region = getCenteredNoTemplateSlot(preset);
-        html += `<div class="bm-preview-photo-wrap" style="${slotStyle(region)}"><img class="bm-preview-photo" src="${escapeHtml(imageUrl)}" alt="" /></div>`;
+        html += `<div class="bm-preview-photo-wrap" style="${slotStyle(region)}"><img class="bm-preview-photo bm-preview-photo--contain" src="${escapeHtml(imageUrl)}" alt="" /></div>`;
       } else {
         const imgSlot = getImageDisplaySlot(preset);
         if (imgSlot) {
-          html += `<div class="bm-preview-photo-wrap" style="${slotStyle(imgSlot)}"><img class="bm-preview-photo" src="${escapeHtml(imageUrl)}" alt="" /></div>`;
+          // С оверлеем фото заполняет слот (cover), без него — показываем целиком (contain).
+          const fitClass = effectiveOverlay ? '' : ' bm-preview-photo--contain';
+          html += `<div class="bm-preview-photo-wrap" style="${slotStyle(imgSlot)}"><img class="bm-preview-photo${fitClass}" src="${escapeHtml(imageUrl)}" alt="" /></div>`;
         }
       }
     }
@@ -467,6 +469,18 @@
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
+  /** Вписать изображение целиком в область (contain), без обрезки. */
+  function drawImageContain(ctx, img, x, y, w, h) {
+    const iw = img.naturalWidth || img.width || 1;
+    const ih = img.naturalHeight || img.height || 1;
+    const scale = Math.min(w / iw, h / ih);
+    const dw = iw * scale;
+    const dh = ih * scale;
+    const dx = x + (w - dw) / 2;
+    const dy = y + (h - dh) / 2;
+    ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
   async function loadImageSafe(url) {
     if (!url) return null;
     return new Promise((resolve) => {
@@ -518,7 +532,9 @@
           const y = (Number(slot?.y) || 0) * height;
           const w = Math.max(1, (Number(slot?.w) || 1) * width);
           const h = Math.max(1, (Number(slot?.h) || 1) * height);
-          drawImageCover(ctx, image, x, y, w, h);
+          // С оверлеем фото заполняет слот, без него — вписываем целиком (без обрезки).
+          if (effectiveOverlay) drawImageCover(ctx, image, x, y, w, h);
+          else drawImageContain(ctx, image, x, y, w, h);
         }
       }
     }

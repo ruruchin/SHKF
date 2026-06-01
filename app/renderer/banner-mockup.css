@@ -533,6 +533,12 @@
   object-position: center center;
 }
 
+/* Фото без шаблона — вписываем целиком, без обрезки. */
+.bm-preview-photo--contain {
+  object-fit: contain;
+  object-position: center center;
+}
+
 .bm-preview-overlay {
   display: block;
   position: absolute;
