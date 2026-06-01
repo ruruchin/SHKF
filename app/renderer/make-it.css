@@ -313,8 +313,8 @@ html[data-no-anim] .make-empty-icon-ring {
   position: absolute;
   inset: -6px;
   border-radius: 24px;
-  border: 1px solid rgba(249, 115, 22, 0.22);
-  background: linear-gradient(135deg, rgba(249, 115, 22, 0.06), rgba(59, 130, 246, 0.04));
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   animation: makeIconRing 5s ease-in-out infinite;
 }
 
@@ -325,7 +325,6 @@ html[data-no-anim] .make-empty-icon-ring {
   border-radius: 22px;
   border: 1px solid var(--border);
   background: #fff center / 34px no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231C1C1E' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z'/%3E%3Cpath d='M12 12l8-4.5M12 12v9M12 12L4 7.5'/%3E%3C/svg%3E");
-  box-shadow: 0 10px 28px rgba(28, 28, 30, 0.08);
   animation: makeIconFloat 4.5s ease-in-out infinite;
 }
 
@@ -426,8 +425,7 @@ html[data-no-anim] .make-empty-icon-ring {
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  transition: border-color 0.22s, box-shadow 0.28s, transform 0.24s cubic-bezier(0.34, 1.2, 0.64, 1);
-  box-shadow: 0 2px 12px rgba(28, 28, 30, 0.05);
+  transition: border-color 0.22s, transform 0.24s cubic-bezier(0.34, 1.2, 0.64, 1);
   animation: makeCardIn 0.5s cubic-bezier(0.34, 1.15, 0.64, 1) backwards;
   position: relative;
 }
@@ -458,8 +456,7 @@ html[data-no-anim] .make-empty-icon-ring {
 }
 
 .make-starter-card:hover {
-  border-color: rgba(249, 115, 22, 0.18);
-  box-shadow: 0 20px 48px rgba(28, 28, 30, 0.1);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   transform: translateY(-3px);
 }
 
@@ -1203,7 +1200,7 @@ html[data-no-anim] .make-starter-card--modal .make-sp-modal-btns span:last-child
 }
 
 #page-makeit.make-has-empty .make-composer {
-  box-shadow: 0 8px 32px rgba(28, 28, 30, 0.08);
+  box-shadow: none;
 }
 
 @media (max-width: 560px) {

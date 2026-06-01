@@ -18,9 +18,7 @@
 #page-notes h1,
 .settings-page-header h1,
 .tpl-title,
-.bm-title,
-.nb-panel-title,
-.agent-chat-title {
+.bm-title {
   font-size: 32px !important;
   font-weight: 800 !important;
   letter-spacing: -0.02em !important;
@@ -40,7 +38,6 @@
 
 /* Заголовки секций внутри страниц (как «Мои плейлисты ›») */
 .settings-section-title,
-.nb-panel-title,
 .bm-section-label,
 .agent-panel-title,
 .notes-list-head,
