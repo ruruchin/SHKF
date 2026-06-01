@@ -111,16 +111,7 @@
         setError('auth-error', result?.message || 'Не удалось войти.');
         return;
       }
-      if (result.profile?.must_change_password) {
-        // Не пускаем в приложение, пока пользователь не задаст свой пароль.
-        pendingLogin = result;
-        setError('auth-cp-error', '');
-        if ($('auth-newpw')) $('auth-newpw').value = '';
-        if ($('auth-newpw2')) $('auth-newpw2').value = '';
-        showStep('changepw');
-        setTimeout(() => $('auth-newpw')?.focus(), 60);
-        return;
-      }
+      // Пароль не меняем принудительно — это можно сделать в профиле.
       finishAuth(result);
     } catch (err) {
       setError('auth-error', err?.message || 'Ошибка связи с сервисом авторизации.');
@@ -197,18 +188,10 @@
       }
     });
 
+    // Сессия восстанавливается из файла (auth-session.json) — повторно входить не нужно.
     const result = await window.api.authGetSession?.();
     if (result?.config) window.__APP_CONFIG__ = result.config;
-
-    if (result?.profile?.must_change_password) {
-      pendingLogin = result;
-      document.documentElement.removeAttribute('data-authenticated');
-      $('auth-gate')?.classList.remove('hidden');
-      showStep('changepw');
-      updateUserCard(result.profile);
-    } else {
-      applyAuthState(result);
-    }
+    applyAuthState(result);
     return result;
   }
 

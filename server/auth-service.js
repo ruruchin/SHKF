@@ -117,6 +117,9 @@ export class AuthService {
       const expiresAt = Number(this.session.expires_at || 0) * 1000;
       if (expiresAt && expiresAt - Date.now() < 60_000) {
         await this.refreshSession();
+      } else {
+        // Привязать восстановленную сессию к http-клиенту, чтобы профиль грузился без повторного входа.
+        await this.ensureClientSession().catch(() => null);
       }
     }
     if (this.session && !this.profile) {

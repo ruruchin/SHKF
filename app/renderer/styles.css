@@ -1472,15 +1472,9 @@ select { cursor: pointer; }
   letter-spacing: -0.02em;
 }
 
-/* Кнопки-пилюли — мягкий объём и подъём при наведении */
-.btn-play {
-  box-shadow: 0 8px 22px var(--accent-dim);
-}
-.btn-play:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 30px var(--accent-dim);
-}
-.btn-play:active { transform: translateY(0); }
+/* Кнопки-пилюли — без свечения, лёгкая реакция на наведение */
+.btn-play:hover { filter: brightness(1.03); }
+.btn-play:active { filter: brightness(0.98); }
 
 .btn-secondary { transition: background 0.16s ease, border-color 0.16s ease; }
 .btn-secondary:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
@@ -1512,11 +1506,11 @@ input[type="number"]:focus, select:focus, textarea:focus {
 @keyframes modal-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 
 .modal {
-  border-radius: 24px;
+  border-radius: 22px;
   border: 1px solid var(--border);
-  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.42);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.22);
   overflow: hidden;
-  animation: modal-pop-in 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: modal-pop-in 0.24s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 @keyframes modal-pop-in {
   from { opacity: 0; transform: translateY(14px) scale(0.97); }
@@ -1541,3 +1535,8 @@ input[type="number"]:focus, select:focus, textarea:focus {
 /* ===== Заголовки страниц — крупные и жирные, как в референсах ===== */
 .page h1 { letter-spacing: -0.02em; }
 .hero p, .hero .hero-sub { color: var(--text-secondary); }
+
+/* Меньше теней/свечений в интерфейсе (по просьбе): убираем glow у кнопки обновления */
+.sidebar-update-btn { box-shadow: none; }
+.sidebar-update-btn:hover:not(:disabled) { box-shadow: none; transform: none; }
+.sidebar-update-wrap.is-ready .sidebar-update-btn:not(:disabled) { animation: none; }

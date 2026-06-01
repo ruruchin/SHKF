@@ -8,38 +8,21 @@
   justify-content: center;
   padding: 24px;
   overflow: hidden;
-  background:
-    radial-gradient(1100px 700px at 8% -8%, rgba(255, 204, 0, 0.16), transparent 55%),
-    radial-gradient(900px 600px at 100% 110%, rgba(124, 92, 255, 0.18), transparent 55%),
-    linear-gradient(135deg, #15151a, #0a0a0c 60%);
+  background: linear-gradient(135deg, #17171c, #0d0d10 70%);
 }
 
 .auth-gate.hidden { display: none; }
 
-.auth-aurora {
-  position: absolute;
-  inset: -25%;
-  pointer-events: none;
-  background:
-    radial-gradient(360px 360px at 22% 28%, rgba(255, 204, 0, 0.20), transparent 60%),
-    radial-gradient(440px 440px at 78% 72%, rgba(124, 92, 255, 0.20), transparent 60%),
-    radial-gradient(300px 300px at 60% 12%, rgba(91, 157, 255, 0.16), transparent 60%);
-  filter: blur(30px);
-  animation: auth-aurora-float 18s ease-in-out infinite alternate;
-}
-
-@keyframes auth-aurora-float {
-  0% { transform: translate3d(-2%, -1%, 0) scale(1); }
-  100% { transform: translate3d(3%, 2%, 0) scale(1.1); }
-}
+/* Фон-подложка отключена — убрали лишние свечения */
+.auth-aurora { display: none; }
 
 /* Карточка всегда светлая — как в Паспорте */
 .auth-card {
   position: relative;
   width: min(400px, 100%);
-  border-radius: 28px;
+  border-radius: 24px;
   background: #ffffff;
-  box-shadow: 0 40px 100px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
   padding: 36px 34px 30px;
   color: #1a1a1a;
 }
@@ -73,14 +56,12 @@
   justify-content: center;
   background: linear-gradient(135deg, #ffd60a, #ffb800);
   color: #1a1a1a;
-  box-shadow: 0 12px 30px rgba(255, 200, 0, 0.4);
 }
 .auth-logo svg { width: 32px; height: 32px; }
 
 .auth-logo--key {
   background: linear-gradient(135deg, #7c5cff, #5a8bff);
   color: #fff;
-  box-shadow: 0 12px 30px rgba(124, 92, 255, 0.45);
 }
 
 .auth-brand-text { display: flex; flex-direction: column; gap: 4px; }
@@ -178,11 +159,10 @@
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.16s ease, opacity 0.16s ease, filter 0.16s ease;
-  box-shadow: 0 14px 34px rgba(255, 200, 0, 0.4);
+  transition: filter 0.16s ease, opacity 0.16s ease;
 }
-.auth-submit:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.03); box-shadow: 0 18px 42px rgba(255, 200, 0, 0.5); }
-.auth-submit:active:not(:disabled) { transform: translateY(0); }
+.auth-submit:hover:not(:disabled) { filter: brightness(1.04); }
+.auth-submit:active:not(:disabled) { filter: brightness(0.98); }
 .auth-submit:disabled { opacity: 0.65; cursor: progress; }
 
 .auth-error {

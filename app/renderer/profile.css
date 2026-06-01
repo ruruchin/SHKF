@@ -106,9 +106,8 @@
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(520px 260px at 0% 0%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 60%),
-    radial-gradient(520px 260px at 100% 120%, rgba(124, 92, 255, 0.22), transparent 60%);
-  opacity: 0.9;
+    radial-gradient(520px 260px at 0% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 62%);
+  opacity: 0.7;
 }
 
 .pf-avatar {
@@ -122,7 +121,6 @@
   padding: 0;
   cursor: pointer;
   background: none;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
 }
 
 .pf-avatar-img {
@@ -154,7 +152,7 @@
   justify-content: center;
   background: var(--panel);
   border: 2px solid var(--panel);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
   color: var(--text-secondary);
   transition: color 0.16s ease, transform 0.12s ease;
 }
@@ -308,10 +306,9 @@
   border-color: transparent;
   background: var(--accent);
   color: var(--accent-text);
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
-.pf-btn--primary:hover:not(:disabled) { transform: translateY(-1px); background: var(--accent); }
+.pf-btn--primary:hover:not(:disabled) { filter: brightness(1.03); background: var(--accent); }
 
 .pf-btn--danger {
   width: 100%;
