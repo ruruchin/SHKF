@@ -23,12 +23,18 @@ function buildFallbackProfile(user) {
   return {
     id: user.id,
     email: user.email || '',
+    username: String(meta.username || '').trim() || (user.email || '').split('@')[0] || '',
     full_name: String(meta.full_name || '').trim(),
+    position: String(meta.position || '').trim(),
+    avatar_url: String(meta.avatar_url || '').trim(),
     role,
     is_active: true,
+    must_change_password: meta.must_change_password !== false,
     fallback: true,
   };
 }
+
+const PROFILE_COLUMNS = 'id,email,username,full_name,position,avatar_url,role,is_active,must_change_password,created_at,updated_at';
 
 export class AuthService {
   constructor(userDataPath) {
@@ -36,6 +42,7 @@ export class AuthService {
     this.sessionPath = path.join(userDataPath, 'auth-session.json');
     this.supabaseUrl = readEnv('SUPABASE_URL') || SUPABASE_CONFIG.url;
     this.supabaseAnonKey = readEnv('SUPABASE_ANON_KEY') || SUPABASE_CONFIG.anonKey;
+    this.emailDomain = (readEnv('EMPLOYEE_EMAIL_DOMAIN') || SUPABASE_CONFIG.emailDomain || 'firuru.local').toLowerCase();
     this.client = null;
     this.session = null;
     this.profile = null;
@@ -124,8 +131,32 @@ export class AuthService {
     };
   }
 
-  async signIn(email, password) {
+  /** Логин вида "k.zorenko" -> внутренний email "k.zorenko@<domain>". Email пропускаем как есть. */
+  loginToEmail(login) {
+    const value = String(login || '').trim().toLowerCase();
+    if (!value) return '';
+    if (value.includes('@')) return value;
+    return `${value}@${this.emailDomain}`;
+  }
+
+  /** Привязать текущую сессию к http-клиенту (нужно для updateUser / RLS после рестарта). */
+  async ensureClientSession() {
+    if (!this.session?.access_token || !this.session?.refresh_token) {
+      throw new Error('Не выполнен вход');
+    }
+    try {
+      await this.client.auth.setSession({
+        access_token: this.session.access_token,
+        refresh_token: this.session.refresh_token,
+      });
+    } catch {
+      /* токен мог протухнуть — операция вернёт ошибку ниже */
+    }
+  }
+
+  async signIn(login, password) {
     this.ensureConfigured();
+    const email = this.loginToEmail(login);
     try {
       const { data, error } = await this.client.auth.signInWithPassword({ email, password });
       if (error) return { ok: false, message: error.message };
@@ -168,12 +199,88 @@ export class AuthService {
     if (!this.session?.access_token) return null;
     const { data, error } = await this.client
       .from('profiles')
-      .select('id,email,full_name,role,is_active,created_at,updated_at')
+      .select(PROFILE_COLUMNS)
       .eq('id', this.session.user.id)
       .maybeSingle();
     if (error) throw error;
     this.profile = data || buildFallbackProfile(this.session.user);
     return this.profile;
+  }
+
+  /** Сменить пароль (на экране входа / в профиле) и снять флаг must_change_password. */
+  async changePassword(newPassword) {
+    this.ensureConfigured();
+    if (!this.session?.user?.id) return { ok: false, message: 'Не выполнен вход' };
+    const pwd = String(newPassword || '');
+    if (pwd.length < 6) return { ok: false, message: 'Пароль должен быть не короче 6 символов' };
+    await this.ensureClientSession();
+    const { error } = await this.client.auth.updateUser({ password: pwd });
+    if (error) return { ok: false, message: error.message };
+
+    try {
+      await this.client.from('profiles').update({ must_change_password: false }).eq('id', this.session.user.id);
+    } catch {
+      /* профиль обновится при следующем fetch */
+    }
+    if (this.profile) this.profile.must_change_password = false;
+
+    try {
+      const { data } = await this.client.auth.getSession();
+      if (data?.session) {
+        this.session = data.session;
+        this.persistSession(this.session);
+      }
+    } catch {
+      /* keep current session */
+    }
+    return { ok: true, profile: this.profile };
+  }
+
+  /** Обновить отображаемые поля профиля (ФИО, должность). Роль здесь не меняется. */
+  async updateProfile(patch = {}) {
+    this.ensureConfigured();
+    if (!this.session?.user?.id) return { ok: false, message: 'Не выполнен вход' };
+    await this.ensureClientSession();
+    const update = {};
+    if (patch.full_name !== undefined) update.full_name = String(patch.full_name || '');
+    if (patch.position !== undefined) update.position = String(patch.position || '');
+    if (!Object.keys(update).length) return { ok: true, profile: this.profile };
+    const { data, error } = await this.client
+      .from('profiles')
+      .update(update)
+      .eq('id', this.session.user.id)
+      .select(PROFILE_COLUMNS)
+      .maybeSingle();
+    if (error) return { ok: false, message: error.message };
+    if (data) this.profile = data;
+    return { ok: true, profile: this.profile };
+  }
+
+  /** Загрузить аватар (data:URL) в storage и записать ссылку в профиль. */
+  async uploadAvatar(dataUrl) {
+    this.ensureConfigured();
+    if (!this.session?.user?.id) return { ok: false, message: 'Не выполнен вход' };
+    const match = String(dataUrl || '').match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
+    if (!match) return { ok: false, message: 'Неподдерживаемый формат изображения' };
+    const contentType = match[1];
+    const ext = contentType.split('/')[1].replace('jpeg', 'jpg').replace('+xml', '').replace('svg', 'svg');
+    const buffer = Buffer.from(match[2], 'base64');
+    if (buffer.length > 4 * 1024 * 1024) return { ok: false, message: 'Аватар слишком большой (макс. 4 МБ)' };
+
+    await this.ensureClientSession();
+    const userId = this.session.user.id;
+    const filePath = `${userId}/avatar_${Date.now()}.${ext || 'png'}`;
+    const { error: upErr } = await this.client.storage
+      .from('avatars')
+      .upload(filePath, buffer, { contentType, upsert: true });
+    if (upErr) return { ok: false, message: upErr.message };
+
+    const { data: pub } = this.client.storage.from('avatars').getPublicUrl(filePath);
+    const url = pub?.publicUrl || '';
+    const { error: pErr } = await this.client.from('profiles').update({ avatar_url: url }).eq('id', userId);
+    if (pErr) return { ok: false, message: pErr.message };
+    if (this.profile) this.profile.avatar_url = url;
+    return { ok: true, avatarUrl: url, profile: this.profile };
   }
 
   async fetchUserSettings() {

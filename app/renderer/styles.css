@@ -1434,3 +1434,60 @@ select { cursor: pointer; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* ============================================================
+   SHELL POLISH — единый стиль в духе референсов (Я.Музыка).
+   Аккуратные переопределения общих элементов, без изменения логики.
+   ============================================================ */
+
+/* Боковая навигация: активный пункт — мягкая «пилюля» с акцентом */
+.nav-item {
+  transition: background 0.16s ease, color 0.16s ease, transform 0.1s ease;
+}
+.nav-item:hover { transform: translateX(1px); }
+.nav-item.active {
+  background: color-mix(in srgb, var(--accent) 14%, var(--elevated));
+  color: var(--text);
+  font-weight: 700;
+}
+.nav-item.active svg { opacity: 1; color: var(--accent); }
+
+.nav-group-label {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.brand-name { letter-spacing: 0.12em; font-weight: 800; }
+
+/* Контентная панель — чуть крупнее скругление, тонкая рамка */
+.panel {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+/* Крупные заголовки страниц */
+.hero h1 {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* Кнопки-пилюли — мягкий объём и подъём при наведении */
+.btn-play {
+  box-shadow: 0 8px 22px var(--accent-dim);
+}
+.btn-play:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px var(--accent-dim);
+}
+.btn-play:active { transform: translateY(0); }
+
+.btn-secondary { transition: background 0.16s ease, border-color 0.16s ease; }
+.btn-secondary:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+
+/* Тоньше и аккуратнее скролл внутри страниц */
+.page::-webkit-scrollbar { width: 8px; }
+.page::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-muted) 60%, transparent);
+  border-radius: 4px;
+}

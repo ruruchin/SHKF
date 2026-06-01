@@ -28,34 +28,69 @@
   <link rel="stylesheet" href="banner-mockup.css" />
   <link rel="stylesheet" href="role-picker.css" />
   <link rel="stylesheet" href="auth.css" />
+  <link rel="stylesheet" href="profile.css" />
   <link rel="stylesheet" href="character-art.css" />
 </head>
 <body>
   <div class="auth-gate hidden" id="auth-gate">
-    <form class="auth-card" id="auth-form">
-      <div class="auth-brand">
-        <span class="auth-logo">FR</span>
-        <span>
-          <span class="auth-title">FIRURU</span>
-          <span class="auth-subtitle">Войдите в рабочий аккаунт</span>
-        </span>
-      </div>
-      <div class="auth-form">
-        <label class="auth-field">
-          Email
-          <input type="email" id="auth-email" autocomplete="username" placeholder="designer@firuru.local" />
-        </label>
-        <label class="auth-field">
-          Пароль
-          <input type="password" id="auth-password" autocomplete="current-password" placeholder="Пароль" />
-        </label>
-        <div class="auth-error" id="auth-error"></div>
-        <div class="auth-actions">
-          <span class="auth-user-chip">Supabase Auth</span>
-          <button type="submit" class="btn-play" id="auth-submit">Войти</button>
+    <div class="auth-aurora" aria-hidden="true"></div>
+    <div class="auth-card" id="auth-card">
+      <form class="auth-step" id="auth-step-login">
+        <div class="auth-brand">
+          <span class="auth-logo">
+            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
+              <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
+              <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
+              <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
+            </svg>
+          </span>
+          <span class="auth-brand-text">
+            <span class="auth-title">SHKF</span>
+            <span class="auth-subtitle">Войдите в рабочий аккаунт</span>
+          </span>
         </div>
-      </div>
-    </form>
+        <div class="auth-form">
+          <label class="auth-field">
+            Логин
+            <input type="text" id="auth-login" autocomplete="username" spellcheck="false" autocapitalize="none" placeholder="k.zorenko" />
+          </label>
+          <label class="auth-field">
+            Пароль
+            <input type="password" id="auth-password" autocomplete="current-password" placeholder="Пароль" />
+          </label>
+          <div class="auth-error" id="auth-error"></div>
+          <button type="submit" class="auth-submit" id="auth-submit">Войти</button>
+          <div class="auth-hint">Аккаунты создаёт администратор. Самостоятельная регистрация недоступна.</div>
+        </div>
+      </form>
+
+      <form class="auth-step hidden" id="auth-step-changepw">
+        <div class="auth-brand">
+          <span class="auth-logo auth-logo--key">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="8" cy="15" r="4"/><path d="M10.85 12.15L19 4M18 5l2 2M15 8l2 2"/>
+            </svg>
+          </span>
+          <span class="auth-brand-text">
+            <span class="auth-title">Новый пароль</span>
+            <span class="auth-subtitle">Задайте свой пароль для входа</span>
+          </span>
+        </div>
+        <div class="auth-form">
+          <label class="auth-field">
+            Новый пароль
+            <input type="password" id="auth-newpw" autocomplete="new-password" placeholder="Минимум 6 символов" />
+          </label>
+          <label class="auth-field">
+            Повторите пароль
+            <input type="password" id="auth-newpw2" autocomplete="new-password" placeholder="Ещё раз" />
+          </label>
+          <div class="auth-error" id="auth-cp-error"></div>
+          <button type="submit" class="auth-submit" id="auth-cp-submit">Сохранить и войти</button>
+        </div>
+      </form>
+    </div>
   </div>
   <div class="shell">
     <!-- PNG-персонажи — только тема Manga -->
@@ -251,6 +286,15 @@
           <source src="assets/mangaplus/sidebar-loop.mp4" type="video/mp4" />
         </video>
       </div>
+
+      <button type="button" class="sidebar-user-card is-empty" id="sidebar-user-card" title="Профиль">
+        <span class="sidebar-user-avatar" id="sidebar-user-avatar"></span>
+        <span class="sidebar-user-meta">
+          <span class="sidebar-user-name" id="sidebar-user-name">Гость</span>
+          <span class="sidebar-user-position" id="sidebar-user-position">Не выполнен вход</span>
+        </span>
+        <svg class="sidebar-user-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
     </aside>
 
     <!-- Main panel -->
@@ -774,6 +818,77 @@
               </div>
 
               <p class="upd-note" id="upd-note">Приложение перезапустится автоматически — это займёт пару секунд. Окно установщика не появится.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROFILE -->
+        <section class="page" id="page-profile">
+          <div class="pf-page">
+            <header class="pf-hero">
+              <div class="pf-hero-bg" aria-hidden="true"></div>
+              <button type="button" class="pf-avatar" id="pf-avatar" title="Сменить аватар">
+                <span class="pf-avatar-img" id="pf-avatar-img"></span>
+                <span class="pf-avatar-edit" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </span>
+                <input type="file" id="pf-avatar-input" accept="image/png,image/jpeg,image/webp" hidden />
+              </button>
+              <div class="pf-hero-info">
+                <span class="pf-kicker">Профиль</span>
+                <h1 class="pf-name" id="pf-name">—</h1>
+                <p class="pf-position" id="pf-position-line">—</p>
+                <div class="pf-chips">
+                  <span class="pf-chip" id="pf-login-chip">@—</span>
+                  <span class="pf-chip pf-chip--role" id="pf-role-chip">—</span>
+                </div>
+              </div>
+            </header>
+
+            <div class="pf-grid">
+              <section class="pf-card">
+                <h2 class="pf-card-title">Личные данные</h2>
+                <label class="pf-field">
+                  <span>ФИО</span>
+                  <input type="text" id="pf-fullname" placeholder="Имя Фамилия" />
+                </label>
+                <label class="pf-field">
+                  <span>Должность</span>
+                  <input type="text" id="pf-position" placeholder="например, Дизайнер" />
+                </label>
+                <div class="pf-row">
+                  <div class="pf-readonly">
+                    <span class="pf-readonly-label">Логин</span>
+                    <span class="pf-readonly-value" id="pf-login-ro">—</span>
+                  </div>
+                  <div class="pf-readonly">
+                    <span class="pf-readonly-label">Роль</span>
+                    <span class="pf-readonly-value" id="pf-role-ro">—</span>
+                  </div>
+                </div>
+                <div class="pf-actions">
+                  <span class="pf-status" id="pf-save-status"></span>
+                  <button type="button" class="pf-btn pf-btn--primary" id="pf-save">Сохранить</button>
+                </div>
+              </section>
+
+              <section class="pf-card">
+                <h2 class="pf-card-title">Смена пароля</h2>
+                <label class="pf-field">
+                  <span>Новый пароль</span>
+                  <input type="password" id="pf-newpw" autocomplete="new-password" placeholder="Минимум 6 символов" />
+                </label>
+                <label class="pf-field">
+                  <span>Повторите пароль</span>
+                  <input type="password" id="pf-newpw2" autocomplete="new-password" placeholder="Ещё раз" />
+                </label>
+                <div class="pf-actions">
+                  <span class="pf-status" id="pf-pw-status"></span>
+                  <button type="button" class="pf-btn" id="pf-pw-save">Обновить пароль</button>
+                </div>
+                <div class="pf-divider"></div>
+                <button type="button" class="pf-btn pf-btn--danger" id="pf-logout">Выйти из аккаунта</button>
+              </section>
             </div>
           </div>
         </section>
@@ -1964,6 +2079,7 @@
   <script src="custom-theme-engine.js"></script>
   <script src="custom-themes-ui.js"></script>
   <script src="role-nav.js"></script>
+  <script src="profile.js"></script>
   <script src="auth.js"></script>
   <script src="settings.js"></script>
   <script src="app.js"></script>

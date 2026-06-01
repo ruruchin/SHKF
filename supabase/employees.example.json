@@ -1,0 +1,16 @@
+[
+  {
+    "username": "k.zorenko",
+    "full_name": "Константин Зоренко",
+    "position": "Дизайнер",
+    "role": "designer",
+    "password": "ChangeMe123!"
+  },
+  {
+    "username": "i.ivanov",
+    "full_name": "Иван Иванов",
+    "position": "Frontend-разработчик",
+    "role": "frontend",
+    "password": "ChangeMe123!"
+  }
+]

@@ -804,7 +804,7 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('auth-login', async (_e, payload) => {
     try {
-      const result = await authService.signIn(payload?.email || '', payload?.password || '');
+      const result = await authService.signIn(payload?.login ?? payload?.email ?? '', payload?.password || '');
       if (result.ok && result.profile) {
         applyAuthProfileToConfig(result.profile);
         await pullCloudSettingsIntoConfig();
@@ -834,6 +834,40 @@ app.whenReady().then(() => {
   ipcMain.handle('auth-update-settings', async (_e, payload) => {
     const result = await authService.updateUserSettings(payload?.settings || {});
     return result;
+  });
+  ipcMain.handle('auth-change-password', async (_e, payload) => {
+    try {
+      const result = await authService.changePassword(payload?.password || '');
+      if (result.ok && result.profile) {
+        broadcast('auth-changed', { profile: result.profile, user: { id: result.profile.id, email: result.profile.email } });
+      }
+      return { ...result, config: service.config };
+    } catch (err) {
+      return { ok: false, message: err?.message || 'Не удалось сменить пароль' };
+    }
+  });
+  ipcMain.handle('auth-update-profile', async (_e, payload) => {
+    try {
+      const result = await authService.updateProfile(payload || {});
+      if (result.ok && result.profile) {
+        applyAuthProfileToConfig(result.profile);
+        broadcast('auth-changed', { profile: result.profile, user: { id: result.profile.id, email: result.profile.email } });
+      }
+      return { ...result, config: service.config };
+    } catch (err) {
+      return { ok: false, message: err?.message || 'Не удалось обновить профиль' };
+    }
+  });
+  ipcMain.handle('auth-upload-avatar', async (_e, payload) => {
+    try {
+      const result = await authService.uploadAvatar(payload?.dataUrl || '');
+      if (result.ok && result.profile) {
+        broadcast('auth-changed', { profile: result.profile, user: { id: result.profile.id, email: result.profile.email } });
+      }
+      return result;
+    } catch (err) {
+      return { ok: false, message: err?.message || 'Не удалось загрузить аватар' };
+    }
   });
   ipcMain.handle('app-get-version', () => app.getVersion());
   ipcMain.handle('updater-check-now', () => checkForUpdates());
