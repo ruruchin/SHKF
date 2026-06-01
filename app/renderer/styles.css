@@ -476,6 +476,241 @@ html[data-no-anim] .sidebar-update-btn.is-installing .sidebar-update-icon {
   animation: none;
 }
 
+/* ===== UPDATE PAGE (Yandex Music style) ===== */
+#page-update {
+  padding: 0;
+}
+
+.upd-page {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.upd-card {
+  width: 100%;
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 40px 36px 30px;
+  border-radius: 24px;
+  background: var(--elevated);
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px var(--shadow);
+}
+
+.upd-art {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 22px;
+}
+
+.upd-art-glow {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 68%);
+  opacity: 0.28;
+  filter: blur(10px);
+  animation: upd-glow 3s ease-in-out infinite;
+}
+
+.upd-icon {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 10px 28px var(--accent-dim);
+}
+
+.upd-icon svg {
+  width: 46px;
+  height: 46px;
+}
+
+.upd-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -8px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text);
+  box-shadow: 0 4px 10px var(--shadow);
+}
+
+.upd-title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.upd-subtitle {
+  margin: 0 0 24px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 34ch;
+}
+
+.upd-versions {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 26px;
+}
+
+.upd-version {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+}
+
+.upd-version--new {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-dim);
+}
+
+.upd-version-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.upd-version-value {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.upd-arrow {
+  width: 22px;
+  align-self: center;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.upd-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.upd-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.18s ease, filter 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.upd-btn--primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: 0 10px 26px var(--accent-dim);
+}
+
+.upd-btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  box-shadow: 0 14px 32px var(--accent-dim);
+}
+
+.upd-btn--primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.upd-btn--primary:disabled {
+  opacity: 0.78;
+  cursor: wait;
+}
+
+.upd-btn-icon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+
+.upd-btn--primary.is-installing .upd-btn-icon {
+  animation: upd-spin 0.9s linear infinite;
+}
+
+.upd-btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.upd-btn--ghost:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+
+.upd-note {
+  margin: 18px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  max-width: 38ch;
+}
+
+@keyframes upd-glow {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.06); }
+}
+
+@keyframes upd-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .upd-art-glow,
+  .upd-btn--primary.is-installing .upd-btn-icon {
+    animation: none;
+  }
+}
+
+html[data-no-anim] .upd-art-glow,
+html[data-no-anim] .upd-btn--primary.is-installing .upd-btn-icon {
+  animation: none;
+}
+
 /* ===== SIDEBAR SEARCH (legacy — moved to search-page.css) ===== */
 
 /* ===== NAV ===== */

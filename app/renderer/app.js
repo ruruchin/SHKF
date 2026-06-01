@@ -437,6 +437,70 @@ function bindEvents() {
   });
 }
 
+let updateReadyVersion = '';
+let updatePageReturnTo = 'search';
+
+function openUpdatePage() {
+  const page = $('#page-update');
+  if (!page) return;
+
+  // Запомним активную страницу, чтобы кнопка «Позже» вернула обратно.
+  const current = $$('.nav-item.active')[0];
+  if (current?.dataset.page) updatePageReturnTo = current.dataset.page;
+
+  hideCustomCursor?.();
+  window.detachMetaskBoard?.();
+  window.detachMailView?.();
+  $$('.nav-item').forEach((b) => b.classList.remove('active'));
+  $$('.page').forEach((p) => p.classList.remove('active'));
+  page.classList.add('active');
+
+  fillUpdatePage(updateReadyVersion);
+}
+window.openUpdatePage = openUpdatePage;
+
+async function fillUpdatePage(version) {
+  const next = $('#upd-next');
+  const badge = $('#upd-version-badge');
+  if (next) next.textContent = version ? `v${version}` : '—';
+  if (badge) badge.textContent = version ? `v${version}` : 'NEW';
+  const currentEl = $('#upd-current');
+  if (currentEl) {
+    try {
+      const v = await window.api.getAppVersion?.();
+      currentEl.textContent = v ? `v${v}` : '—';
+    } catch {
+      currentEl.textContent = '—';
+    }
+  }
+}
+
+function leaveUpdatePage() {
+  const target = $(`.nav-item[data-page="${updatePageReturnTo}"]`) || $('.nav-item[data-page="search"]');
+  if (target) {
+    target.click();
+  } else {
+    $('#page-update')?.classList.remove('active');
+  }
+}
+
+function bindUpdatePage() {
+  const installBtn = $('#upd-install');
+  const laterBtn = $('#upd-later');
+  const label = $('#upd-install-label');
+  const note = $('#upd-note');
+
+  installBtn?.addEventListener('click', async () => {
+    installBtn.disabled = true;
+    installBtn.classList.add('is-installing');
+    if (label) label.textContent = 'Устанавливаем…';
+    if (note) note.textContent = 'Закрываем приложение и применяем обновление. Сейчас оно перезапустится.';
+    await window.api.updaterInstallNow?.();
+  });
+
+  laterBtn?.addEventListener('click', leaveUpdatePage);
+}
+
 function bindSidebarUpdater() {
   const wrap = $('#sidebar-update-wrap');
   const btn = $('#sidebar-update-btn');
@@ -444,26 +508,24 @@ function bindSidebarUpdater() {
   const label = $('#sidebar-update-label');
   if (!wrap || !btn) return;
 
-  let installing = false;
-
   // Кнопка появляется ТОЛЬКО когда обновление точно скачано и готово к установке.
   function hideUpdate() {
-    if (installing) return;
     wrap.classList.add('hidden');
     wrap.classList.remove('is-ready');
   }
 
   function showUpdateReady(version) {
+    updateReadyVersion = version || updateReadyVersion;
     wrap.classList.remove('hidden');
     wrap.classList.add('is-ready');
-    btn.disabled = false;
-    btn.classList.remove('is-installing');
     if (label) label.textContent = 'Обновить приложение';
     if (status) {
-      status.textContent = version
-        ? `Версия ${version} готова к установке`
-        : 'Обновление готово к установке';
+      status.textContent = updateReadyVersion
+        ? `Версия ${updateReadyVersion} готова`
+        : 'Обновление готово';
     }
+    // Если страница обновления открыта — обновим данные на ней.
+    if ($('#page-update')?.classList.contains('active')) fillUpdatePage(updateReadyVersion);
   }
 
   function setStatus(payload = {}) {
@@ -474,17 +536,11 @@ function bindSidebarUpdater() {
     hideUpdate();
   }
 
-  btn.addEventListener('click', async () => {
-    if (installing) return;
-    installing = true;
-    btn.disabled = true;
-    btn.classList.add('is-installing');
-    if (label) label.textContent = 'Перезапуск…';
-    if (status) status.textContent = 'Устанавливаем обновление…';
-    await window.api.updaterInstallNow?.();
-  });
+  // Клик по пилюле открывает отдельную страницу обновления (а не ставит сразу).
+  btn.addEventListener('click', openUpdatePage);
 
   hideUpdate();
+  bindUpdatePage();
   window.api.onUpdaterStatus?.(setStatus);
 }
 

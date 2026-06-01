@@ -731,6 +731,53 @@
           </div>
         </section>
 
+        <!-- UPDATE -->
+        <section class="page" id="page-update">
+          <div class="upd-page">
+            <div class="upd-card">
+              <div class="upd-art" aria-hidden="true">
+                <div class="upd-art-glow"></div>
+                <div class="upd-icon">
+                  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
+                    <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
+                    <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
+                    <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
+                  </svg>
+                </div>
+                <span class="upd-badge" id="upd-version-badge">1.0.0</span>
+              </div>
+
+              <h1 class="upd-title">Доступно обновление</h1>
+              <p class="upd-subtitle" id="upd-subtitle">Новая версия FIRURU загружена и готова к установке.</p>
+
+              <div class="upd-versions">
+                <div class="upd-version">
+                  <span class="upd-version-label">Текущая</span>
+                  <span class="upd-version-value" id="upd-current">—</span>
+                </div>
+                <svg class="upd-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+                <div class="upd-version upd-version--new">
+                  <span class="upd-version-label">Новая</span>
+                  <span class="upd-version-value" id="upd-next">—</span>
+                </div>
+              </div>
+
+              <div class="upd-actions">
+                <button type="button" class="upd-btn upd-btn--primary" id="upd-install">
+                  <svg class="upd-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/>
+                  </svg>
+                  <span id="upd-install-label">Обновить и перезапустить</span>
+                </button>
+                <button type="button" class="upd-btn upd-btn--ghost" id="upd-later">Позже</button>
+              </div>
+
+              <p class="upd-note" id="upd-note">Приложение перезапустится автоматически — это займёт пару секунд. Окно установщика не появится.</p>
+            </div>
+          </div>
+        </section>
+
         <!-- AI AGENT -->
         <section class="page" id="page-agent">
           <div class="agent-chat">

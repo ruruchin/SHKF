@@ -835,10 +835,12 @@ app.whenReady().then(() => {
     const result = await authService.updateUserSettings(payload?.settings || {});
     return result;
   });
+  ipcMain.handle('app-get-version', () => app.getVersion());
   ipcMain.handle('updater-check-now', () => checkForUpdates());
   ipcMain.handle('updater-install-now', () => {
     if (!app.isPackaged) return { ok: false, message: 'Доступно только в установленной сборке' };
-    autoUpdater.quitAndInstall(false, true);
+    // isSilent=true — без окна установщика NSIS: приложение тихо обновится и перезапустится.
+    autoUpdater.quitAndInstall(true, true);
     return { ok: true };
   });
 

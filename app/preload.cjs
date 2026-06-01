@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   authUpdateSettings: (payload) => ipcRenderer.invoke('auth-update-settings', payload),
   updaterCheckNow: () => ipcRenderer.invoke('updater-check-now'),
   updaterInstallNow: () => ipcRenderer.invoke('updater-install-now'),
+  getAppVersion: () => ipcRenderer.invoke('app-get-version'),
   getStatus: () => ipcRenderer.invoke('get-status'),
   getActions: () => ipcRenderer.invoke('get-actions'),
   getActionMeta: () => ipcRenderer.invoke('get-action-meta'),
