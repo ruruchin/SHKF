@@ -4,6 +4,7 @@
     analyze: 'Прочитай описание задачи целиком и дай честную оценку для дизайнера: что именно просят, реальный объём, риски, 3–5 уточняющих вопросов заказчику (со ссылкой на текст задачи), с чего начать в Figma.',
     banner: 'Исходя из текста задачи, предложи 3 разных промпта для генерации баннера (размер, стиль, CTA). Каждый — готовый текст, опирайся на формулировки из описания.',
     bannerNano: 'Сделай баннер в NanoBanana: извлеки тему из описания задачи и сгенерируй изображение.',
+    figmaEdit: 'Сформируй и примени план правок прямо в Figma: сначала покажи список изменений, потом по кнопке внеси их в макет.',
     landing: 'По описанию задачи: структура лендинга (блоки) и один детальный промпт для Figma Make — только то, что следует из задачи.',
     make: 'Сформулируй детальный промпт для Figma Make под эту задачу: экраны, компоненты, состояния — строго из описания, без generic UI.',
     split: 'Разбей работу по задаче на подзадачи для дизайнера с порядком и оценкой времени. Каждый пункт привяжи к тексту описания.',
@@ -32,6 +33,7 @@
   const BANNER_WORD_RE = /(?:баннер|banner)/i;
   const GENERATE_WORD_RE = /сгенерир(?:уй|ируй)|генерир(?:уй|ируй)|сделай|создай|нарисуй|выдай|собери/i;
   const PROMPT_WORD_RE = /\bпромпт\b|prompt/i;
+  const FIGMA_EDIT_RE = /(в\s*figma|фигм|макет|mockup|поправ|исправ|правк|перерис|измени|layout|автолейаут)/i;
 
   function isBannerNanobananaIntent(text) {
     const t = String(text || '').trim();
@@ -51,6 +53,13 @@
       if (hasBanner && hasGenerate) return true; // «сделай баннер на тему…»
     }
     return false;
+  }
+
+  function isFigmaEditIntent(text) {
+    const t = String(text || '').trim();
+    if (!t) return false;
+    if (/^\/figma\b/i.test(t)) return true;
+    return FIGMA_EDIT_RE.test(t) && !NB_WORD_RE.test(t);
   }
 
   const HISTORY_KEY = 'firuru-agent-history-v1';
@@ -79,6 +88,7 @@
   let taskThreadActive = false;
   let pendingAgentImage = null;
   const pendingMockupPosts = new Map();
+  const pendingFigmaPlans = new Map();
   const shownCommentNotifyKeys = new Set();
   let metaskCommentWatchdogTimer = null;
   let metaskCommentWatchdogBusy = false;
@@ -1952,6 +1962,135 @@
     showAgentToast(res?.message || 'Не удалось отправить мокапы', 'error');
   }
 
+  function opText(op) {
+    const kind = String(op?.op || '');
+    if (kind === 'create_frame') return `Создать frame "${String(op.name || op.key || 'Frame')}" ${op.width || '?'}×${op.height || '?'}`;
+    if (kind === 'create_text') return `Создать text "${String(op.text || op.label || '').slice(0, 90)}"`;
+    if (kind === 'create_rect') return `Создать rectangle "${String(op.name || op.key || 'Rect')}"`;
+    if (kind === 'create_button') return `Создать button "${String(op.label || op.text || 'Button').slice(0, 90)}"`;
+    if (kind === 'set_text') return `Текст → "${String(op.text || '').slice(0, 90)}"`;
+    if (kind === 'rename') return `Переименовать в "${String(op.name || '').slice(0, 90)}"`;
+    if (kind === 'set_fill_solid' && op.fill) return `Заливка: rgb(${op.fill.r}, ${op.fill.g}, ${op.fill.b})`;
+    if (kind === 'set_stroke_solid' && (op.stroke || op.fill)) {
+      const c = op.stroke || op.fill;
+      return `Обводка: rgb(${c.r}, ${c.g}, ${c.b})`;
+    }
+    if (kind === 'resize') return `Размер: ${op.width || '?'}×${op.height || '?'}`;
+    if (kind === 'move') return `Позиция: x=${op.x ?? '?'} y=${op.y ?? '?'}`;
+    if (kind === 'set_corner_radius') return `Радиус: ${op.radius}`;
+    if (kind === 'set_auto_layout') return `Auto Layout: ${op.layoutMode || 'NONE'}`;
+    if (kind === 'set_padding') return 'Отступы контейнера';
+    if (kind === 'set_spacing') return `Gap: ${op.spacing}`;
+    if (kind === 'set_visibility') return op.visible ? 'Показать' : 'Скрыть';
+    return kind;
+  }
+
+  function buildFigmaPlanHtml({ token, plan, selection }) {
+    const assumptions = (plan.assumptions || [])
+      .map((x) => `<li>${escapeHtml(x)}</li>`)
+      .join('');
+    const ops = (plan.operations || [])
+      .map((op, idx) => `<li><strong>${idx + 1}.</strong> ${escapeHtml(opText(op))}</li>`)
+      .join('');
+    return `
+      <div class="agent-mockup-ready" data-figma-plan-token="${escapeHtml(token)}">
+        <p><strong>План правок для Figma готов.</strong></p>
+        ${plan.summary ? `<p class="agent-mockup-sub">${escapeHtml(plan.summary)}</p>` : ''}
+        <p class="agent-mockup-sub">Файл: <strong>${escapeHtml(selection?.fileName || '—')}</strong>, страница: <strong>${escapeHtml(selection?.pageName || '—')}</strong>, выделено: <strong>${escapeHtml(selection?.selectedCount || 0)}</strong></p>
+        ${assumptions ? `<ul class="agent-md-ul">${assumptions}</ul>` : ''}
+        <ul class="agent-md-ul">${ops}</ul>
+        <div class="agent-mockup-actions">
+          <button type="button" class="agent-link-btn agent-link-btn--apply" data-figma-plan-apply="${escapeHtml(token)}">Применить в Figma</button>
+          <button type="button" class="agent-link-btn agent-link-btn--dismiss" data-figma-plan-cancel="${escapeHtml(token)}">Отменить</button>
+        </div>
+      </div>`;
+  }
+
+  function markFigmaPlanDecision(token, text, ok = false) {
+    const root = [...(messagesEl?.querySelectorAll('[data-figma-plan-token]') || [])]
+      .find((el) => el.getAttribute('data-figma-plan-token') === token);
+    if (!root) return;
+    root.querySelector('.agent-mockup-actions')?.remove();
+    const p = document.createElement('p');
+    p.className = `agent-link-status${ok ? ' agent-link-status--ok' : ''}`;
+    p.textContent = text;
+    root.appendChild(p);
+  }
+
+  async function applyFigmaPlan(token) {
+    const payload = pendingFigmaPlans.get(token);
+    if (!payload) return;
+    const res = await window.api.agentFigmaApply?.({ operations: payload.plan.operations || [] });
+    if (res?.ok) {
+      markFigmaPlanDecision(token, `Применено: ${res.applied || 0}, ошибок: ${res.failed || 0}`, true);
+      pendingFigmaPlans.delete(token);
+      return;
+    }
+    markFigmaPlanDecision(token, res?.message || 'Не удалось применить правки');
+  }
+
+  async function sendFigmaPlan(textOverride) {
+    const text = (textOverride ?? promptEl?.value ?? '').trim();
+    if (!text || sending) return;
+
+    updateTaskThread(text);
+    sending = true;
+    updateSendState();
+
+    addMessage('user', escapeHtml(text).replace(/\n/g, '<br>'));
+    chatHistory.push({ role: 'user', content: text, taskThread: taskThreadActive });
+    saveHistory();
+
+    if (window.appSettings?.agent?.clearInputAfterSend !== false && promptEl && textOverride == null) {
+      promptEl.value = '';
+      autoResize();
+    }
+
+    const task = getSelectedTask();
+    const useTaskContext = taskThreadActive
+      && task
+      && window.appSettings?.agent?.useTaskContext !== false;
+    const thinking = addThinking(useTaskContext ? task : null, [
+      'Читаю структуру выделения в Figma…',
+      'Сопоставляю запрос с макетом…',
+      'Формирую план правок…',
+      'Готовлю превью перед применением…',
+    ]);
+
+    try {
+      const result = await window.api.agentFigmaPlan?.({
+        message: text.replace(/^\/figma\s*/i, ''),
+        history: chatHistory.slice(0, -1),
+        task: useTaskContext ? task : null,
+      });
+      removeThinking(thinking);
+      if (!result?.ok || !result?.plan?.operations?.length) {
+        addMessage('assistant', `<p>${escapeHtml(result?.message || 'Не удалось построить план правок')}</p>`, 'Figma');
+        return;
+      }
+      const token = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      pendingFigmaPlans.set(token, { plan: result.plan });
+      addMessage('assistant', buildFigmaPlanHtml({
+        token,
+        plan: result.plan,
+        selection: result.selection,
+      }), result.model ? `Figma Agent · ${result.model}` : 'Figma Agent');
+      chatHistory.push({
+        role: 'assistant',
+        content: `План правок Figma: ${result.plan.summary || `${result.plan.operations.length} операций`}`,
+        meta: 'Figma Agent',
+      });
+      saveHistory();
+    } catch (err) {
+      removeThinking(thinking);
+      addMessage('assistant', `<p>${escapeHtml(err.message || 'Ошибка при планировании правок Figma')}</p>`, 'Figma');
+    } finally {
+      sending = false;
+      updateSendState();
+      promptEl?.focus();
+    }
+  }
+
   async function sendBannerToNanobanana(textOverride) {
     const text = (textOverride ?? promptEl?.value ?? '').trim();
     if (!text || sending) return;
@@ -2095,6 +2234,9 @@
     if (text && isBannerNanobananaIntent(text)) {
       return sendBannerToNanobanana(textOverride);
     }
+    if (text && isFigmaEditIntent(text)) {
+      return sendFigmaPlan(textOverride);
+    }
 
     updateTaskThread(text || 'изображение');
 
@@ -2213,6 +2355,7 @@
     analyze: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>',
     banner: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h4M7 11h10"/>',
     bannerNano: '<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><rect x="3" y="14" width="18" height="7" rx="1.5"/>',
+    figmaEdit: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
     landing: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/>',
     make: '<path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7l3-7z"/>',
     split: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
@@ -2231,6 +2374,7 @@
     analyze: ['Оценить', 'Оценить задачу'],
     banner: ['Промпт баннер', 'Промпт: баннер'],
     bannerNano: ['NanoBanana', 'Баннер → NanoBanana'],
+    figmaEdit: ['Правки Figma', 'План правок и применение в Figma'],
     landing: ['Промпт лендинг', 'Промпт: лендинг'],
     make: ['Figma Make', 'Figma Make'],
     split: ['На шаги', 'Разбить на шаги'],
@@ -2247,11 +2391,11 @@
   };
 
   const SUGGESTION_SETS = {
-    designer: ['analyze', 'banner', 'bannerNano', 'landing', 'make', 'links', 'split', 'labor'],
+    designer: ['analyze', 'banner', 'bannerNano', 'figmaEdit', 'landing', 'make', 'links', 'split', 'labor'],
     frontend: ['devPlan', 'devStandup', 'links', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'labor'],
     backend: ['devPlan', 'devStandup', 'links', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'labor'],
     pm: ['pmStatus', 'links', 'pmRisks', 'devPlan', 'split', 'devProductivity', 'labor'],
-    full: ['analyze', 'banner', 'bannerNano', 'links', 'devPlan', 'devStandup', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'split', 'labor'],
+    full: ['analyze', 'banner', 'bannerNano', 'figmaEdit', 'links', 'devPlan', 'devStandup', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'split', 'labor'],
   };
 
   function suggestionButtonHtml(key) {
@@ -2402,6 +2546,14 @@
           sendBannerToNanobanana(prompt);
           return;
         }
+        if (key === 'figmaEdit') {
+          if (promptEl) {
+            promptEl.value = prompt;
+            autoResize();
+          }
+          sendFigmaPlan(prompt);
+          return;
+        }
         if (promptEl) {
           promptEl.value = prompt;
           autoResize();
@@ -2473,6 +2625,23 @@
         const token = cancelMockupsBtn.getAttribute('data-mockup-cancel');
         pendingMockupPosts.delete(token);
         markMockupDecision(token, 'Отправку отменили');
+        return;
+      }
+      const applyFigmaPlanBtn = event.target.closest('[data-figma-plan-apply]');
+      if (applyFigmaPlanBtn) {
+        const token = applyFigmaPlanBtn.getAttribute('data-figma-plan-apply');
+        applyFigmaPlanBtn.disabled = true;
+        applyFigmaPlanBtn.textContent = 'Применяю…';
+        applyFigmaPlan(token).finally(() => {
+          if (applyFigmaPlanBtn.isConnected) applyFigmaPlanBtn.disabled = false;
+        });
+        return;
+      }
+      const cancelFigmaPlanBtn = event.target.closest('[data-figma-plan-cancel]');
+      if (cancelFigmaPlanBtn) {
+        const token = cancelFigmaPlanBtn.getAttribute('data-figma-plan-cancel');
+        pendingFigmaPlans.delete(token);
+        markFigmaPlanDecision(token, 'Применение отменено');
         return;
       }
       const openTaskBtn = event.target.closest('[data-open-metask-task]');

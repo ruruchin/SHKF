@@ -597,6 +597,33 @@ export class HotkeyService extends EventEmitter {
     };
   }
 
+  async readFigmaSelectionBrief() {
+    if (!this.pluginConnected) {
+      throw new Error('Плагин Figma не подключён — откройте FIRURU Bridge в нужном файле Figma');
+    }
+    const result = await this.pluginBridge.sendReadSelectionBrief({});
+    return {
+      ok: true,
+      selection: result?.data || null,
+    };
+  }
+
+  async applyFigmaDesignOps(operations = []) {
+    if (!this.pluginConnected) {
+      throw new Error('Плагин Figma не подключён — откройте FIRURU Bridge в нужном файле Figma');
+    }
+    const safeOps = Array.isArray(operations) ? operations.slice(0, 80) : [];
+    const result = await this.pluginBridge.sendApplyDesignOps({
+      operations: safeOps,
+    });
+    return {
+      ok: !!result?.ok,
+      applied: Number(result?.data?.applied || 0),
+      failed: Number(result?.data?.failed || 0),
+      errors: Array.isArray(result?.data?.errors) ? result.data.errors : [],
+    };
+  }
+
   shutdown() {
     this.stop();
     this.figma.disconnect();

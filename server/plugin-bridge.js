@@ -196,6 +196,44 @@ export class PluginBridge {
     });
   }
 
+  sendReadSelectionBrief(payload = {}) {
+    if (!this.client || this.client.readyState !== 1) {
+      throw new Error('Плагин Figma не подключён');
+    }
+    const requestId = 'figma-read-' + Date.now();
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this._templateWaiters.delete(requestId);
+        reject(new Error('Таймаут чтения контекста Figma'));
+      }, 15000);
+      this._templateWaiters.set(requestId, { resolve, reject, timer });
+      this.client.send(JSON.stringify({
+        type: 'read-selection-brief',
+        requestId,
+        payload,
+      }));
+    });
+  }
+
+  sendApplyDesignOps(payload = {}) {
+    if (!this.client || this.client.readyState !== 1) {
+      throw new Error('Плагин Figma не подключён');
+    }
+    const requestId = 'figma-apply-' + Date.now();
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this._templateWaiters.delete(requestId);
+        reject(new Error('Таймаут применения правок Figma'));
+      }, 30000);
+      this._templateWaiters.set(requestId, { resolve, reject, timer });
+      this.client.send(JSON.stringify({
+        type: 'apply-design-ops',
+        requestId,
+        payload,
+      }));
+    });
+  }
+
   sendConfig(hotkeys) {
     if (this.client?.readyState === 1) {
       this.client.send(JSON.stringify({ type: 'config', hotkeys }));
