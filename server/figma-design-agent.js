@@ -37,6 +37,56 @@ function normalizeColor(color) {
   };
 }
 
+function normalizeJsonText(text) {
+  return String(text || '')
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/,\s*([}\]])/g, '$1')
+    .trim();
+}
+
+function extractBalancedChunk(text, openChar, closeChar) {
+  const src = String(text || '');
+  const start = src.indexOf(openChar);
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let quote = '';
+  let escaped = false;
+  for (let i = start; i < src.length; i++) {
+    const ch = src[i];
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+      } else if (ch === '\\') {
+        escaped = true;
+      } else if (ch === quote) {
+        inString = false;
+      }
+      continue;
+    }
+    if (ch === '"' || ch === "'") {
+      inString = true;
+      quote = ch;
+      continue;
+    }
+    if (ch === openChar) depth += 1;
+    if (ch === closeChar) {
+      depth -= 1;
+      if (depth === 0) return src.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
+function extractFirstJsonObject(text) {
+  return extractBalancedChunk(text, '{', '}');
+}
+
+function extractFirstJsonArray(text) {
+  return extractBalancedChunk(text, '[', ']');
+}
+
 function parseJsonLoose(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
@@ -46,13 +96,40 @@ function parseJsonLoose(raw) {
   if (fenced?.[1]) attempts.push(fenced[1].trim());
   const block = text.match(PLAN_BLOCK_RE);
   if (block?.[1]) attempts.push(block[1].trim());
+  const firstObj = extractFirstJsonObject(text);
+  if (firstObj) attempts.push(firstObj.trim());
+  const firstArr = extractFirstJsonArray(text);
+  if (firstArr) attempts.push(firstArr.trim());
 
   for (const chunk of attempts) {
-    try {
-      const parsed = JSON.parse(chunk);
-      if (parsed && typeof parsed === 'object') return parsed;
-    } catch {
-      // next attempt
+    const normalized = normalizeJsonText(chunk);
+    const variants = [normalized];
+    for (const variant of variants) {
+      try {
+        const parsed = JSON.parse(variant);
+        if (Array.isArray(parsed)) {
+          return { summary: '', assumptions: [], operations: parsed };
+        }
+        if (parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed.operations)) return parsed;
+          if (parsed.plan && typeof parsed.plan === 'object' && Array.isArray(parsed.plan.operations)) return parsed.plan;
+          if (parsed.op) return { summary: '', assumptions: [], operations: [parsed] };
+          const embeddedArr = extractFirstJsonArray(variant);
+          if (embeddedArr) {
+            try {
+              const arr = JSON.parse(normalizeJsonText(embeddedArr));
+              if (Array.isArray(arr) && arr.length && arr.some((x) => x && typeof x === 'object' && x.op)) {
+                return { summary: '', assumptions: [], operations: arr };
+              }
+            } catch {
+              // ignore
+            }
+          }
+          return parsed;
+        }
+      } catch {
+        // next variant
+      }
     }
   }
   return null;
@@ -66,9 +143,11 @@ function parseCriticJsonLoose(raw) {
   if (block?.[1]) attempts.push(block[1].trim());
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenced?.[1]) attempts.push(fenced[1].trim());
+  const firstObj = extractFirstJsonObject(text);
+  if (firstObj) attempts.push(firstObj.trim());
   for (const chunk of attempts) {
     try {
-      const parsed = JSON.parse(chunk);
+      const parsed = JSON.parse(normalizeJsonText(chunk));
       if (parsed && typeof parsed === 'object') return parsed;
     } catch {
       // next attempt

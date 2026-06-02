@@ -1253,6 +1253,24 @@ app.whenReady().then(() => {
     }
 
     let plan = extractFigmaPlan(chatResult.content);
+    if ((!plan || !plan.operations?.length) && chatResult?.content) {
+      const repair = await agentService.chat({
+        message: [
+          'Преобразуй ответ в строгий JSON-план операций Figma.',
+          'Верни только JSON в формате {"summary":"","assumptions":[],"operations":[...]} без markdown.',
+          '',
+          'Исходный ответ:',
+          chatResult.content,
+        ].join('\n'),
+        history: [],
+        task,
+        systemPrompt: FIGMA_DESIGN_SYSTEM_PROMPT,
+        allowFollowups: false,
+      });
+      if (repair?.ok) {
+        plan = extractFigmaPlan(repair.content);
+      }
+    }
     if (!plan || !plan.operations?.length) {
       return {
         ok: false,
