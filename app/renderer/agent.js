@@ -1985,18 +1985,24 @@
     return kind;
   }
 
-  function buildFigmaPlanHtml({ token, plan, selection }) {
+  function buildFigmaPlanHtml({ token, plan, selection, refs }) {
     const assumptions = (plan.assumptions || [])
       .map((x) => `<li>${escapeHtml(x)}</li>`)
       .join('');
     const ops = (plan.operations || [])
       .map((op, idx) => `<li><strong>${idx + 1}.</strong> ${escapeHtml(opText(op))}</li>`)
       .join('');
+    const refList = Array.isArray(refs) && refs.length
+      ? `<ul class="agent-md-ul">${refs.slice(0, 4).map((r) => (
+        `<li><a href="#" class="agent-md-link" data-agent-href="${escapeAttr(r.url)}">${escapeHtml(r.title || r.url)}</a></li>`
+      )).join('')}</ul>`
+      : '';
     return `
       <div class="agent-mockup-ready" data-figma-plan-token="${escapeHtml(token)}">
         <p><strong>План правок для Figma готов.</strong></p>
         ${plan.summary ? `<p class="agent-mockup-sub">${escapeHtml(plan.summary)}</p>` : ''}
         <p class="agent-mockup-sub">Файл: <strong>${escapeHtml(selection?.fileName || '—')}</strong>, страница: <strong>${escapeHtml(selection?.pageName || '—')}</strong>, выделено: <strong>${escapeHtml(selection?.selectedCount || 0)}</strong></p>
+        ${refList ? `<p class="agent-mockup-sub"><strong>Референсы:</strong></p>${refList}` : ''}
         ${assumptions ? `<ul class="agent-md-ul">${assumptions}</ul>` : ''}
         <ul class="agent-md-ul">${ops}</ul>
         <div class="agent-mockup-actions">
@@ -2074,6 +2080,7 @@
         token,
         plan: result.plan,
         selection: result.selection,
+        refs: result.refs,
       }), result.model ? `Figma Agent · ${result.model}` : 'Figma Agent');
       chatHistory.push({
         role: 'assistant',

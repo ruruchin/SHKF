@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "mobbin-eleven-reader-ios",
+      "source": "mobbin",
+      "title": "Eleven Reader iOS",
+      "url": "https://mobbin.com/apps/eleven-reader-ios-76fa9e1b-337d-4b3a-92cc-ec566f697c8c/1c4ca409-7e55-4df0-97f2-301850c24c49/screens",
+      "platform": "ios",
+      "surface": "app",
+      "tags": ["ios", "reader", "content", "typography", "cards", "minimal"],
+      "quality": 5
+    },
+    {
+      "id": "mobbin-cash-app-ios",
+      "source": "mobbin",
+      "title": "Cash App iOS",
+      "url": "https://mobbin.com/apps/cash-app-ios-6fc9a5b8-91ee-47dd-976d-9784a1975e1a/fed5f550-de22-4c8f-98d3-72b7dcf28e2e/screens",
+      "platform": "ios",
+      "surface": "app",
+      "tags": ["ios", "fintech", "wallet", "dark", "cta", "dashboard"],
+      "quality": 5
+    },
+    {
+      "id": "mobbin-public-ios",
+      "source": "mobbin",
+      "title": "Public iOS",
+      "url": "https://mobbin.com/apps/public-ios-224625da-821d-490b-b4b6-1d167492a0fb/c96471b6-af80-49dd-a932-cf43a18b67dc/screens",
+      "platform": "ios",
+      "surface": "app",
+      "tags": ["ios", "fintech", "charts", "portfolio", "data", "dashboard"],
+      "quality": 5
+    },
+    {
+      "id": "mobbin-intercom-site",
+      "source": "mobbin",
+      "title": "Intercom Site",
+      "url": "https://mobbin.com/sites/intercom-7164b223-2b19-451e-a6e8-14f9f32d14ef/c94582c7-f629-4a19-b11d-7b4b6264d5e3/preview",
+      "platform": "web",
+      "surface": "site",
+      "tags": ["web", "saas", "landing", "hero", "conversion", "enterprise"],
+      "quality": 5
+    },
+    {
+      "id": "mobbin-shopify-design-site",
+      "source": "mobbin",
+      "title": "Shopify Design Site",
+      "url": "https://mobbin.com/sites/shopify-design-6ebc4665-ba1e-4033-baa7-cc92ade892ea/ad8fb275-19f1-4604-b3d3-98f6a285ed57/preview",
+      "platform": "web",
+      "surface": "site",
+      "tags": ["web", "commerce", "landing", "sections", "marketing", "grid"],
+      "quality": 5
+    },
+    {
+      "id": "mobbin-attio-web",
+      "source": "mobbin",
+      "title": "Attio Web",
+      "url": "https://mobbin.com/apps/attio-web-f8618f57-3608-4752-9643-94b510d99b43/f29cde1f-b0ef-46b2-b029-726b09dcf71c/screens",
+      "platform": "web",
+      "surface": "app",
+      "tags": ["web", "crm", "dashboard", "tables", "data", "b2b"],
+      "quality": 5
+    },
+    {
+      "id": "mobbin-mixpanel-web",
+      "source": "mobbin",
+      "title": "Mixpanel Web",
+      "url": "https://mobbin.com/apps/mixpanel-web-8f7a816f-8ce4-4244-9573-e936113af6e2/8f71ae9a-8024-48b2-9ec0-1eea3ab3ed5c/screens",
+      "platform": "web",
+      "surface": "app",
+      "tags": ["web", "analytics", "charts", "dashboard", "data", "saas"],
+      "quality": 5
+    },
+    {
+      "id": "mobbin-jasper-web",
+      "source": "mobbin",
+      "title": "Jasper Web",
+      "url": "https://mobbin.com/apps/jasper-web-51723e89-5901-43fd-9128-837fe193532e/83e303d1-95bf-4cc8-99c7-958c95126486/screens",
+      "platform": "web",
+      "surface": "app",
+      "tags": ["web", "ai", "workspace", "editor", "empty-state", "saas"],
+      "quality": 5
+    },
+    {
+      "id": "mobbin-lovable-web",
+      "source": "mobbin",
+      "title": "Lovable Web",
+      "url": "https://mobbin.com/apps/lovable-web-ddefb8c8-715e-4dec-bc56-9bb4b99d4f15/6cf1551f-ad56-4139-b6c0-c65576fa4ea6/screens",
+      "platform": "web",
+      "surface": "app",
+      "tags": ["web", "ai", "builder", "landing", "modern", "saas"],
+      "quality": 5
+    }
+  ]
+}

@@ -41,6 +41,7 @@ import {
   buildBannerBuilderUserMessage,
   extractNanobananaPrompt,
 } from '../shared/banner-nanobanana.js';
+import { DesignMemoryService } from '../server/design-memory-service.js';
 import {
   FIGMA_DESIGN_SYSTEM_PROMPT,
   extractFigmaPlan,
@@ -54,6 +55,7 @@ const userLibraryPaths = getUserLibraryPaths(__dirname);
 const customThemeAssetsDir = getCustomThemeAssetsDir(__dirname);
 const notesLibraryPath = getNotesLibraryPath(__dirname);
 const nanobananaGalleryPath = getNanobananaGalleryPath(__dirname);
+const designReferencesSeedPath = path.join(__dirname, '../config/design-references.seed.json');
 
 app.setPath('userData', path.join(app.getPath('appData'), 'FIRURU'));
 if (process.platform === 'win32') {
@@ -87,6 +89,7 @@ const agentService = new AgentService();
 const taskLinkerService = new TaskLinkerService(agentService);
 const nanobananaService = new NanobananaService();
 const nanobananaGallery = createNanobananaGalleryStore(nanobananaGalleryPath);
+const designMemoryService = new DesignMemoryService(designReferencesSeedPath);
 const { autoUpdater } = electronUpdater;
 const APP_UPDATE_FEED_URL = 'https://github.com/ruruchin/SHKF/releases/latest/download';
 const METASK_DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -1226,8 +1229,9 @@ app.whenReady().then(() => {
 
     const message = String(payload?.message || '').trim();
     const contextPrefix = buildFigmaContextBlock(selection);
+    const refsPrefix = designMemoryService.buildContextBlock(message, 6);
     const chatResult = await agentService.chat({
-      message: `${contextPrefix}\n\n---\nЗапрос пользователя:\n${message}`,
+      message: `${contextPrefix}\n\n${refsPrefix}\n\n---\nЗапрос пользователя:\n${message}`,
       history: payload?.history,
       task,
       systemPrompt: FIGMA_DESIGN_SYSTEM_PROMPT,
@@ -1250,8 +1254,22 @@ app.whenReady().then(() => {
       ok: true,
       plan,
       selection,
+      refs: designMemoryService.retrieve(message, { limit: 6 }),
       model: chatResult.model || null,
     };
+  });
+
+  ipcMain.handle('design-memory-list', () => {
+    return { ok: true, items: designMemoryService.list() };
+  });
+
+  ipcMain.handle('design-memory-add', (_e, payload) => {
+    try {
+      const item = designMemoryService.add(payload || {});
+      return { ok: true, item };
+    } catch (err) {
+      return { ok: false, message: err.message || 'Не удалось добавить референс' };
+    }
   });
 
   ipcMain.handle('agent-figma-apply', async (_e, payload) => {

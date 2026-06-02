@@ -76,6 +76,8 @@ contextBridge.exposeInMainWorld('api', {
   agentBannerToNanobanana: (payload) => ipcRenderer.invoke('agent-banner-to-nanobanana', payload),
   agentFigmaPlan: (payload) => ipcRenderer.invoke('agent-figma-plan', payload),
   agentFigmaApply: (payload) => ipcRenderer.invoke('agent-figma-apply', payload),
+  designMemoryList: () => ipcRenderer.invoke('design-memory-list'),
+  designMemoryAdd: (payload) => ipcRenderer.invoke('design-memory-add', payload),
   agentFindTaskLinks: (payload) => ipcRenderer.invoke('agent-find-task-links', payload),
   agentLinkTasks: (payload) => ipcRenderer.invoke('agent-link-tasks', payload),
   agentDismissTaskLink: (payload) => ipcRenderer.invoke('agent-dismiss-task-link', payload),
