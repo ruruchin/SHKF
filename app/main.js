@@ -45,6 +45,7 @@ import { DesignMemoryService } from '../server/design-memory-service.js';
 import {
   FIGMA_DESIGN_CRITIC_PROMPT,
   FIGMA_DESIGN_SYSTEM_PROMPT,
+  buildDeterministicLandingPlan,
   extractFigmaCritic,
   extractFigmaPlan,
   buildFigmaContextBlock,
@@ -1233,6 +1234,7 @@ app.whenReady().then(() => {
     }
 
     const message = String(payload?.message || '').trim();
+    const forceDeterministicLayout = /(лендинг|landing|сайт|website|web\s*page|главная|homepage|hero)/i.test(message);
     const contextPrefix = buildFigmaContextBlock(selection);
     const retrievalMode = service.config.settings?.agent?.designMemoryMode || 'hybrid';
     const refsResult = await designMemoryService.getPromptContext(message, {
@@ -1240,6 +1242,50 @@ app.whenReady().then(() => {
       mode: retrievalMode,
     });
     const refsPrefix = refsResult.context;
+
+    if (forceDeterministicLayout) {
+      let plan = buildDeterministicLandingPlan({
+        message,
+        refs: refsResult.refs,
+      });
+      let critic = null;
+      if (service.config.settings?.agent?.figmaCriticEnabled !== false) {
+        const criticInput = [
+          'Пользовательский запрос:',
+          message,
+          '',
+          'План (JSON):',
+          JSON.stringify(plan, null, 2),
+          '',
+          contextPrefix,
+          '',
+          refsPrefix,
+        ].join('\n');
+        const criticResult = await agentService.chat({
+          message: criticInput,
+          history: [],
+          task,
+          systemPrompt: FIGMA_DESIGN_CRITIC_PROMPT,
+          allowFollowups: false,
+        });
+        if (criticResult?.ok) {
+          critic = extractFigmaCritic(criticResult.content);
+          if (critic?.improvedPlan?.operations?.length) {
+            plan = critic.improvedPlan;
+          }
+        }
+      }
+
+      return {
+        ok: true,
+        plan,
+        selection,
+        critic,
+        refs: refsResult.refs,
+        model: 'deterministic-layout-v3',
+      };
+    }
+
     const chatResult = await agentService.chat({
       message: `${contextPrefix}\n\n${refsPrefix}\n\n---\nЗапрос пользователя:\n${message}`,
       history: payload?.history,

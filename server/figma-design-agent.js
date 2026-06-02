@@ -284,6 +284,8 @@ export const FIGMA_DESIGN_CRITIC_PROMPT = `Ты — строгий AI-крити
 Если план слабый, верни improvedPlan с исправлениями.
 Если план хороший, improvedPlan оставь null.
 
+Важно: не уменьшай размеры шрифтов/контейнеров до мобильного вида, если в плане desktop-лендинг.
+
 Отвечай ТОЛЬКО JSON в блоке:
 <<<FIGMA_CRITIC_JSON
 {
@@ -307,4 +309,209 @@ export function buildFigmaContextBlock(selectionBrief) {
     '```',
   ];
   return lines.join('\n');
+}
+
+function compactText(value, maxLen = 120) {
+  const text = String(value || '').replace(/\s+/g, ' ').trim();
+  if (!text) return '';
+  return text.length > maxLen ? `${text.slice(0, maxLen - 1)}…` : text;
+}
+
+function splitPromptLines(prompt) {
+  return String(prompt || '')
+    .split(/\n+/)
+    .map((line) => line.replace(/^\s*[-•\d.)]+\s*/, '').trim())
+    .filter(Boolean);
+}
+
+function inferLandingTopic(prompt) {
+  const text = String(prompt || '').trim();
+  if (!text) return 'Продукт';
+  const match = text.match(/(?:для|о|про)\s+([^,.!?\n]{3,60})/i);
+  if (match?.[1]) return compactText(match[1], 36);
+  return compactText(text, 36);
+}
+
+function inferSections(prompt) {
+  const lines = splitPromptLines(prompt);
+  const candidates = lines.filter((line) => line.length > 8);
+  const sections = [];
+  for (const line of candidates) {
+    if (sections.length >= 4) break;
+    if (/лендинг|сайт|нужн|сделай|создай|макет/i.test(line)) continue;
+    sections.push({
+      title: compactText(line, 44),
+      body: 'Короткое описание ценности блока и ключевого действия пользователя.',
+    });
+  }
+  if (!sections.length) {
+    return [
+      { title: 'О продукте', body: 'Что это за сервис, кому и какую пользу он дает.' },
+      { title: 'Преимущества', body: 'Ключевые причины выбрать продукт и его отличия от альтернатив.' },
+      { title: 'Как начать', body: 'Простой сценарий старта: регистрация, настройка, первый результат.' },
+    ];
+  }
+  return sections;
+}
+
+function inferStyleFromRefs(refs) {
+  const tags = new Set();
+  for (const ref of refs || []) {
+    for (const tag of (ref.tags || [])) tags.add(String(tag).toLowerCase());
+  }
+  const fintech = tags.has('fintech') || tags.has('dashboard') || tags.has('portfolio');
+  const b2b = tags.has('saas') || tags.has('enterprise') || tags.has('b2b');
+  if (fintech) {
+    return {
+      heroBg: { r: 246, g: 247, b: 252, a: 1 },
+      sectionOdd: { r: 255, g: 255, b: 255, a: 1 },
+      sectionEven: { r: 249, g: 250, b: 252, a: 1 },
+      buttonBg: { r: 20, g: 24, b: 36, a: 1 },
+      titleColor: { r: 16, g: 18, b: 24, a: 1 },
+      bodyColor: { r: 70, g: 78, b: 92, a: 1 },
+    };
+  }
+  if (b2b) {
+    return {
+      heroBg: { r: 245, g: 246, b: 242, a: 1 },
+      sectionOdd: { r: 255, g: 255, b: 255, a: 1 },
+      sectionEven: { r: 248, g: 248, b: 246, a: 1 },
+      buttonBg: { r: 28, g: 28, b: 30, a: 1 },
+      titleColor: { r: 28, g: 28, b: 30, a: 1 },
+      bodyColor: { r: 84, g: 84, b: 92, a: 1 },
+    };
+  }
+  return {
+    heroBg: { r: 247, g: 247, b: 247, a: 1 },
+    sectionOdd: { r: 255, g: 255, b: 255, a: 1 },
+    sectionEven: { r: 248, g: 248, b: 248, a: 1 },
+    buttonBg: { r: 28, g: 28, b: 30, a: 1 },
+    titleColor: { r: 20, g: 20, b: 20, a: 1 },
+    bodyColor: { r: 90, g: 90, b: 96, a: 1 },
+  };
+}
+
+/**
+ * Детерминированный план лендинга: фиксированная сетка, размеры и ритм секций.
+ * Это заметно стабильнее для "верстки" чем свободная генерация LLM.
+ */
+export function buildDeterministicLandingPlan({ message, refs = [] }) {
+  const topic = inferLandingTopic(message);
+  const sections = inferSections(message);
+  const style = inferStyleFromRefs(refs);
+
+  const ops = [];
+  ops.push({
+    op: 'create_frame',
+    key: 'root',
+    name: 'Landing',
+    width: 1440,
+    height: 2200,
+    x: 120,
+    y: 120,
+    fill: { r: 255, g: 255, b: 255, a: 1 },
+  });
+  ops.push({
+    op: 'create_frame',
+    key: 'hero',
+    parentKey: 'root',
+    name: 'Hero',
+    x: 120,
+    y: 88,
+    width: 1200,
+    height: 460,
+    fill: style.heroBg,
+  });
+  ops.push({
+    op: 'create_text',
+    key: 'heroTitle',
+    parentKey: 'hero',
+    name: 'Hero Title',
+    text: compactText(topic, 44),
+    x: 84,
+    y: 96,
+    fontSize: 64,
+    fontWeight: 700,
+    fill: style.titleColor,
+  });
+  ops.push({
+    op: 'create_text',
+    key: 'heroBody',
+    parentKey: 'hero',
+    name: 'Hero Body',
+    text: 'Кратко опишите ценность продукта, чем он полезен и почему пользователю стоит начать сейчас.',
+    x: 84,
+    y: 188,
+    fontSize: 24,
+    fontWeight: 400,
+    fill: style.bodyColor,
+  });
+  ops.push({
+    op: 'create_button',
+    key: 'heroCta',
+    parentKey: 'hero',
+    name: 'Primary CTA',
+    label: 'Начать',
+    x: 84,
+    y: 264,
+    width: 220,
+    height: 60,
+    radius: 14,
+    fontSize: 22,
+    fontWeight: 600,
+    fill: style.buttonBg,
+    stroke: { r: 255, g: 255, b: 255, a: 1 },
+  });
+
+  let y = 596;
+  sections.forEach((section, idx) => {
+    const key = `section${idx + 1}`;
+    ops.push({
+      op: 'create_frame',
+      key,
+      parentKey: 'root',
+      name: `Section ${idx + 1}`,
+      x: 120,
+      y,
+      width: 1200,
+      height: 320,
+      fill: idx % 2 === 0 ? style.sectionOdd : style.sectionEven,
+    });
+    ops.push({
+      op: 'create_text',
+      key: `${key}Title`,
+      parentKey: key,
+      name: `Section ${idx + 1} Title`,
+      text: section.title,
+      x: 84,
+      y: 72,
+      fontSize: 46,
+      fontWeight: 700,
+      fill: style.titleColor,
+    });
+    ops.push({
+      op: 'create_text',
+      key: `${key}Body`,
+      parentKey: key,
+      name: `Section ${idx + 1} Body`,
+      text: section.body,
+      x: 84,
+      y: 148,
+      fontSize: 24,
+      fontWeight: 400,
+      fill: style.bodyColor,
+    });
+    y += 344;
+  });
+
+  return {
+    summary: 'Детерминированный лендинг по 12-колоночной сетке с контейнером 1200 и стабильным вертикальным ритмом.',
+    assumptions: [
+      'Режим desktop-first: 1440 px.',
+      'Container width 1200 px.',
+      'Секциям задан фиксированный ритм и читаемые размеры шрифтов.',
+      'Стиль палитры частично адаптирован по reference tags.',
+    ],
+    operations: ops,
+  };
 }
