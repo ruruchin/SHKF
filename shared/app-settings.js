@@ -38,6 +38,8 @@ export const DEFAULT_APP_SETTINGS = {
     keepChatHistory: true,
     clearInputAfterSend: true,
     useTaskContext: true,
+    designMemoryMode: 'hybrid',
+    figmaCriticEnabled: true,
   },
   nanobanana: {
     apiKey: '',

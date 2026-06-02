@@ -1,4 +1,5 @@
 const PLAN_BLOCK_RE = /<<<FIGMA_PLAN_JSON\s*([\s\S]*?)\s*FIGMA_PLAN_JSON>>>/i;
+const CRITIC_BLOCK_RE = /<<<FIGMA_CRITIC_JSON\s*([\s\S]*?)\s*FIGMA_CRITIC_JSON>>>/i;
 
 const ALLOWED_OPS = new Set([
   'create_frame',
@@ -57,6 +58,25 @@ function parseJsonLoose(raw) {
   return null;
 }
 
+function parseCriticJsonLoose(raw) {
+  const text = String(raw || '').trim();
+  if (!text) return null;
+  const attempts = [text];
+  const block = text.match(CRITIC_BLOCK_RE);
+  if (block?.[1]) attempts.push(block[1].trim());
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenced?.[1]) attempts.push(fenced[1].trim());
+  for (const chunk of attempts) {
+    try {
+      const parsed = JSON.parse(chunk);
+      if (parsed && typeof parsed === 'object') return parsed;
+    } catch {
+      // next attempt
+    }
+  }
+  return null;
+}
+
 export function extractFigmaPlan(raw) {
   const parsed = parseJsonLoose(raw);
   if (!parsed) return null;
@@ -73,6 +93,25 @@ export function extractFigmaPlan(raw) {
       ? parsed.assumptions.map((x) => String(x || '').trim()).filter(Boolean).slice(0, 10)
       : [],
     operations: sanitizedOps,
+  };
+}
+
+export function extractFigmaCritic(raw) {
+  const parsed = parseCriticJsonLoose(raw);
+  if (!parsed) return null;
+  const issues = Array.isArray(parsed.issues)
+    ? parsed.issues.map((x) => String(x || '').trim()).filter(Boolean).slice(0, 12)
+    : [];
+  let improvedPlan = null;
+  if (parsed.improvedPlan && typeof parsed.improvedPlan === 'object') {
+    const candidate = extractFigmaPlan(JSON.stringify(parsed.improvedPlan));
+    if (candidate?.operations?.length) improvedPlan = candidate;
+  }
+  return {
+    verdict: String(parsed.verdict || 'unknown').trim().toLowerCase(),
+    score: clampNumber(parsed.score, 0, 100, 0),
+    issues,
+    improvedPlan,
   };
 }
 
@@ -148,6 +187,33 @@ FIGMA_PLAN_JSON>>>
     {"op":"create_button","key":"cta","parentKey":"root","name":"CTA","label":"Начать","x":80,"y":260}
   ]
 }`;
+
+export const FIGMA_DESIGN_CRITIC_PROMPT = `Ты — строгий AI-критик UI-макета.
+Тебе дают:
+1) запрос пользователя,
+2) план JSON операций для Figma,
+3) контекст выделения и reference signals.
+
+Проверь план по критериям:
+- иерархия контента и читаемость,
+- структура секций и композиция,
+- типографика и визуальный ритм,
+- контраст и доступность,
+- консистентность отступов/размеров,
+- соответствие запросу.
+
+Если план слабый, верни improvedPlan с исправлениями.
+Если план хороший, improvedPlan оставь null.
+
+Отвечай ТОЛЬКО JSON в блоке:
+<<<FIGMA_CRITIC_JSON
+{
+  "verdict": "approved|needs_improvement",
+  "score": 0-100,
+  "issues": ["..."],
+  "improvedPlan": { "summary": "...", "assumptions": [], "operations": [...] } | null
+}
+FIGMA_CRITIC_JSON>>>`;
 
 export function buildFigmaContextBlock(selectionBrief) {
   if (!selectionBrief) return 'Figma контекст недоступен.';

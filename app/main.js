@@ -43,7 +43,9 @@ import {
 } from '../shared/banner-nanobanana.js';
 import { DesignMemoryService } from '../server/design-memory-service.js';
 import {
+  FIGMA_DESIGN_CRITIC_PROMPT,
   FIGMA_DESIGN_SYSTEM_PROMPT,
+  extractFigmaCritic,
   extractFigmaPlan,
   buildFigmaContextBlock,
 } from '../server/figma-design-agent.js';
@@ -89,7 +91,10 @@ const agentService = new AgentService();
 const taskLinkerService = new TaskLinkerService(agentService);
 const nanobananaService = new NanobananaService();
 const nanobananaGallery = createNanobananaGalleryStore(nanobananaGalleryPath);
-const designMemoryService = new DesignMemoryService(designReferencesSeedPath);
+const designMemoryService = new DesignMemoryService(designReferencesSeedPath, {
+  authService,
+  agentService,
+});
 const { autoUpdater } = electronUpdater;
 const APP_UPDATE_FEED_URL = 'https://github.com/ruruchin/SHKF/releases/latest/download';
 const METASK_DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -1229,7 +1234,12 @@ app.whenReady().then(() => {
 
     const message = String(payload?.message || '').trim();
     const contextPrefix = buildFigmaContextBlock(selection);
-    const refsPrefix = designMemoryService.buildContextBlock(message, 6);
+    const retrievalMode = service.config.settings?.agent?.designMemoryMode || 'hybrid';
+    const refsResult = await designMemoryService.getPromptContext(message, {
+      limit: 6,
+      mode: retrievalMode,
+    });
+    const refsPrefix = refsResult.context;
     const chatResult = await agentService.chat({
       message: `${contextPrefix}\n\n${refsPrefix}\n\n---\nЗапрос пользователя:\n${message}`,
       history: payload?.history,
@@ -1242,7 +1252,7 @@ app.whenReady().then(() => {
       return { ok: false, message: chatResult?.message || 'Ошибка генерации плана' };
     }
 
-    const plan = extractFigmaPlan(chatResult.content);
+    let plan = extractFigmaPlan(chatResult.content);
     if (!plan || !plan.operations?.length) {
       return {
         ok: false,
@@ -1250,11 +1260,40 @@ app.whenReady().then(() => {
       };
     }
 
+    let critic = null;
+    if (service.config.settings?.agent?.figmaCriticEnabled !== false) {
+      const criticInput = [
+        'Пользовательский запрос:',
+        message,
+        '',
+        'План (JSON):',
+        JSON.stringify(plan, null, 2),
+        '',
+        contextPrefix,
+        '',
+        refsPrefix,
+      ].join('\n');
+      const criticResult = await agentService.chat({
+        message: criticInput,
+        history: [],
+        task,
+        systemPrompt: FIGMA_DESIGN_CRITIC_PROMPT,
+        allowFollowups: false,
+      });
+      if (criticResult?.ok) {
+        critic = extractFigmaCritic(criticResult.content);
+        if (critic?.improvedPlan?.operations?.length) {
+          plan = critic.improvedPlan;
+        }
+      }
+    }
+
     return {
       ok: true,
       plan,
       selection,
-      refs: designMemoryService.retrieve(message, { limit: 6 }),
+      critic,
+      refs: refsResult.refs,
       model: chatResult.model || null,
     };
   });
@@ -1269,6 +1308,16 @@ app.whenReady().then(() => {
       return { ok: true, item };
     } catch (err) {
       return { ok: false, message: err.message || 'Не удалось добавить референс' };
+    }
+  });
+
+  ipcMain.handle('design-memory-sync', async (_e, payload) => {
+    try {
+      return await designMemoryService.syncSeedToSupabase({
+        limit: payload?.limit || 200,
+      });
+    } catch (err) {
+      return { ok: false, message: err.message || 'Не удалось синхронизировать design memory' };
     }
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "firuru",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "description": "FIRURU — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",

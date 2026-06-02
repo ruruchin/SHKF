@@ -1985,7 +1985,7 @@
     return kind;
   }
 
-  function buildFigmaPlanHtml({ token, plan, selection, refs }) {
+  function buildFigmaPlanHtml({ token, plan, selection, refs, critic }) {
     const assumptions = (plan.assumptions || [])
       .map((x) => `<li>${escapeHtml(x)}</li>`)
       .join('');
@@ -1997,11 +1997,15 @@
         `<li><a href="#" class="agent-md-link" data-agent-href="${escapeAttr(r.url)}">${escapeHtml(r.title || r.url)}</a></li>`
       )).join('')}</ul>`
       : '';
+    const criticLine = critic
+      ? `<p class="agent-mockup-sub"><strong>Critic:</strong> ${escapeHtml(String(critic.verdict || 'unknown'))} · score ${escapeHtml(Number(critic.score || 0))}/100${critic.issues?.[0] ? ` · ${escapeHtml(critic.issues[0])}` : ''}</p>`
+      : '';
     return `
       <div class="agent-mockup-ready" data-figma-plan-token="${escapeHtml(token)}">
         <p><strong>План правок для Figma готов.</strong></p>
         ${plan.summary ? `<p class="agent-mockup-sub">${escapeHtml(plan.summary)}</p>` : ''}
         <p class="agent-mockup-sub">Файл: <strong>${escapeHtml(selection?.fileName || '—')}</strong>, страница: <strong>${escapeHtml(selection?.pageName || '—')}</strong>, выделено: <strong>${escapeHtml(selection?.selectedCount || 0)}</strong></p>
+        ${criticLine}
         ${refList ? `<p class="agent-mockup-sub"><strong>Референсы:</strong></p>${refList}` : ''}
         ${assumptions ? `<ul class="agent-md-ul">${assumptions}</ul>` : ''}
         <ul class="agent-md-ul">${ops}</ul>
@@ -2081,6 +2085,7 @@
         plan: result.plan,
         selection: result.selection,
         refs: result.refs,
+        critic: result.critic,
       }), result.model ? `Figma Agent · ${result.model}` : 'Figma Agent');
       chatHistory.push({
         role: 'assistant',

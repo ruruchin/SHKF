@@ -78,6 +78,7 @@ contextBridge.exposeInMainWorld('api', {
   agentFigmaApply: (payload) => ipcRenderer.invoke('agent-figma-apply', payload),
   designMemoryList: () => ipcRenderer.invoke('design-memory-list'),
   designMemoryAdd: (payload) => ipcRenderer.invoke('design-memory-add', payload),
+  designMemorySync: (payload) => ipcRenderer.invoke('design-memory-sync', payload),
   agentFindTaskLinks: (payload) => ipcRenderer.invoke('agent-find-task-links', payload),
   agentLinkTasks: (payload) => ipcRenderer.invoke('agent-link-tasks', payload),
   agentDismissTaskLink: (payload) => ipcRenderer.invoke('agent-dismiss-task-link', payload),
