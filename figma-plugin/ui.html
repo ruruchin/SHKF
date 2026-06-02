@@ -910,6 +910,22 @@
                 requestId: msg.requestId,
               },
             }, '*');
+          } else if (msg.type === 'read-selection-brief') {
+            parent.postMessage({
+              pluginMessage: {
+                type: 'read-selection-brief',
+                payload: msg.payload,
+                requestId: msg.requestId,
+              },
+            }, '*');
+          } else if (msg.type === 'apply-design-ops') {
+            parent.postMessage({
+              pluginMessage: {
+                type: 'apply-design-ops',
+                payload: msg.payload,
+                requestId: msg.requestId,
+              },
+            }, '*');
           }
         } catch (e) {
           console.error(e);
@@ -1035,6 +1051,7 @@
           requestId: msg.requestId,
           ok: msg.ok,
           error: msg.error,
+          data: msg.data || null,
         }));
       }
       if (msg.type === 'notify') {

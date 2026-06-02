@@ -27,6 +27,16 @@ figma.ui.onmessage = function (msg) {
       sendTemplateResult(msg.requestId, false, err.message);
     });
   }
+  if (msg.type === 'read-selection-brief') {
+    readSelectionBrief(msg.payload, msg.requestId).catch(function (err) {
+      sendTemplateResult(msg.requestId, false, err.message);
+    });
+  }
+  if (msg.type === 'apply-design-ops') {
+    applyDesignOps(msg.payload, msg.requestId).catch(function (err) {
+      sendTemplateResult(msg.requestId, false, err.message);
+    });
+  }
   if (msg.type === 'resize') {
     figma.ui.resize(msg.width, msg.height);
   }
@@ -1118,5 +1128,379 @@ function applyBannerMockup(payload, requestId) {
     });
   }).catch(function (err) {
     sendTemplateResult(requestId, false, err.message || String(err));
+  });
+}
+
+function briefNode(node, depth, maxDepth) {
+  var item = {
+    id: node.id,
+    name: node.name || '',
+    type: node.type,
+    visible: node.visible !== false,
+    x: typeof node.x === 'number' ? Math.round(node.x) : null,
+    y: typeof node.y === 'number' ? Math.round(node.y) : null,
+    width: 'width' in node ? Math.round(node.width) : null,
+    height: 'height' in node ? Math.round(node.height) : null,
+  };
+
+  if (node.type === 'TEXT') {
+    item.text = String(node.characters || '').slice(0, 240);
+  }
+  if (node.layoutMode && node.layoutMode !== 'NONE') {
+    item.layoutMode = node.layoutMode;
+    item.itemSpacing = node.itemSpacing;
+    item.padding = {
+      left: node.paddingLeft || 0,
+      right: node.paddingRight || 0,
+      top: node.paddingTop || 0,
+      bottom: node.paddingBottom || 0,
+    };
+  }
+
+  if (depth < maxDepth && 'children' in node && node.children && node.children.length) {
+    item.children = [];
+    for (var i = 0; i < node.children.length && i < 20; i++) {
+      item.children.push(briefNode(node.children[i], depth + 1, maxDepth));
+    }
+  }
+  return item;
+}
+
+function readSelectionBrief(payload, requestId) {
+  var selection = figma.currentPage.selection || [];
+  var maxDepth = payload && payload.maxDepth != null ? Number(payload.maxDepth) : 2;
+  if (!Number.isFinite(maxDepth) || maxDepth < 0) maxDepth = 2;
+  if (maxDepth > 4) maxDepth = 4;
+
+  var nodes = [];
+  for (var i = 0; i < selection.length && i < 20; i++) {
+    nodes.push(briefNode(selection[i], 0, maxDepth));
+  }
+  var data = {
+    fileName: figma.root && figma.root.name ? figma.root.name : '',
+    pageName: figma.currentPage && figma.currentPage.name ? figma.currentPage.name : '',
+    selectedCount: selection.length,
+    nodes: nodes,
+  };
+  sendTemplateResult(requestId, true, '', data);
+  return Promise.resolve();
+}
+
+function parseTargetNodes(operation) {
+  if (operation && operation.target === 'nodeId' && operation.nodeId) {
+    var node = figma.getNodeById(operation.nodeId);
+    return node && !node.removed ? [node] : [];
+  }
+  return (figma.currentPage.selection || []).slice();
+}
+
+function resolveParentNode(operation, ctx) {
+  if (operation && operation.parentKey && ctx && ctx.created && ctx.created[operation.parentKey]) {
+    return ctx.created[operation.parentKey];
+  }
+  if (operation && operation.target === 'nodeId' && operation.nodeId) {
+    var explicit = figma.getNodeById(operation.nodeId);
+    if (explicit && !explicit.removed && 'appendChild' in explicit) return explicit;
+  }
+  var selection = figma.currentPage.selection || [];
+  if (selection.length === 1 && 'appendChild' in selection[0]) return selection[0];
+  return figma.currentPage;
+}
+
+function toSolidPaint(color) {
+  if (!color) return null;
+  var r = Number(color.r);
+  var g = Number(color.g);
+  var b = Number(color.b);
+  var a = color.a == null ? 1 : Number(color.a);
+  if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) return null;
+  if (!Number.isFinite(a)) a = 1;
+  return {
+    type: 'SOLID',
+    color: {
+      r: Math.max(0, Math.min(1, r / 255)),
+      g: Math.max(0, Math.min(1, g / 255)),
+      b: Math.max(0, Math.min(1, b / 255)),
+    },
+    opacity: Math.max(0, Math.min(1, a)),
+    visible: true,
+  };
+}
+
+function appendToParent(node, parent) {
+  if (!node) return;
+  var host = parent && 'appendChild' in parent ? parent : figma.currentPage;
+  host.appendChild(node);
+}
+
+function applyFrameStyle(frame, operation) {
+  if (!frame || !operation) return;
+  if (operation.name != null) frame.name = String(operation.name);
+  if (operation.width != null && operation.height != null) {
+    frame.resize(Number(operation.width), Number(operation.height));
+  }
+  if (operation.x != null) frame.x = Number(operation.x);
+  if (operation.y != null) frame.y = Number(operation.y);
+  if (operation.radius != null && 'cornerRadius' in frame) frame.cornerRadius = Number(operation.radius);
+  if (operation.fill) {
+    var fill = toSolidPaint(operation.fill);
+    if (fill && 'fills' in frame) frame.fills = [fill];
+  }
+  if (operation.layoutMode) {
+    var mode = String(operation.layoutMode).toUpperCase();
+    if (mode === 'NONE' || mode === 'HORIZONTAL' || mode === 'VERTICAL') frame.layoutMode = mode;
+  }
+  if (operation.spacing != null && 'itemSpacing' in frame) frame.itemSpacing = Number(operation.spacing);
+  if (operation.padding != null) {
+    frame.paddingLeft = Number(operation.padding);
+    frame.paddingRight = Number(operation.padding);
+    frame.paddingTop = Number(operation.padding);
+    frame.paddingBottom = Number(operation.padding);
+  } else {
+    if (operation.paddingLeft != null) frame.paddingLeft = Number(operation.paddingLeft);
+    if (operation.paddingRight != null) frame.paddingRight = Number(operation.paddingRight);
+    if (operation.paddingTop != null) frame.paddingTop = Number(operation.paddingTop);
+    if (operation.paddingBottom != null) frame.paddingBottom = Number(operation.paddingBottom);
+  }
+}
+
+function loadFontByWeight(weight) {
+  var w = Number(weight);
+  var style = 'Regular';
+  if (w >= 700) style = 'Bold';
+  else if (w >= 500) style = 'Medium';
+  return figma.loadFontAsync({ family: 'Inter', style: style })
+    .then(function () {
+      return { family: 'Inter', style: style };
+    })
+    .catch(function () {
+      return figma.loadFontAsync({ family: 'Roboto', style: style }).then(function () {
+        return { family: 'Roboto', style: style };
+      });
+    })
+    .catch(function () {
+      return figma.loadFontAsync({ family: 'Roboto', style: 'Regular' }).then(function () {
+        return { family: 'Roboto', style: 'Regular' };
+      });
+    });
+}
+
+function createTextNode(operation) {
+  return loadFontByWeight(operation.fontWeight).then(function (fontName) {
+    var node = figma.createText();
+    node.fontName = fontName;
+    node.characters = String(operation.text || operation.label || 'Text');
+    if (operation.fontSize != null) node.fontSize = Number(operation.fontSize);
+    if (operation.name != null) node.name = String(operation.name);
+    if (operation.x != null) node.x = Number(operation.x);
+    if (operation.y != null) node.y = Number(operation.y);
+    var fill = toSolidPaint(operation.fill);
+    if (fill) node.fills = [fill];
+    return node;
+  });
+}
+
+function createButtonPrimitive(operation) {
+  return loadFontByWeight(operation.fontWeight || 600).then(function (fontName) {
+    var btn = figma.createFrame();
+    btn.name = String(operation.name || 'Button');
+    btn.layoutMode = 'HORIZONTAL';
+    btn.primaryAxisSizingMode = 'AUTO';
+    btn.counterAxisSizingMode = 'AUTO';
+    btn.primaryAxisAlignItems = 'CENTER';
+    btn.counterAxisAlignItems = 'CENTER';
+    btn.paddingLeft = 20;
+    btn.paddingRight = 20;
+    btn.paddingTop = 12;
+    btn.paddingBottom = 12;
+    btn.itemSpacing = 8;
+    btn.cornerRadius = operation.radius != null ? Number(operation.radius) : 12;
+    btn.fills = [toSolidPaint(operation.fill || { r: 28, g: 28, b: 30, a: 1 }) || {
+      type: 'SOLID',
+      color: { r: 28 / 255, g: 28 / 255, b: 30 / 255 },
+      opacity: 1,
+      visible: true,
+    }];
+
+    var label = figma.createText();
+    label.fontName = fontName;
+    label.characters = String(operation.label || operation.text || 'Кнопка');
+    label.fontSize = Number(operation.fontSize || 16);
+    label.fills = [toSolidPaint(operation.stroke || { r: 255, g: 255, b: 255, a: 1 }) || {
+      type: 'SOLID',
+      color: { r: 1, g: 1, b: 1 },
+      opacity: 1,
+      visible: true,
+    }];
+    btn.appendChild(label);
+
+    if (operation.width != null && operation.height != null) {
+      btn.primaryAxisSizingMode = 'FIXED';
+      btn.counterAxisSizingMode = 'FIXED';
+      btn.resize(Number(operation.width), Number(operation.height));
+    }
+    if (operation.x != null) btn.x = Number(operation.x);
+    if (operation.y != null) btn.y = Number(operation.y);
+    return btn;
+  });
+}
+
+function loadTextNodeFont(node) {
+  if (!node || node.type !== 'TEXT') return Promise.resolve();
+  var fontName = node.fontName;
+  if (fontName === figma.mixed && node.characters && node.characters.length) {
+    fontName = node.getRangeFontName(0, 1);
+  }
+  if (fontName === figma.mixed || !fontName) {
+    fontName = { family: 'Inter', style: 'Regular' };
+  }
+  return figma.loadFontAsync(fontName);
+}
+
+function applyOperation(operation, ctx) {
+  var op = String(operation.op || '');
+
+  if (op === 'create_frame') {
+    var frame = figma.createFrame();
+    applyFrameStyle(frame, operation);
+    appendToParent(frame, resolveParentNode(operation, ctx));
+    if (operation.key && ctx && ctx.created) ctx.created[operation.key] = frame;
+    return Promise.resolve({ ok: true });
+  }
+
+  if (op === 'create_rect') {
+    var rect = figma.createRectangle();
+    if (operation.name != null) rect.name = String(operation.name);
+    if (operation.width != null && operation.height != null) rect.resize(Number(operation.width), Number(operation.height));
+    if (operation.x != null) rect.x = Number(operation.x);
+    if (operation.y != null) rect.y = Number(operation.y);
+    if (operation.radius != null) rect.cornerRadius = Number(operation.radius);
+    var rectFill = toSolidPaint(operation.fill || { r: 232, g: 230, b: 225, a: 1 });
+    if (rectFill) rect.fills = [rectFill];
+    appendToParent(rect, resolveParentNode(operation, ctx));
+    if (operation.key && ctx && ctx.created) ctx.created[operation.key] = rect;
+    return Promise.resolve({ ok: true });
+  }
+
+  if (op === 'create_text') {
+    return createTextNode(operation).then(function (node) {
+      appendToParent(node, resolveParentNode(operation, ctx));
+      if (operation.key && ctx && ctx.created) ctx.created[operation.key] = node;
+      return { ok: true };
+    });
+  }
+
+  if (op === 'create_button') {
+    return createButtonPrimitive(operation).then(function (node) {
+      appendToParent(node, resolveParentNode(operation, ctx));
+      if (operation.key && ctx && ctx.created) ctx.created[operation.key] = node;
+      return { ok: true };
+    });
+  }
+
+  var targets = parseTargetNodes(operation);
+  if (!targets.length) return Promise.resolve({ ok: false, reason: 'target-not-found' });
+  var tasks = [];
+  for (var i = 0; i < targets.length; i++) {
+    (function (node) {
+      if (op === 'rename') {
+        node.name = String(operation.name || node.name || '');
+        tasks.push(Promise.resolve());
+      } else if (op === 'set_text') {
+        if (node.type !== 'TEXT') return;
+        tasks.push(loadTextNodeFont(node).then(function () {
+          node.characters = String(operation.text || '');
+        }));
+      } else if (op === 'resize') {
+        if ('resize' in node && operation.width != null && operation.height != null) {
+          node.resize(Number(operation.width), Number(operation.height));
+        }
+        tasks.push(Promise.resolve());
+      } else if (op === 'move') {
+        if (operation.x != null) node.x = Number(operation.x);
+        if (operation.y != null) node.y = Number(operation.y);
+        tasks.push(Promise.resolve());
+      } else if (op === 'set_fill_solid') {
+        var fill = toSolidPaint(operation.fill);
+        if (fill && 'fills' in node) node.fills = [fill];
+        tasks.push(Promise.resolve());
+      } else if (op === 'set_stroke_solid') {
+        var stroke = toSolidPaint(operation.stroke || operation.fill);
+        if (stroke && 'strokes' in node) node.strokes = [stroke];
+        tasks.push(Promise.resolve());
+      } else if (op === 'set_corner_radius') {
+        if ('cornerRadius' in node && operation.radius != null) {
+          node.cornerRadius = Number(operation.radius);
+        }
+        tasks.push(Promise.resolve());
+      } else if (op === 'set_auto_layout') {
+        if (node.type === 'FRAME' || node.type === 'COMPONENT') {
+          var mode = String(operation.layoutMode || 'NONE').toUpperCase();
+          if (mode === 'HORIZONTAL' || mode === 'VERTICAL' || mode === 'NONE') {
+            node.layoutMode = mode;
+          }
+        }
+        tasks.push(Promise.resolve());
+      } else if (op === 'set_padding') {
+        if (node.type === 'FRAME' || node.type === 'COMPONENT') {
+          var all = operation.padding;
+          if (all != null) {
+            node.paddingLeft = Number(all);
+            node.paddingRight = Number(all);
+            node.paddingTop = Number(all);
+            node.paddingBottom = Number(all);
+          } else {
+            if (operation.paddingLeft != null) node.paddingLeft = Number(operation.paddingLeft);
+            if (operation.paddingRight != null) node.paddingRight = Number(operation.paddingRight);
+            if (operation.paddingTop != null) node.paddingTop = Number(operation.paddingTop);
+            if (operation.paddingBottom != null) node.paddingBottom = Number(operation.paddingBottom);
+          }
+        }
+        tasks.push(Promise.resolve());
+      } else if (op === 'set_spacing') {
+        if ((node.type === 'FRAME' || node.type === 'COMPONENT') && operation.spacing != null) {
+          node.itemSpacing = Number(operation.spacing);
+        }
+        tasks.push(Promise.resolve());
+      } else if (op === 'set_visibility') {
+        if (operation.visible != null) node.visible = !!operation.visible;
+        tasks.push(Promise.resolve());
+      }
+    })(targets[i]);
+  }
+  return Promise.all(tasks).then(function () {
+    return { ok: true };
+  });
+}
+
+function applyDesignOps(payload, requestId) {
+  var operations = payload && Array.isArray(payload.operations) ? payload.operations.slice(0, 80) : [];
+  if (!operations.length) {
+    sendTemplateResult(requestId, false, 'Пустой список операций');
+    return Promise.resolve();
+  }
+
+  var applied = 0;
+  var failed = 0;
+  var errors = [];
+  var ctx = { created: {} };
+  var chain = Promise.resolve();
+  operations.forEach(function (op, idx) {
+    chain = chain.then(function () {
+      return applyOperation(op, ctx).then(function () {
+        applied++;
+      }).catch(function (err) {
+        failed++;
+        errors.push({ index: idx, op: op && op.op, error: err && err.message ? err.message : String(err) });
+      });
+    });
+  });
+
+  return chain.then(function () {
+    if (figma.currentPage.selection && figma.currentPage.selection.length) {
+      figma.viewport.scrollAndZoomIntoView(figma.currentPage.selection);
+    }
+    figma.notify('AI-правки применены: ' + applied + ', ошибок: ' + failed);
+    sendTemplateResult(requestId, true, '', { applied: applied, failed: failed, errors: errors });
   });
 }

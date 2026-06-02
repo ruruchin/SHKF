@@ -41,6 +41,11 @@ import {
   buildBannerBuilderUserMessage,
   extractNanobananaPrompt,
 } from '../shared/banner-nanobanana.js';
+import {
+  FIGMA_DESIGN_SYSTEM_PROMPT,
+  extractFigmaPlan,
+  buildFigmaContextBlock,
+} from '../server/figma-design-agent.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const configPath = getConfigPath(__dirname);
@@ -1192,6 +1197,75 @@ app.whenReady().then(() => {
     }
 
     return { ...chatResult, laborEntries };
+  });
+
+  ipcMain.handle('agent-figma-plan', async (_e, payload) => {
+    agentService.configure(service.config.settings?.agent || {});
+    if (!agentService.isConfigured()) {
+      return { ok: false, message: 'Подключите GigaChat: Настройки → ИИ Агент' };
+    }
+
+    let selection = null;
+    try {
+      const result = await service.readFigmaSelectionBrief();
+      selection = result?.selection || null;
+    } catch (err) {
+      return { ok: false, message: err.message || 'Не удалось прочитать контекст Figma' };
+    }
+
+    let task = payload?.task || null;
+    if (task?.id) {
+      metaskService.configure(service.config.settings?.metask || {});
+      try {
+        const full = await metaskService.fetchIssueForAgent(task.id);
+        if (full) task = { ...task, ...full };
+      } catch {
+        // keep partial task
+      }
+    }
+
+    const message = String(payload?.message || '').trim();
+    const contextPrefix = buildFigmaContextBlock(selection);
+    const chatResult = await agentService.chat({
+      message: `${contextPrefix}\n\n---\nЗапрос пользователя:\n${message}`,
+      history: payload?.history,
+      task,
+      systemPrompt: FIGMA_DESIGN_SYSTEM_PROMPT,
+      allowFollowups: false,
+    });
+
+    if (!chatResult?.ok) {
+      return { ok: false, message: chatResult?.message || 'Ошибка генерации плана' };
+    }
+
+    const plan = extractFigmaPlan(chatResult.content);
+    if (!plan || !plan.operations?.length) {
+      return {
+        ok: false,
+        message: 'Модель не вернула валидный JSON-план правок. Попробуйте уточнить запрос.',
+      };
+    }
+
+    return {
+      ok: true,
+      plan,
+      selection,
+      model: chatResult.model || null,
+    };
+  });
+
+  ipcMain.handle('agent-figma-apply', async (_e, payload) => {
+    try {
+      const result = await service.applyFigmaDesignOps(payload?.operations || []);
+      return {
+        ok: !!result?.ok,
+        applied: result?.applied || 0,
+        failed: result?.failed || 0,
+        errors: result?.errors || [],
+      };
+    } catch (err) {
+      return { ok: false, message: err.message || 'Не удалось применить правки в Figma' };
+    }
   });
 
   ipcMain.handle('agent-banner-to-nanobanana', async (_e, payload) => {
