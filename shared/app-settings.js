@@ -42,7 +42,7 @@ export const DEFAULT_APP_SETTINGS = {
     figmaCriticEnabled: true,
     mobbinApiKey: '',
     mobbinEnabled: true,
-    siteBuilderEnabled: true,
+    siteBuilderEnabled: false,
   },
   nanobanana: {
     apiKey: '',

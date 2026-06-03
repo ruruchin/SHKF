@@ -54,6 +54,10 @@ import {
   extractFigmaPlan,
   buildFigmaContextBlock,
 } from '../server/figma-design-agent.js';
+import {
+  buildDeterministicAppPlan,
+  shouldBuildFigmaAppPlan,
+} from '../server/figma-app-plan.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const configPath = getConfigPath(__dirname);
@@ -1211,7 +1215,7 @@ app.whenReady().then(() => {
     let message = payload?.message;
     const agentSettings = service.config.settings?.agent || {};
     if (
-      agentSettings.siteBuilderEnabled !== false
+      agentSettings.siteBuilderEnabled === true
       && isSiteBuildIntent(message)
       && !payload?.skipMobbinContext
     ) {
@@ -1351,7 +1355,9 @@ app.whenReady().then(() => {
     }
 
     const message = String(payload?.message || '').trim();
-    const forceDeterministicLayout = /(лендинг|landing|сайт|website|web\s*page|главная|homepage|hero)/i.test(message);
+    const forceFigmaApp = shouldBuildFigmaAppPlan(message) || payload?.figmaApp === true;
+    const forceDeterministicLayout = !forceFigmaApp
+      && /(лендинг|landing|сайт|website|web\s*page|главная|homepage|hero)/i.test(message);
     const contextPrefix = buildFigmaContextBlock(selection);
     const retrievalMode = service.config.settings?.agent?.designMemoryMode || 'hybrid';
     let refsResult = await designMemoryService.getPromptContext(message, {
@@ -1369,13 +1375,12 @@ app.whenReady().then(() => {
     }
     const refsPrefix = refsResult.context;
 
-    if (forceDeterministicLayout) {
-      let plan = buildDeterministicLandingPlan({
-        message,
-        refs: refsResult.refs,
-      });
+    if (forceFigmaApp || forceDeterministicLayout) {
+      let plan = forceFigmaApp
+        ? buildDeterministicAppPlan({ message, refs: refsResult.refs })
+        : buildDeterministicLandingPlan({ message, refs: refsResult.refs });
       let critic = null;
-      if (service.config.settings?.agent?.figmaCriticEnabled !== false) {
+      if (service.config.settings?.agent?.figmaCriticEnabled !== false && !forceFigmaApp) {
         const criticInput = [
           'Пользовательский запрос:',
           message,
@@ -1408,7 +1413,7 @@ app.whenReady().then(() => {
         selection,
         critic,
         refs: refsResult.refs,
-        model: 'deterministic-layout-v3',
+        model: forceFigmaApp ? 'figma-app-mobbin-v1' : 'deterministic-layout-v3',
       };
     }
 

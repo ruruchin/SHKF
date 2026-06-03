@@ -16,7 +16,7 @@
     devReview: 'Дай чеклист для код-ревью этой задачи: что обязательно проверить (логика, edge-cases, безопасность, производительность, тесты, читаемость), на что обратить внимание ревьюеру именно в этой задаче.',
     devCommit: 'По описанию задачи предложи: 1) название ветки (feature/fix + краткий слаг), 2) сообщение коммита в стиле Conventional Commits, 3) заголовок и описание Pull Request (Что сделано / Как проверить / Связанная задача).',
     devProductivity: 'Проанализируй мои задачи из Kanban и список трудозатрат и дай честный разбор продуктивности: сколько задач в работе/закрыто, где застряло, что съедает время, и 3–5 конкретных советов как ускориться и улучшить показатели. Только реальные данные.',
-    siteBuild: 'Собери многостраничный fintech web-прототип: главная, вход, регистрация с онбордингом, профиль и аналитика инвестиций — отдельные страницы с hero, формами, таблицами и графиками.',
+    siteBuild: 'Собери многостраничный макет в Figma (мобильные экраны): главная, вход, регистрация, онбординг, профиль и аналитика инвестиций — по референсам Mobbin. Примени план в Figma.',
     pmStatus: 'Сделай сводку статуса по всем задачам команды из Kanban: что в работе, что готово, что просрочено или висит без движения. Кратко и структурировано для отчёта.',
     pmRisks: 'Найди риски и узкие места по задачам из Kanban: что может сорвать сроки, где перегруз, какие задачи без оценки или зависают. Предложи действия.',
   };
@@ -61,16 +61,22 @@
     const t = String(text || '').trim();
     if (!t) return false;
     if (/^\/figma\b/i.test(t)) return true;
+    if (/^\/site\b/i.test(t) && !wantsReactCodeExport(t)) return true;
+    if (t === QUICK.siteBuild || t === QUICK.figmaEdit) return true;
+    if (SITE_BUILD_RE.test(t) && !NB_WORD_RE.test(t) && !wantsReactCodeExport(t)) return true;
     return FIGMA_EDIT_RE.test(t) && !NB_WORD_RE.test(t);
+  }
+
+  function wantsReactCodeExport(text) {
+    const t = String(text || '').trim();
+    if (!t || window.appSettings?.agent?.siteBuilderEnabled !== true) return false;
+    return /^\/code\b/i.test(t) || /(react|vite|npm|tsx|jsx|исходник|код\s+проекта)/i.test(t);
   }
 
   function isSiteBuildIntent(text) {
     const t = String(text || '').trim();
-    if (!t) return false;
-    if (t === QUICK.siteBuild) return true;
-    if (/^\/site\b/i.test(t)) return true;
-    if (window.appSettings?.agent?.siteBuilderEnabled === false) return false;
-    return SITE_BUILD_RE.test(t) && !NB_WORD_RE.test(t) && !isFigmaEditIntent(t);
+    if (!t || !wantsReactCodeExport(t)) return false;
+    return SITE_BUILD_RE.test(t) && !NB_WORD_RE.test(t);
   }
 
   const HISTORY_KEY = 'firuru-agent-history-v1';
@@ -2000,9 +2006,19 @@
     const assumptions = (plan.assumptions || [])
       .map((x) => `<li>${escapeHtml(x)}</li>`)
       .join('');
-    const ops = (plan.operations || [])
+    const allOps = plan.operations || [];
+    const opsShown = allOps.slice(0, 12);
+    const opsExtra = allOps.length > opsShown.length
+      ? `<li class="agent-mockup-sub">…и ещё ${allOps.length - opsShown.length} операций</li>`
+      : '';
+    const ops = opsShown
       .map((op, idx) => `<li><strong>${idx + 1}.</strong> ${escapeHtml(opText(op))}</li>`)
-      .join('');
+      .join('') + opsExtra;
+    const pagesList = Array.isArray(plan.pages) && plan.pages.length
+      ? `<p class="agent-mockup-sub"><strong>Экраны:</strong></p><ul class="agent-md-ul">${plan.pages.map((p) => (
+        `<li><code>${escapeHtml(p.route || '/')}</code> — ${escapeHtml(p.name || '')}${p.purpose ? ` <span class="agent-mockup-sub">(${escapeHtml(p.purpose)})</span>` : ''}</li>`
+      )).join('')}</ul>`
+      : '';
     const refList = Array.isArray(refs) && refs.length
       ? `<ul class="agent-md-ul">${refs.slice(0, 4).map((r) => (
         `<li><a href="#" class="agent-md-link" data-agent-href="${escapeAttr(r.url)}">${escapeHtml(r.title || r.url)}</a></li>`
@@ -2017,8 +2033,10 @@
         ${plan.summary ? `<p class="agent-mockup-sub">${escapeHtml(plan.summary)}</p>` : ''}
         <p class="agent-mockup-sub">Файл: <strong>${escapeHtml(selection?.fileName || '—')}</strong>, страница: <strong>${escapeHtml(selection?.pageName || '—')}</strong>, выделено: <strong>${escapeHtml(selection?.selectedCount || 0)}</strong></p>
         ${criticLine}
-        ${refList ? `<p class="agent-mockup-sub"><strong>Референсы:</strong></p>${refList}` : ''}
+        ${refList ? `<p class="agent-mockup-sub"><strong>Референсы Mobbin:</strong></p>${refList}` : ''}
+        ${pagesList}
         ${assumptions ? `<ul class="agent-md-ul">${assumptions}</ul>` : ''}
+        <p class="agent-mockup-sub"><strong>Операции (${allOps.length}):</strong></p>
         <ul class="agent-md-ul">${ops}</ul>
         <div class="agent-mockup-actions">
           <button type="button" class="agent-link-btn agent-link-btn--apply" data-figma-plan-apply="${escapeHtml(token)}">Применить в Figma</button>
@@ -2211,7 +2229,13 @@
     const useTaskContext = taskThreadActive
       && task
       && window.appSettings?.agent?.useTaskContext !== false;
-    const thinking = addThinking(useTaskContext ? task : null, [
+    const isAppMockup = /приложени|onboarding|login|register|инвест|fintech|многостранич|\/site\b/i.test(text);
+    const thinking = addThinking(useTaskContext ? task : null, isAppMockup ? [
+      'Ищу референсы Mobbin…',
+      'Планирую экраны приложения…',
+      'Собираю фреймы и UI-блоки в Figma…',
+      'Готовлю план к применению…',
+    ] : [
       'Читаю структуру выделения в Figma…',
       'Сопоставляю запрос с макетом…',
       'Формирую план правок…',
@@ -2552,7 +2576,7 @@
     devReview: ['Код-ревью', 'Чеклист код-ревью'],
     devCommit: ['Commit / PR', 'Сообщение коммита и PR'],
     devProductivity: ['Продуктивность', 'Разбор продуктивности'],
-    siteBuild: ['Сайт / App', 'Многостраничный прототип с Mobbin'],
+    siteBuild: ['Макет Figma', 'Многостраничный макет в Figma (Mobbin)'],
     pmStatus: ['Статус', 'Сводка статуса задач'],
     pmRisks: ['Риски', 'Риски и узкие места'],
     links: ['Найти связи', 'Найти связанные задачи в Kanban'],
@@ -2727,7 +2751,7 @@
             promptEl.value = prompt;
             autoResize();
           }
-          sendSiteBuild(prompt);
+          sendFigmaPlan(prompt);
           return;
         }
         if (promptEl) {
