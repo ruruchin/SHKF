@@ -33,11 +33,11 @@
   };
 
   const ROLE_PAGES = {
-    designer: ['search', 'hotkeys', 'makeit', 'templates', 'nanobanana', 'bannermockup', 'metask', 'mail', 'agent', 'notes', 'setup', 'settings'],
+    designer: ['search', 'hotkeys', 'makeit', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'mail', 'agent', 'notes', 'setup', 'settings'],
     frontend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'settings'],
     backend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'settings'],
     pm: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'notes', 'settings'],
-    full: ['search', 'hotkeys', 'makeit', 'templates', 'nanobanana', 'bannermockup', 'metask', 'agent', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
+    full: ['search', 'hotkeys', 'makeit', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'agent', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
   };
 
   const ROLE_DEFAULT_PAGE = {
@@ -97,6 +97,7 @@
     if (pageId === 'metask') window.activateMetaskPage?.();
     if (pageId === 'agent') window.activateAgentPage?.();
     if (pageId === 'nanobanana') window.activateNanobananaPage?.();
+    if (pageId === 'magnific') window.activateMagnificPage?.();
     if (pageId === 'bannermockup') window.activateBannerMockupPage?.();
     if (pageId === 'mail') window.activateMailPage?.();
     if (pageId === 'github' || pageId === 'outline') window.activateWebtab?.(pageId);

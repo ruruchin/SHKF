@@ -385,6 +385,7 @@ function bindEvents() {
       if (btn.dataset.page === 'metask') window.activateMetaskPage?.();
       if (btn.dataset.page === 'agent') window.activateAgentPage?.();
       if (btn.dataset.page === 'nanobanana') window.activateNanobananaPage?.();
+      if (btn.dataset.page === 'magnific') window.activateMagnificPage?.();
       if (btn.dataset.page === 'bannermockup') window.activateBannerMockupPage?.();
       if (btn.dataset.page === 'mail') window.activateMailPage?.();
       if (btn.dataset.page === 'github' || btn.dataset.page === 'outline') window.activateWebtab?.(btn.dataset.page);
