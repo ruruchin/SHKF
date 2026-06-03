@@ -42,6 +42,7 @@ import {
   extractNanobananaPrompt,
 } from '../shared/banner-nanobanana.js';
 import { DesignMemoryService } from '../server/design-memory-service.js';
+import { MagnificMcpService } from '../server/magnific-mcp-service.js';
 import {
   FIGMA_DESIGN_CRITIC_PROMPT,
   FIGMA_DESIGN_SYSTEM_PROMPT,
@@ -96,6 +97,7 @@ const designMemoryService = new DesignMemoryService(designReferencesSeedPath, {
   authService,
   agentService,
 });
+const magnificMcpService = new MagnificMcpService(service);
 const { autoUpdater } = electronUpdater;
 const APP_UPDATE_FEED_URL = 'https://github.com/ruruchin/SHKF/releases/latest/download';
 const METASK_DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -1958,6 +1960,37 @@ app.whenReady().then(() => {
       return { ok: true, ...result, config: service.config };
     } catch (err) {
       return { ok: false, message: err.message };
+    }
+  });
+
+  ipcMain.handle('magnific-status', () => {
+    return { ok: true, isConnected: magnificMcpService.isConnected };
+  });
+
+  ipcMain.handle('magnific-connect', async () => {
+    try {
+      await magnificMcpService.connect();
+      return { ok: true, isConnected: magnificMcpService.isConnected };
+    } catch (err) {
+      return { ok: false, message: err.message || String(err) };
+    }
+  });
+
+  ipcMain.handle('magnific-get-tools', async () => {
+    try {
+      const tools = await magnificMcpService.getTools();
+      return { ok: true, tools: tools.tools };
+    } catch (err) {
+      return { ok: false, message: err.message || String(err) };
+    }
+  });
+
+  ipcMain.handle('magnific-call-tool', async (_e, payload) => {
+    try {
+      const result = await magnificMcpService.callTool(payload.name, payload.arguments);
+      return { ok: true, result };
+    } catch (err) {
+      return { ok: false, message: err.message || String(err) };
     }
   });
 });

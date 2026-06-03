@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="profile.css" />
   <link rel="stylesheet" href="character-art.css" />
   <link rel="stylesheet" href="reference-ui.css" />
+  <link rel="stylesheet" href="magnific.css" />
 </head>
 <body>
   <div class="auth-gate hidden" id="auth-gate">
@@ -229,6 +230,10 @@
           <button class="nav-item" data-page="nanobanana">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l4-8 4 5 4-9 4 12"/><circle cx="18" cy="6" r="2" fill="currentColor" stroke="none"/></svg>
             NanoBanana
+          </button>
+          <button class="nav-item" data-page="magnific">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            Magnific MCP
           </button>
           <button class="nav-item" data-page="bannermockup">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M7 11h5M7 14h8"/></svg>
@@ -701,6 +706,39 @@
                   <div class="nb-thumb-grid" id="nb-thumb-grid"></div>
                 </div>
               </main>
+            </div>
+          </div>
+        </section>
+
+        <!-- MAGNIFIC MCP -->
+        <section class="page" id="page-magnific">
+          <div class="magnific-app">
+            <header class="magnific-topbar">
+              <div class="magnific-topbar-text">
+                <h2 class="magnific-title">Magnific MCP</h2>
+                <p class="magnific-sub">Генерация изображений, апскейл и другие инструменты Magnific через Model Context Protocol.</p>
+              </div>
+              <div class="magnific-topbar-actions">
+                <button id="magnific-connect-btn" class="btn btn-primary">Подключить</button>
+              </div>
+            </header>
+            <div class="magnific-content">
+              <div id="magnific-status-panel" class="magnific-status-panel">
+                <div class="status-indicator"></div>
+                <span id="magnific-status-text">Не подключено</span>
+              </div>
+              
+              <div id="magnific-tools-container" class="magnific-tools-container" style="display: none;">
+                <div class="magnific-sidebar">
+                  <h3>Инструменты</h3>
+                  <ul id="magnific-tools-list" class="magnific-tools-list"></ul>
+                </div>
+                <div class="magnific-main">
+                  <h3 id="magnific-tool-title">Выберите инструмент</h3>
+                  <div id="magnific-tool-form-container"></div>
+                  <div id="magnific-tool-result" class="magnific-tool-result"></div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -2073,6 +2111,7 @@
   <script src="demos.js"></script>
   <script src="make-it.js"></script>
   <script src="nanobanana.js"></script>
+  <script src="magnific.js"></script>
   <script src="banner-mockup.js"></script>
   <script src="agent.js"></script>
   <script src="templates.js"></script>
