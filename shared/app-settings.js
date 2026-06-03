@@ -40,6 +40,9 @@ export const DEFAULT_APP_SETTINGS = {
     useTaskContext: true,
     designMemoryMode: 'hybrid',
     figmaCriticEnabled: true,
+    mobbinApiKey: '',
+    mobbinEnabled: true,
+    siteBuilderEnabled: true,
   },
   nanobanana: {
     apiKey: '',

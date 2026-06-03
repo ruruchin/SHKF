@@ -282,7 +282,42 @@ html[data-font-size="large"] { --font-scale: 1.12; }
   --studio-shadow-sm: 0 1px 3px rgba(28, 28, 30, 0.05);
 }
 
-/* anime / manga decor → anime-theme.css, manga-theme.css, mangaplus-theme.css, studio-theme.css */
+[data-theme="mobbin"] {
+  --shell: #F5F2EC;
+  --sidebar: rgba(255, 255, 255, 0.82);
+  --panel: #FFFCF7;
+  --panel-hover: #F7F2EA;
+  --elevated: #FFFFFF;
+  --border: rgba(42, 34, 25, 0.10);
+  --text: #201A16;
+  --text-secondary: rgba(32, 26, 22, 0.66);
+  --text-muted: rgba(32, 26, 22, 0.42);
+  --accent: #6E56CF;
+  --accent-text: #FFFFFF;
+  --accent-hover: #5B46B2;
+  --accent-dim: rgba(110, 86, 207, 0.13);
+  --green: #13A36E;
+  --orange: #E0792D;
+  --red: #D93D4A;
+  --input-bg: #FFFFFF;
+  --modal-bg: #FFFCF7;
+  --shadow: rgba(42, 34, 25, 0.12);
+  --cursor-bg: #201A16;
+  --cursor-arrow: #FFFCF7;
+  --mobbin-cream: #FFFCF7;
+  --mobbin-lilac: #EEE8FF;
+  --mobbin-mint: #DDF8EE;
+  --mobbin-peach: #FFE4D1;
+  --mobbin-sky: #E4F1FF;
+  --mobbin-rose: #FFE3ED;
+  --mobbin-radius: 18px;
+  --mobbin-radius-lg: 28px;
+  --mobbin-shadow-sm: 0 1px 2px rgba(42, 34, 25, 0.04), 0 6px 18px rgba(42, 34, 25, 0.06);
+  --mobbin-shadow: 0 1px 2px rgba(42, 34, 25, 0.05), 0 18px 48px rgba(42, 34, 25, 0.10);
+  --mobbin-shadow-strong: 0 24px 70px rgba(110, 86, 207, 0.18), 0 12px 32px rgba(42, 34, 25, 0.10);
+}
+
+/* anime / manga decor → anime-theme.css, manga-theme.css, mangaplus-theme.css, studio-theme.css, mobbin-theme.css */
 
 /* ===== BASE ===== */
 * { box-sizing: border-box; margin: 0; padding: 0; }

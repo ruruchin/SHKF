@@ -3,6 +3,17 @@
   let returnTo = 'search';
 
   const $ = (id) => document.getElementById(id);
+  const ROLE_LABELS = {
+    designer: 'Дизайнер',
+    frontend: 'Front-end',
+    backend: 'Back-end',
+    pm: 'Project Manager',
+    full: 'Все разделы',
+  };
+
+  function roleLabel(role) {
+    return ROLE_LABELS[role] || role || '—';
+  }
 
   function initials(p) {
     const name = (p?.full_name || '').trim();
@@ -25,12 +36,15 @@
     profile = p || null;
     if (!p) return;
     const login = p.username || (p.email || '').split('@')[0] || '';
-    if ($('pf-name')) $('pf-name').textContent = p.full_name || login || '—';
-    if ($('pf-position-line')) $('pf-position-line').textContent = p.position || 'Должность не указана';
+    const displayName = p.full_name || login || '—';
+    const displayPosition = p.position || 'Должность не указана';
+    const displayRole = roleLabel(p.role);
+    if ($('pf-name')) $('pf-name').textContent = displayName;
+    if ($('pf-position-line')) $('pf-position-line').textContent = displayPosition;
     if ($('pf-login-chip')) $('pf-login-chip').textContent = `@${login}`;
-    if ($('pf-role-chip')) $('pf-role-chip').textContent = p.role || '—';
+    if ($('pf-role-chip')) $('pf-role-chip').textContent = displayRole;
     if ($('pf-login-ro')) $('pf-login-ro').textContent = login || '—';
-    if ($('pf-role-ro')) $('pf-role-ro').textContent = p.role || '—';
+    if ($('pf-role-ro')) $('pf-role-ro').textContent = displayRole;
     if ($('pf-fullname') && document.activeElement !== $('pf-fullname')) $('pf-fullname').value = p.full_name || '';
     if ($('pf-position') && document.activeElement !== $('pf-position')) $('pf-position').value = p.position || '';
 
@@ -45,6 +59,40 @@
         img.textContent = initials(p);
         img.classList.remove('has-img');
       }
+    }
+    syncPreview();
+  }
+
+  function paintAvatar(el, p) {
+    if (!el || !p) return;
+    if (p.avatar_url) {
+      el.style.backgroundImage = `url("${p.avatar_url}")`;
+      el.textContent = '';
+      el.classList.add('has-img');
+    } else {
+      el.style.backgroundImage = '';
+      el.textContent = initials(p);
+      el.classList.remove('has-img');
+    }
+  }
+
+  function syncPreview() {
+    if (!profile) return;
+    const login = profile.username || (profile.email || '').split('@')[0] || '';
+    const name = $('pf-fullname')?.value?.trim() || profile.full_name || login || '—';
+    const position = $('pf-position')?.value?.trim() || profile.position || 'Должность не указана';
+    if ($('pf-preview-name')) $('pf-preview-name').textContent = name;
+    if ($('pf-preview-position')) $('pf-preview-position').textContent = position;
+    if ($('pf-preview-login')) $('pf-preview-login').textContent = `@${login || '—'}`;
+    if ($('pf-preview-role')) $('pf-preview-role').textContent = roleLabel(profile.role);
+    paintAvatar($('pf-preview-avatar'), profile);
+  }
+
+  function goBack() {
+    const target = document.querySelector(`.nav-item[data-page="${returnTo}"]`) || document.querySelector('.nav-item[data-page]');
+    if (target) {
+      target.click();
+      $('sidebar-user-card')?.classList.remove('is-active');
     }
   }
 
@@ -174,6 +222,9 @@
     });
     $('pf-avatar')?.addEventListener('click', () => $('pf-avatar-input')?.click());
     $('pf-avatar-input')?.addEventListener('change', onAvatarPicked);
+    $('pf-back')?.addEventListener('click', goBack);
+    $('pf-fullname')?.addEventListener('input', syncPreview);
+    $('pf-position')?.addEventListener('input', syncPreview);
     $('pf-save')?.addEventListener('click', saveProfile);
     $('pf-pw-save')?.addEventListener('click', changePassword);
     $('pf-logout')?.addEventListener('click', async () => {

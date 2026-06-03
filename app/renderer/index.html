@@ -32,6 +32,7 @@
   <link rel="stylesheet" href="character-art.css" />
   <link rel="stylesheet" href="reference-ui.css" />
   <link rel="stylesheet" href="magnific.css" />
+  <link rel="stylesheet" href="mobbin-theme.css" />
 </head>
 <body>
   <div class="auth-gate hidden" id="auth-gate">
@@ -716,28 +717,152 @@
             <header class="magnific-topbar">
               <div class="magnific-topbar-text">
                 <h2 class="magnific-title">Magnific MCP</h2>
-                <p class="magnific-sub">Генерация изображений, апскейл и другие инструменты Magnific через Model Context Protocol.</p>
+                <p class="magnific-sub">Генерация изображений и видео, апскейл, SVG и история через ваш аккаунт Magnific.</p>
               </div>
               <div class="magnific-topbar-actions">
-                <button id="magnific-connect-btn" class="btn btn-primary">Подключить</button>
+                <button id="magnific-connect-btn" class="magnific-connect-btn" type="button">Войти в Magnific</button>
+                <button id="magnific-disconnect-btn" class="magnific-connect-btn magnific-connect-btn--ghost" type="button" hidden>Выйти</button>
               </div>
             </header>
             <div class="magnific-content">
               <div id="magnific-status-panel" class="magnific-status-panel">
                 <div class="status-indicator"></div>
-                <span id="magnific-status-text">Не подключено</span>
+                <div class="magnific-status-copy">
+                  <span id="magnific-status-text">Не подключено</span>
+                  <p id="magnific-status-hint" class="magnific-status-hint">Нажмите «Войти в Magnific» — откроется окно входа. Дождитесь «Готово!», затем закройте окно.</p>
+                </div>
               </div>
-              
-              <div id="magnific-tools-container" class="magnific-tools-container" style="display: none;">
-                <div class="magnific-sidebar">
-                  <h3>Инструменты</h3>
-                  <ul id="magnific-tools-list" class="magnific-tools-list"></ul>
-                </div>
-                <div class="magnific-main">
-                  <h3 id="magnific-tool-title">Выберите инструмент</h3>
-                  <div id="magnific-tool-form-container"></div>
+
+              <div id="magnific-session-banner" class="magnific-session-banner hidden" role="status"></div>
+              <div id="magnific-tools-container" class="magnific-tools-container">
+                <aside class="magnific-sidebar">
+                  <button class="magnific-mode active" data-magnific-mode="image"><span class="magnific-mode-icon">✦</span>Изображение</button>
+                  <button class="magnific-mode" data-magnific-mode="video"><span class="magnific-mode-icon">▶</span>Видео</button>
+                  <button class="magnific-mode" data-magnific-mode="upscale"><span class="magnific-mode-icon">⬡</span>Апскейл</button>
+                  <button class="magnific-mode" data-magnific-mode="removebg"><span class="magnific-mode-icon">◌</span>Вырезать фон</button>
+                  <button class="magnific-mode" data-magnific-mode="history"><span class="magnific-mode-icon">⌕</span>История</button>
+                  <button class="magnific-mode" data-magnific-mode="tools"><span class="magnific-mode-icon">⚙</span>Все инструменты</button>
+                </aside>
+
+                <main class="magnific-main">
+                  <section class="magnific-panel" data-magnific-panel="image">
+                    <div class="magnific-panel-head">
+                      <h3>Сгенерировать изображение</h3>
+                      <p>Опишите сцену, стиль, формат и детали. Magnific сам спишет кредиты с вашего аккаунта.</p>
+                    </div>
+                    <label class="magnific-field">
+                      <span>Промпт</span>
+                      <textarea id="magnific-image-prompt" placeholder="Например: премиальный баннер для банка, чистый белый фон, мягкий свет, 3D объект, high detail"></textarea>
+                    </label>
+                    <div class="magnific-grid">
+                      <label class="magnific-field">
+                        <span>Модель</span>
+                        <select id="magnific-image-model"></select>
+                      </label>
+                      <label class="magnific-field">
+                        <span>Соотношение сторон</span>
+                        <select id="magnific-image-aspect">
+                          <option value="">auto</option>
+                          <option value="1:1">1:1</option>
+                          <option value="16:9">16:9</option>
+                          <option value="9:16">9:16</option>
+                          <option value="4:3">4:3</option>
+                          <option value="3:4">3:4</option>
+                        </select>
+                      </label>
+                      <label class="magnific-field">
+                        <span>Кол-во</span>
+                        <input id="magnific-image-count" type="number" min="1" max="4" value="1" />
+                      </label>
+                    </div>
+                    <div class="magnific-inline-actions">
+                      <button id="magnific-refresh-image-models" class="magnific-secondary">Обновить модели</button>
+                      <button id="magnific-pick-image-refs" class="magnific-secondary">Прикрепить референсы</button>
+                    </div>
+                    <div id="magnific-image-refs" class="magnific-refs empty">Референсы не выбраны</div>
+                    <div class="magnific-inline-actions">
+                      <button id="magnific-generate-image" class="magnific-primary">Сгенерировать изображение</button>
+                      <button id="magnific-remove-bg-last" class="magnific-secondary">Вырезать фон у результата</button>
+                    </div>
+                  </section>
+
+                  <section class="magnific-panel hidden" data-magnific-panel="video">
+                    <div class="magnific-panel-head">
+                      <h3>Сгенерировать видео</h3>
+                      <p>Короткий промпт с движением камеры, длительностью и атмосферой.</p>
+                    </div>
+                    <label class="magnific-field">
+                      <span>Промпт</span>
+                      <textarea id="magnific-video-prompt" placeholder="Например: cinematic product shot, camera slowly pushes in, soft studio light"></textarea>
+                    </label>
+                    <div class="magnific-grid">
+                      <label class="magnific-field">
+                        <span>Модель</span>
+                        <select id="magnific-video-model"></select>
+                      </label>
+                    </div>
+                    <button id="magnific-generate-video" class="magnific-primary">Сгенерировать видео</button>
+                  </section>
+
+                  <section class="magnific-panel hidden" data-magnific-panel="upscale">
+                    <div class="magnific-panel-head">
+                      <h3>Апскейл изображения</h3>
+                      <p>Укажите ID создания из истории Magnific или URL изображения, если инструмент принимает URL.</p>
+                    </div>
+                    <label class="magnific-field">
+                      <span>Creation ID или URL</span>
+                      <input id="magnific-upscale-source" type="text" placeholder="Например: creation_..." />
+                    </label>
+                    <label class="magnific-field">
+                      <span>Промпт / подсказка для апскейла</span>
+                      <textarea id="magnific-upscale-prompt" placeholder="Улучшить детали, сохранить композицию, clean premium look"></textarea>
+                    </label>
+                    <button id="magnific-upscale-image" class="magnific-primary">Запустить апскейл</button>
+                  </section>
+
+                  <section class="magnific-panel hidden" data-magnific-panel="removebg">
+                    <div class="magnific-panel-head">
+                      <h3>Вырезать фон</h3>
+                      <p>Укажите Creation ID или URL изображения. Если вы только что сгенерировали картинку, поле заполнится автоматически.</p>
+                    </div>
+                    <label class="magnific-field">
+                      <span>Creation ID или URL</span>
+                      <input id="magnific-remove-bg-source" type="text" placeholder="Например: creation_... или https://..." />
+                    </label>
+                    <button id="magnific-remove-bg" class="magnific-primary">Вырезать фон</button>
+                  </section>
+
+                  <section class="magnific-panel hidden" data-magnific-panel="history">
+                    <div class="magnific-panel-head">
+                      <h3>История генераций</h3>
+                      <p>Поиск по вашим Magnific creations.</p>
+                    </div>
+                    <div class="magnific-row">
+                      <input id="magnific-history-query" type="text" placeholder="Поиск по истории" />
+                      <button id="magnific-search-history" class="magnific-secondary">Найти</button>
+                    </div>
+                  </section>
+
+                  <section class="magnific-panel hidden" data-magnific-panel="tools">
+                    <div class="magnific-panel-head">
+                      <h3 id="magnific-tool-title">Все MCP-инструменты</h3>
+                      <p>Библиотека возможностей Magnific. Выберите плашку, чтобы открыть форму инструмента.</p>
+                    </div>
+                    <div class="magnific-tools-toolbar">
+                      <input id="magnific-tools-search" type="text" placeholder="Поиск инструмента: image, video, фон, история..." />
+                      <span id="magnific-tools-count" class="magnific-tools-count"></span>
+                    </div>
+                    <div id="magnific-tools-filters" class="magnific-tools-filters"></div>
+                    <div class="magnific-advanced">
+                      <div id="magnific-tools-list" class="magnific-tools-list"></div>
+                      <div id="magnific-tool-form-container" class="magnific-tool-form">
+                        <div class="magnific-tool-form-empty">Выберите плашку инструмента выше.</div>
+                      </div>
+                    </div>
+                  </section>
+
                   <div id="magnific-tool-result" class="magnific-tool-result"></div>
-                </div>
+                </main>
               </div>
             </div>
           </div>
@@ -870,17 +995,11 @@
         <!-- PROFILE -->
         <section class="page" id="page-profile">
           <div class="pf-page">
+            <button type="button" class="pf-back" id="pf-back">← Назад</button>
             <header class="pf-hero">
               <div class="pf-hero-bg" aria-hidden="true"></div>
-              <button type="button" class="pf-avatar" id="pf-avatar" title="Сменить аватар">
-                <span class="pf-avatar-img" id="pf-avatar-img"></span>
-                <span class="pf-avatar-edit" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                </span>
-                <input type="file" id="pf-avatar-input" accept="image/png,image/jpeg,image/webp" hidden />
-              </button>
-              <div class="pf-hero-info">
-                <span class="pf-kicker">Профиль</span>
+              <div class="pf-hero-copy">
+                <span class="pf-kicker">Профиль команды</span>
                 <h1 class="pf-name" id="pf-name">—</h1>
                 <p class="pf-position" id="pf-position-line">—</p>
                 <div class="pf-chips">
@@ -888,52 +1007,90 @@
                   <span class="pf-chip pf-chip--role" id="pf-role-chip">—</span>
                 </div>
               </div>
+              <button type="button" class="pf-avatar" id="pf-avatar" title="Сменить аватар">
+                <span class="pf-avatar-img" id="pf-avatar-img"></span>
+                <span class="pf-avatar-edit" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                </span>
+                <input type="file" id="pf-avatar-input" accept="image/png,image/jpeg,image/webp" hidden />
+              </button>
             </header>
 
-            <div class="pf-grid">
-              <section class="pf-card">
-                <h2 class="pf-card-title">Личные данные</h2>
-                <label class="pf-field">
-                  <span>ФИО</span>
-                  <input type="text" id="pf-fullname" placeholder="Имя Фамилия" />
-                </label>
-                <label class="pf-field">
-                  <span>Должность</span>
-                  <input type="text" id="pf-position" placeholder="например, Дизайнер" />
-                </label>
-                <div class="pf-row">
-                  <div class="pf-readonly">
-                    <span class="pf-readonly-label">Логин</span>
-                    <span class="pf-readonly-value" id="pf-login-ro">—</span>
-                  </div>
-                  <div class="pf-readonly">
-                    <span class="pf-readonly-label">Роль</span>
-                    <span class="pf-readonly-value" id="pf-role-ro">—</span>
-                  </div>
+            <div class="pf-dashboard">
+              <aside class="pf-preview-card" aria-label="Превью профиля">
+                <div class="pf-preview-glow" aria-hidden="true"></div>
+                <div class="pf-preview-avatar" id="pf-preview-avatar"></div>
+                <div class="pf-preview-name" id="pf-preview-name">—</div>
+                <div class="pf-preview-position" id="pf-preview-position">—</div>
+                <div class="pf-preview-links">
+                  <span id="pf-preview-login">@—</span>
+                  <span id="pf-preview-role">—</span>
                 </div>
-                <div class="pf-actions">
-                  <span class="pf-status" id="pf-save-status"></span>
-                  <button type="button" class="pf-btn pf-btn--primary" id="pf-save">Сохранить</button>
-                </div>
-              </section>
+                <p class="pf-preview-note">То, как вас видит команда в FIRURU.</p>
+              </aside>
 
-              <section class="pf-card">
-                <h2 class="pf-card-title">Смена пароля</h2>
-                <label class="pf-field">
-                  <span>Новый пароль</span>
-                  <input type="password" id="pf-newpw" autocomplete="new-password" placeholder="Минимум 6 символов" />
-                </label>
-                <label class="pf-field">
-                  <span>Повторите пароль</span>
-                  <input type="password" id="pf-newpw2" autocomplete="new-password" placeholder="Ещё раз" />
-                </label>
-                <div class="pf-actions">
-                  <span class="pf-status" id="pf-pw-status"></span>
-                  <button type="button" class="pf-btn" id="pf-pw-save">Обновить пароль</button>
-                </div>
-                <div class="pf-divider"></div>
-                <button type="button" class="pf-btn pf-btn--danger" id="pf-logout">Выйти из аккаунта</button>
-              </section>
+              <div class="pf-stack">
+                <section class="pf-card pf-card--identity">
+                  <div class="pf-card-head">
+                    <div>
+                      <span class="pf-card-eyebrow">Identity</span>
+                      <h2 class="pf-card-title">Личные данные</h2>
+                    </div>
+                    <span class="pf-card-badge">Live preview</span>
+                  </div>
+                  <label class="pf-field">
+                    <span>ФИО</span>
+                    <input type="text" id="pf-fullname" placeholder="Имя Фамилия" />
+                  </label>
+                  <label class="pf-field">
+                    <span>Должность</span>
+                    <input type="text" id="pf-position" placeholder="например, Product Designer" />
+                  </label>
+                  <div class="pf-row">
+                    <div class="pf-readonly">
+                      <span class="pf-readonly-label">Логин</span>
+                      <span class="pf-readonly-value" id="pf-login-ro">—</span>
+                    </div>
+                    <div class="pf-readonly">
+                      <span class="pf-readonly-label">Роль</span>
+                      <span class="pf-readonly-value" id="pf-role-ro">—</span>
+                    </div>
+                  </div>
+                  <div class="pf-actions">
+                    <span class="pf-status" id="pf-save-status"></span>
+                    <button type="button" class="pf-btn pf-btn--primary" id="pf-save">Сохранить профиль</button>
+                  </div>
+                </section>
+
+                <section class="pf-card pf-card--security">
+                  <div class="pf-card-head">
+                    <div>
+                      <span class="pf-card-eyebrow">Security</span>
+                      <h2 class="pf-card-title">Доступ и пароль</h2>
+                    </div>
+                  </div>
+                  <label class="pf-field">
+                    <span>Новый пароль</span>
+                    <input type="password" id="pf-newpw" autocomplete="new-password" placeholder="Минимум 6 символов" />
+                  </label>
+                  <label class="pf-field">
+                    <span>Повторите пароль</span>
+                    <input type="password" id="pf-newpw2" autocomplete="new-password" placeholder="Ещё раз" />
+                  </label>
+                  <div class="pf-actions">
+                    <span class="pf-status" id="pf-pw-status"></span>
+                    <button type="button" class="pf-btn" id="pf-pw-save">Обновить пароль</button>
+                  </div>
+                  <div class="pf-divider"></div>
+                  <div class="pf-account-row">
+                    <div>
+                      <strong>Рабочая сессия</strong>
+                      <span>Выход завершит текущий вход в приложении.</span>
+                    </div>
+                    <button type="button" class="pf-btn pf-btn--danger" id="pf-logout">Выйти</button>
+                  </div>
+                </section>
+              </div>
             </div>
           </div>
         </section>
@@ -1626,6 +1783,29 @@
                       <div class="settings-label">Очищать поле после отправки</div>
                     </div>
                     <label class="toggle settings-control"><input type="checkbox" id="set-agent-clear" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item settings-item-stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Mobbin API key (live-референсы)</div>
+                      <div class="settings-hint">Team/Enterprise: ключ из <a href="#" id="set-mobbin-docs-link">docs.mobbin.com</a>. Без ключа работает локальная design memory из seed.</div>
+                    </div>
+                    <div class="settings-control settings-stack">
+                      <input type="password" id="set-mobbin-api-key" class="w-full" placeholder="Bearer token" autocomplete="off" />
+                    </div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Mobbin в агенте</div>
+                      <div class="settings-hint">Подмешивать live-поиск экранов и flows в запросы на сайты/UI</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-mobbin-enabled" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Сборка сайтов (/site)</div>
+                      <div class="settings-hint">Авто-режим многостраничного React-проекта по запросу</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-site-builder-enabled" checked /><span class="toggle-slider"></span></label>
                   </div>
                 </div>
               </div>

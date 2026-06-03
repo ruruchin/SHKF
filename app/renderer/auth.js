@@ -33,6 +33,17 @@
     return (login[0] || '?').toUpperCase();
   }
 
+  function roleLabel(role) {
+    const labels = {
+      designer: 'Дизайнер',
+      frontend: 'Front-end',
+      backend: 'Back-end',
+      pm: 'Project Manager',
+      full: 'Все разделы',
+    };
+    return labels[role] || role || '—';
+  }
+
   function applyAuthState(auth) {
     currentAuth = auth || null;
     const profile = auth?.profile;
@@ -43,11 +54,11 @@
     const chip = $('settings-auth-chip');
     if (chip) {
       chip.textContent = profile
-        ? `${profile.full_name || profile.username || profile.email || 'Пользователь'} · ${profile.role}`
+        ? `${profile.full_name || profile.username || profile.email || 'Пользователь'} · ${roleLabel(profile.role)}`
         : 'Не выполнен вход';
     }
-    const roleLabel = $('settings-role-label');
-    if (roleLabel) roleLabel.textContent = profile?.role || '—';
+    const roleLabelEl = $('settings-role-label');
+    if (roleLabelEl) roleLabelEl.textContent = roleLabel(profile?.role);
     const roleHint = $('settings-role-hint');
     if (roleHint) {
       roleHint.textContent = profile
@@ -182,9 +193,7 @@
     // Профиль/аватар могли обновиться из другого места — обновим карточку и страницу профиля.
     window.api.onAuthChanged?.((payload) => {
       if (payload?.profile) {
-        currentAuth = { ...(currentAuth || {}), profile: payload.profile, user: payload.user };
-        updateUserCard(payload.profile);
-        window.Profile?.setProfile?.(payload.profile);
+        applyAuthState({ ...(currentAuth || {}), profile: payload.profile, user: payload.user });
       }
     });
 

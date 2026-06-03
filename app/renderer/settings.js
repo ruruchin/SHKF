@@ -292,6 +292,12 @@
       const a = s('agent') || {};
       if (credentials && a.credentials) credentials.value = a.credentials;
       if (model) model.value = a.model || 'GigaChat';
+      const mobbinKey = $('set-mobbin-api-key');
+      if (mobbinKey) mobbinKey.value = a.mobbinApiKey || '';
+      const mobbinEnabled = $('set-mobbin-enabled');
+      if (mobbinEnabled) mobbinEnabled.checked = a.mobbinEnabled !== false;
+      const siteBuilder = $('set-site-builder-enabled');
+      if (siteBuilder) siteBuilder.checked = a.siteBuilderEnabled !== false;
     }
 
     fillFromConfig();
@@ -299,6 +305,10 @@
     $('set-agent-docs-link')?.addEventListener('click', (event) => {
       event.preventDefault();
       window.api.agentOpenGigaChatDocs?.();
+    });
+    $('set-mobbin-docs-link')?.addEventListener('click', (event) => {
+      event.preventDefault();
+      window.api.metaskOpenExternal?.('https://docs.mobbin.com/');
     });
 
     saveBtn?.addEventListener('click', async () => {
@@ -308,6 +318,9 @@
         provider: 'gigachat',
         scope: 'GIGACHAT_API_PERS',
         ignoreTls: true,
+        mobbinApiKey: $('set-mobbin-api-key')?.value?.trim() || '',
+        mobbinEnabled: $('set-mobbin-enabled')?.checked !== false,
+        siteBuilderEnabled: $('set-site-builder-enabled')?.checked !== false,
       };
       if (!creds.credentials) {
         alert('Вставьте ключ Authorization (Base64) из GigaChat Studio');
@@ -347,6 +360,18 @@
     bindToggle('set-agent-task-context', 'agent.useTaskContext');
     bindToggle('set-agent-history', 'agent.keepChatHistory');
     bindToggle('set-agent-clear', 'agent.clearInputAfterSend');
+    bindToggle('set-mobbin-enabled', 'agent.mobbinEnabled');
+    bindToggle('set-site-builder-enabled', 'agent.siteBuilderEnabled');
+    const mobbinKeyInput = $('set-mobbin-api-key');
+    mobbinKeyInput?.addEventListener('change', async () => {
+      await window.api.updateAppSettings?.({
+        agent: {
+          ...s('agent'),
+          mobbinApiKey: mobbinKeyInput.value?.trim() || '',
+        },
+      });
+      config = await window.api.getConfig();
+    });
   }
 
   function fillNanobananaFromConfig() {

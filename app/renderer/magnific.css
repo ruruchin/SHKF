@@ -1,49 +1,178 @@
+/* ===== MAGNIFIC MCP PAGE ===== */
+#page-magnific {
+  padding: 0;
+  overflow: hidden;
+}
+
 .magnific-app {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg);
+  min-height: 0;
+  background: var(--shell);
   color: var(--text);
 }
 
 .magnific-topbar {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  padding: 16px 24px;
+  gap: 16px;
+  padding: 24px 28px 12px;
+  background: var(--panel);
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
   flex-shrink: 0;
 }
 
 .magnific-title {
-  margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.4px;
 }
 
 .magnific-sub {
-  margin: 4px 0 0 0;
+  margin: 0;
+  max-width: 760px;
+  color: var(--text-secondary);
   font-size: 13px;
-  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.magnific-connect-btn,
+.magnific-primary,
+.magnific-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: border-color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.magnific-connect-btn,
+.magnific-primary {
+  padding: 10px 14px;
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: transparent;
+}
+
+.magnific-secondary {
+  padding: 9px 12px;
+  background: var(--elevated);
+  color: var(--text);
+}
+
+.magnific-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.magnific-connect-btn--ghost {
+  background: var(--elevated);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.magnific-connect-btn--ghost:hover {
+  background: var(--panel);
+}
+
+.magnific-connect-btn:hover,
+.magnific-primary:hover {
+  background: var(--accent-hover);
+}
+
+.magnific-secondary:hover {
+  border-color: color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.magnific-connect-btn:disabled,
+.magnific-primary:disabled,
+.magnific-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .magnific-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-height: 0;
+}
+
+.magnific-session-banner {
+  margin: 0 28px;
+  padding: 12px 14px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.45;
+  flex-shrink: 0;
+}
+
+.magnific-session-banner.hidden {
+  display: none;
+}
+
+.magnific-session-banner strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.magnific-session-banner p {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.magnific-session-banner-detail {
+  margin-top: 8px !important;
+  color: var(--danger, #b42318) !important;
+}
+
+.magnific-tools-container--offline {
+  opacity: 0.92;
 }
 
 .magnific-status-panel {
-  padding: 12px 24px;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--surface-hover);
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 28px;
+  background: var(--panel);
   border-bottom: 1px solid var(--border);
-  font-size: 13px;
+  color: var(--text-secondary);
+  font-size: 12px;
   flex-shrink: 0;
+}
+
+.magnific-status-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.magnific-status-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.45;
+  max-width: 720px;
+}
+
+.magnific-error-actions {
+  margin: 10px 0 0;
 }
 
 .status-indicator {
@@ -54,184 +183,572 @@
 }
 
 .status-indicator.connected {
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  background: var(--green);
 }
 
 .magnific-tools-container {
   flex: 1;
   display: flex;
+  min-height: 0;
   overflow: hidden;
 }
 
 .magnific-sidebar {
-  width: 250px;
+  width: 210px;
+  padding: 16px 12px;
+  background: var(--panel);
   border-right: 1px solid var(--border);
-  background: var(--surface);
-  display: flex;
-  flex-direction: column;
   flex-shrink: 0;
-}
-
-.magnific-sidebar h3 {
-  padding: 16px;
-  margin: 0;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.magnific-tools-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
   overflow-y: auto;
-  flex: 1;
 }
 
-.magnific-tool-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--border);
-  transition: background 0.2s;
-}
-
-.magnific-tool-item:hover {
-  background: var(--surface-hover);
-}
-
-.magnific-tool-item.active {
-  background: var(--primary-alpha);
-  border-left: 3px solid var(--primary);
-}
-
-.magnific-tool-name {
-  font-weight: 500;
-  font-size: 14px;
+.magnific-mode {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-start;
   margin-bottom: 4px;
-  word-break: break-all;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
 }
 
-.magnific-tool-desc {
-  font-size: 12px;
+.magnific-mode:hover {
+  background: var(--panel-hover);
+  color: var(--text);
+}
+
+.magnific-mode.active {
+  background: var(--accent-dim);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.magnific-mode-icon {
+  display: inline-flex;
+  width: 20px;
+  justify-content: center;
   color: var(--text-muted);
-  line-height: 1.4;
+  font-size: 13px;
+}
+
+.magnific-mode.active .magnific-mode-icon {
+  color: var(--accent);
 }
 
 .magnific-main {
   flex: 1;
-  padding: 24px;
+  min-width: 0;
+  padding: 16px 28px 28px;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.magnific-panel {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.magnific-panel.hidden {
+  display: none;
+}
+
+.magnific-panel-head {
+  margin-bottom: 18px;
+}
+
+.magnific-panel-head h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.35px;
+}
+
+.magnific-panel-head p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.magnific-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.magnific-row,
+.magnific-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0;
+}
+
+.magnific-row input {
+  flex: 1;
+}
+
+.magnific-field {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 6px;
+  margin-bottom: 14px;
 }
 
-.magnific-main h3 {
-  margin: 0;
-  font-size: 20px;
+.magnific-field span {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.magnific-form-group {
+.magnific-field input,
+.magnific-field textarea,
+.magnific-field select,
+.magnific-row input,
+.magnific-tools-toolbar input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--input-bg);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 10px 12px;
+}
+
+.magnific-field textarea {
+  min-height: 128px;
+  resize: vertical;
+}
+
+.magnific-field input:focus,
+.magnific-field textarea:focus,
+.magnific-field select:focus,
+.magnific-row input:focus,
+.magnific-tools-toolbar input:focus {
+  outline: 2px solid var(--accent-dim);
+  border-color: var(--accent);
+}
+
+.magnific-field .is-invalid {
+  border-color: var(--red);
+}
+
+.magnific-refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 50px;
+  margin: 12px 0 4px;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--input-bg);
+}
+
+.magnific-refs.empty {
+  align-items: center;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.magnific-ref-chip {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 22px;
+  align-items: center;
+  gap: 8px;
+  max-width: 240px;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.magnific-ref-chip img {
+  width: 38px;
+  height: 38px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.magnific-ref-chip span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.magnific-ref-chip button {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--elevated);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.magnific-tools-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.magnific-tools-toolbar input {
+  flex: 1;
+  min-width: 0;
+}
+
+.magnific-tools-count {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.magnific-tools-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
-.magnific-form-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text-muted);
-}
-
-.magnific-form-group input,
-.magnific-form-group textarea,
-.magnific-form-group select {
-  width: 100%;
-  padding: 10px;
+.magnific-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.magnific-form-group textarea {
-  resize: vertical;
-  min-height: 80px;
-}
-
-.magnific-form-group input:focus,
-.magnific-form-group textarea:focus,
-.magnific-form-group select:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-.magnific-submit-btn {
-  margin-top: 8px;
-  align-self: flex-start;
-  padding: 10px 24px;
-  background: var(--primary);
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
+  border-radius: 999px;
+  background: var(--elevated);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.2s;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
 }
 
-.magnific-submit-btn:hover {
-  background: var(--primary-hover);
+.magnific-filter span {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  place-items: center;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text-muted);
+  font-size: 11px;
 }
 
-.magnific-submit-btn:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+.magnific-filter:hover,
+.magnific-filter.active {
+  color: var(--text);
+  background: var(--accent-dim);
+}
+
+.magnific-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.magnific-tools-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+}
+
+.magnific-tool-empty {
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  background: var(--input-bg);
+}
+
+.magnific-tool-item {
+  position: relative;
+  display: flex;
+  min-height: 176px;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  contain: layout style paint;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.magnific-tool-item:hover,
+.magnific-tool-item.active {
+  background: var(--panel-hover);
+  border-color: color-mix(in srgb, var(--text) 16%, transparent);
+}
+
+.magnific-tool-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--elevated);
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.magnific-tool-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.magnific-tool-kicker {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.magnific-tool-name {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.magnific-tool-desc {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.magnific-tool-code {
+  align-self: flex-start;
+  margin-top: auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--elevated);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.magnific-tool-form {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.magnific-tool-form-empty {
+  padding: 22px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 .magnific-tool-result {
-  border-top: 1px solid var(--border);
-  padding-top: 24px;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+}
+
+.magnific-result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.magnific-result-head h4 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.magnific-result-head span {
+  max-width: 360px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+.magnific-result-content,
+.magnific-note,
+.magnific-error,
+.magnific-success {
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .magnific-result-content {
-  background: var(--surface);
+  max-height: 420px;
+  overflow: auto;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 16px;
-  font-family: monospace;
+  background: var(--elevated);
+  color: var(--text);
   white-space: pre-wrap;
-  word-break: break-all;
+  word-break: break-word;
+}
+
+.magnific-note {
+  background: var(--input-bg);
+  color: var(--text-secondary);
+}
+
+.magnific-error {
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
+}
+
+.magnific-success {
+  background: color-mix(in srgb, var(--green) 12%, transparent);
+  color: var(--green);
+}
+
+.magnific-media-frame {
+  position: relative;
+  display: grid;
+  min-height: 300px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    linear-gradient(45deg, var(--input-bg) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--input-bg) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--input-bg) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--input-bg) 75%),
+    var(--panel);
+  background-size: 22px 22px;
+  background-position: 0 0, 0 11px, 11px -11px, -11px 0;
+}
+
+.magnific-media-frame--filled {
+  padding: 16px;
+  background: var(--elevated);
+}
+
+.magnific-media-orb {
+  width: 80px;
+  height: 80px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--elevated);
+}
+
+.magnific-media-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 22px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.magnific-media-empty strong {
+  color: var(--text);
+  font-size: 16px;
+}
+
+.magnific-media-empty span {
+  max-width: 300px;
   font-size: 13px;
-  max-height: 400px;
-  overflow-y: auto;
+  line-height: 1.45;
 }
 
 .magnific-result-image {
   max-width: 100%;
-  border-radius: 8px;
-  margin-top: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  border-radius: 12px;
 }
 
 .magnific-loading {
   display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255,255,255,0.3);
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border: 2px solid color-mix(in srgb, currentColor 28%, transparent);
+  border-top-color: currentColor;
   border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-  vertical-align: middle;
+  animation: magnific-spin 0.8s linear infinite;
 }
 
-@keyframes spin {
+@keyframes magnific-spin {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 1100px) {
+  .magnific-tools-container {
+    flex-direction: column;
+  }
+
+  .magnific-sidebar {
+    width: auto;
+    display: flex;
+    gap: 8px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+
+  .magnific-mode {
+    width: auto;
+    margin-bottom: 0;
+    white-space: nowrap;
+  }
+
+  .magnific-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .magnific-tools-list {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
 }

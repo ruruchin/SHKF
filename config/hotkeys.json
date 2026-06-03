@@ -293,7 +293,9 @@
       "ignoreTls": true,
       "keepChatHistory": true,
       "clearInputAfterSend": true,
-      "useTaskContext": true
+      "useTaskContext": true,
+      "designMemoryMode": "hybrid",
+      "figmaCriticEnabled": true
     },
     "nanobanana": {
       "apiKey": "nb_960364c408581f323ff09df76467df052ad8a1b1b57bc33c727ba566f561b8bf",
@@ -340,6 +342,11 @@
     "user": {
       "role": "designer",
       "roleSelectedAt": "2026-05-31T12:30:08.650Z"
+    },
+    "magnific": {
+      "clientId": "e382dd51-8f9b-44ee-9922-6eb63bd53074",
+      "accessToken": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJQZm5ieHRpaWpnbGJaUHp3YWlPdUpfeDI4MlViX0Q1RWFNbDJ6cGx4eldZIn0.eyJleHAiOjE3ODA3NDA3OTUsImlhdCI6MTc4MDQ4MTU5NSwiYXV0aF90aW1lIjoxNzgwNDgxNTk1LCJqdGkiOiJvZnJ0YWM6ODA0MDRjZGUtNjIzYi1iOTk4LTBiNGItOWZhODgzOWRiNGUxIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLm1hZ25pZmljLmNvbS9yZWFsbXMvbWNwIiwiYXVkIjoiaHR0cHM6Ly9tY3AubWFnbmlmaWMuY29tIiwic3ViIjoiZDc3MDE0Y2QtZTAzOS00OGI2LTlhZGYtMmVkYWJlYjNjNjdjIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoiZTM4MmRkNTEtOGY5Yi00NGVlLTk5MjItNmViNjNiZDUzMDc0Iiwic2lkIjoiTWl6aXFnM2xJR2d1bDhveW9waFJ2U01RIiwic2NvcGUiOiJlbWFpbCBwcm9maWxlIG9wZW5pZCBtY3A6Y3VzdG9tLWF1ZGllbmNlIG9mZmxpbmVfYWNjZXNzIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInByZWZlcnJlZF91c2VybmFtZSI6ImZyZWVwaWtjaW5ldEBnbWFpbC5jb20iLCJlbWFpbCI6ImZyZWVwaWtjaW5ldEBnbWFpbC5jb20iLCJhY2NvdW50c191c2VyX2lkIjo5MjYzODMxM30.W2LL87_gWBvcK0FSU-nbnqMCv8ZmixE0rhe8eQFxv_Ez23RdQW5mkK4L8mxO8FkUolE943BcOkP2tSqM-frNJlNgtMkiOfglc1_6lyL3KNvY6yhjhpyR-mnBm-rT08pfJzeWnzqC0YMXIwYkF-lOcaoKImngcAFhAJpMvctioUBR5YzvhHiQ1-w8IoloXOeo45OnBZMGZtbgTyFZhw_xYs4uxIMVKLs1MjOv5LvwpW9dI6v-aqPyGzY4SDHi1AOo_R2vJO7WbsY5nGeFNrWsbrhaPcg7py6NXm5SDp16MptwcJ5wlO1fXGYyRnKLY9QcGrFLcvdQzYkpsU0H-WDawA",
+      "refreshToken": "eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIyNDhhZTY1MC1hOWVjLTRiMTEtYWNhZS02ZDA1YTk2NmIyYjAifQ.eyJpYXQiOjE3ODA0ODE1OTUsImp0aSI6ImVhYWJmNjYwLTU4ZDUtMWY0Yy05NGVlLTY3Njk1ODcwYWI0NyIsImlzcyI6Imh0dHBzOi8vYXV0aC5tYWduaWZpYy5jb20vcmVhbG1zL21jcCIsImF1ZCI6Imh0dHBzOi8vYXV0aC5tYWduaWZpYy5jb20vcmVhbG1zL21jcCIsInN1YiI6ImQ3NzAxNGNkLWUwMzktNDhiNi05YWRmLTJlZGFiZWIzYzY3YyIsInR5cCI6Ik9mZmxpbmUiLCJhenAiOiJlMzgyZGQ1MS04ZjliLTQ0ZWUtOTkyMi02ZWI2M2JkNTMwNzQiLCJzaWQiOiJNaXppcWczbElHZ3VsOG95b3BoUnZTTVEiLCJzY29wZSI6ImVtYWlsIHByb2ZpbGUgYmFzaWMgb3BlbmlkIG1jcDpjdXN0b20tYXVkaWVuY2Ugb2ZmbGluZV9hY2Nlc3MiLCJhdWRfeCI6Imh0dHBzOi8vbWNwLm1hZ25pZmljLmNvbSJ9.71FDNX0eE5iUOwDM82TtO2xiqaQ0nCq8WVjy9I3gnm5IJjDfbBIziwxdmygI1YhAeHf1ZHcjdybHB0HWLhfARg"
     }
   }
 }

@@ -16,6 +16,7 @@
     devReview: 'Дай чеклист для код-ревью этой задачи: что обязательно проверить (логика, edge-cases, безопасность, производительность, тесты, читаемость), на что обратить внимание ревьюеру именно в этой задаче.',
     devCommit: 'По описанию задачи предложи: 1) название ветки (feature/fix + краткий слаг), 2) сообщение коммита в стиле Conventional Commits, 3) заголовок и описание Pull Request (Что сделано / Как проверить / Связанная задача).',
     devProductivity: 'Проанализируй мои задачи из Kanban и список трудозатрат и дай честный разбор продуктивности: сколько задач в работе/закрыто, где застряло, что съедает время, и 3–5 конкретных советов как ускориться и улучшить показатели. Только реальные данные.',
+    siteBuild: 'Собери многостраничный web-прототип (React + Vite): найди референсы в Mobbin, опиши структуру страниц и выдай готовые файлы проекта с роутингом и стилями в духе сильных SaaS.',
     pmStatus: 'Сделай сводку статуса по всем задачам команды из Kanban: что в работе, что готово, что просрочено или висит без движения. Кратко и структурировано для отчёта.',
     pmRisks: 'Найди риски и узкие места по задачам из Kanban: что может сорвать сроки, где перегруз, какие задачи без оценки или зависают. Предложи действия.',
   };
@@ -34,6 +35,7 @@
   const GENERATE_WORD_RE = /сгенерир(?:уй|ируй)|генерир(?:уй|ируй)|сделай|создай|нарисуй|выдай|собери/i;
   const PROMPT_WORD_RE = /\bпромпт\b|prompt/i;
   const FIGMA_EDIT_RE = /(в\s*figma|фигм|макет|mockup|поправ|исправ|правк|перерис|измени|layout|автолейаут)/i;
+  const SITE_BUILD_RE = /(?:сверст|верст|собери|сделай|создай|напиши|build|scaffold|generate).{0,40}(?:сайт|website|лендинг|landing|веб.?прилож|web\s*app|приложени[ея]|dashboard|админк|портал|многостранич|multi.?page)|(?:сайт|website|лендинг|landing|веб.?прилож|react\s*app|next\.?js).{0,40}(?:сверст|верст|собери|сделай|создай|напиши)/i;
 
   function isBannerNanobananaIntent(text) {
     const t = String(text || '').trim();
@@ -60,6 +62,15 @@
     if (!t) return false;
     if (/^\/figma\b/i.test(t)) return true;
     return FIGMA_EDIT_RE.test(t) && !NB_WORD_RE.test(t);
+  }
+
+  function isSiteBuildIntent(text) {
+    const t = String(text || '').trim();
+    if (!t) return false;
+    if (t === QUICK.siteBuild) return true;
+    if (/^\/site\b/i.test(t)) return true;
+    if (window.appSettings?.agent?.siteBuilderEnabled === false) return false;
+    return SITE_BUILD_RE.test(t) && !NB_WORD_RE.test(t) && !isFigmaEditIntent(t);
   }
 
   const HISTORY_KEY = 'firuru-agent-history-v1';
@@ -2039,6 +2050,125 @@
     markFigmaPlanDecision(token, res?.message || 'Не удалось применить правки');
   }
 
+  function buildSiteBuildHtml({ token, plan, refs, mobbinLive }) {
+    const pages = (plan.pages || [])
+      .map((p) => `<li><code>${escapeHtml(p.route || '/')}</code> — ${escapeHtml(p.name || p.purpose || '')}</li>`)
+      .join('');
+    const files = (plan.files || [])
+      .map((f) => `<li><code>${escapeHtml(f.path || '')}</code></li>`)
+      .join('');
+    const refList = Array.isArray(refs) && refs.length
+      ? `<ul class="agent-md-ul">${refs.slice(0, 5).map((r) => (
+        `<li><a href="#" class="agent-md-link" data-agent-href="${escapeAttr(r.url)}">${escapeHtml(r.title || r.url)}</a></li>`
+      )).join('')}</ul>`
+      : '';
+    const assumptions = (plan.assumptions || [])
+      .map((x) => `<li>${escapeHtml(x)}</li>`)
+      .join('');
+    return `
+      <div class="agent-mockup-ready agent-site-build" data-site-build-token="${escapeHtml(token)}">
+        <p><strong>Проект готов.</strong> ${plan.summary ? escapeHtml(plan.summary) : ''}</p>
+        ${mobbinLive ? '<p class="agent-mockup-sub">Референсы: live Mobbin + design memory</p>' : '<p class="agent-mockup-sub">Референсы: design memory (добавьте Mobbin API key для live-поиска)</p>'}
+        ${refList ? `<p class="agent-mockup-sub"><strong>Mobbin:</strong></p>${refList}` : ''}
+        ${pages ? `<p class="agent-mockup-sub"><strong>Страницы:</strong></p><ul class="agent-md-ul">${pages}</ul>` : ''}
+        ${assumptions ? `<ul class="agent-md-ul">${assumptions}</ul>` : ''}
+        ${files ? `<p class="agent-mockup-sub"><strong>Файлы (${plan.files.length}):</strong></p><ul class="agent-md-ul agent-site-files">${files}</ul>` : ''}
+        <div class="agent-mockup-actions">
+          <button type="button" class="agent-link-btn agent-link-btn--apply" data-site-build-copy="${escapeHtml(token)}">Скопировать все файлы</button>
+          <button type="button" class="agent-link-btn agent-link-btn--dismiss" data-site-build-open-readme="${escapeHtml(token)}">Показать README</button>
+        </div>
+      </div>`;
+  }
+
+  const pendingSiteBuilds = new Map();
+
+  async function copySiteBuildBundle(token) {
+    const payload = pendingSiteBuilds.get(token);
+    if (!payload?.plan?.files?.length) return;
+    const bundle = payload.plan.files
+      .map((f) => `// === ${f.path} ===\n${f.content || ''}`)
+      .join('\n\n');
+    try {
+      await navigator.clipboard.writeText(bundle);
+      showAgentToast('Файлы скопированы в буфер', 'ok');
+    } catch {
+      showAgentToast('Не удалось скопировать — откройте README', 'error');
+    }
+  }
+
+  function showSiteBuildReadme(token) {
+    const payload = pendingSiteBuilds.get(token);
+    const readme = payload?.plan?.files?.find((f) => /readme/i.test(f.path || ''));
+    if (!readme?.content) {
+      showAgentToast('README не найден в ответе', 'error');
+      return;
+    }
+    addMessage('assistant', `<pre class="agent-code-block">${escapeHtml(readme.content)}</pre>`, 'Site Builder · README', { pushHistory: false });
+  }
+
+  async function sendSiteBuild(textOverride) {
+    const text = (textOverride ?? promptEl?.value ?? '').trim();
+    if (!text || sending) return;
+
+    updateTaskThread(text);
+    sending = true;
+    updateSendState();
+
+    addMessage('user', escapeHtml(text).replace(/\n/g, '<br>'));
+    chatHistory.push({ role: 'user', content: text, taskThread: taskThreadActive });
+    saveHistory();
+
+    if (window.appSettings?.agent?.clearInputAfterSend !== false && promptEl && textOverride == null) {
+      promptEl.value = '';
+      autoResize();
+    }
+
+    const task = getSelectedTask();
+    const useTaskContext = taskThreadActive
+      && task
+      && window.appSettings?.agent?.useTaskContext !== false;
+    const thinking = addThinking(useTaskContext ? task : null, [
+      'Ищу референсы в Mobbin…',
+      'Сопоставляю паттерны UI…',
+      'Планирую страницы и роутинг…',
+      'Генерирую файлы проекта…',
+    ]);
+
+    try {
+      const result = await window.api.agentSiteBuild?.({
+        message: text.replace(/^\/site\s*/i, ''),
+        history: chatHistory.slice(0, -1),
+        task: useTaskContext ? task : null,
+      });
+      removeThinking(thinking);
+      if (!result?.ok || !result?.plan?.files?.length) {
+        addMessage('assistant', `<p>${escapeHtml(result?.message || 'Не удалось собрать проект')}</p>`, 'Site Builder');
+        return;
+      }
+      const token = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      pendingSiteBuilds.set(token, { plan: result.plan });
+      addMessage('assistant', buildSiteBuildHtml({
+        token,
+        plan: result.plan,
+        refs: result.refs,
+        mobbinLive: result.mobbinLive,
+      }), result.model ? `Site Builder · ${result.model}` : 'Site Builder');
+      chatHistory.push({
+        role: 'assistant',
+        content: `Собран проект: ${result.plan.summary || `${result.plan.files.length} файлов`}`,
+        meta: 'Site Builder',
+      });
+      saveHistory();
+    } catch (err) {
+      removeThinking(thinking);
+      addMessage('assistant', `<p>${escapeHtml(err.message || 'Ошибка сборки сайта')}</p>`, 'Site Builder');
+    } finally {
+      sending = false;
+      updateSendState();
+      promptEl?.focus();
+    }
+  }
+
   async function sendFigmaPlan(textOverride) {
     const text = (textOverride ?? promptEl?.value ?? '').trim();
     if (!text || sending) return;
@@ -2249,6 +2379,9 @@
     if (text && isFigmaEditIntent(text)) {
       return sendFigmaPlan(textOverride);
     }
+    if (text && isSiteBuildIntent(text)) {
+      return sendSiteBuild(textOverride);
+    }
 
     updateTaskThread(text || 'изображение');
 
@@ -2368,6 +2501,7 @@
     banner: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h4M7 11h10"/>',
     bannerNano: '<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><rect x="3" y="14" width="18" height="7" rx="1.5"/>',
     figmaEdit: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',
+    siteBuild: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M6 21h12M9 17v4M15 17v4"/>',
     landing: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/>',
     make: '<path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7l3-7z"/>',
     split: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
@@ -2397,17 +2531,18 @@
     devReview: ['Код-ревью', 'Чеклист код-ревью'],
     devCommit: ['Commit / PR', 'Сообщение коммита и PR'],
     devProductivity: ['Продуктивность', 'Разбор продуктивности'],
+    siteBuild: ['Сайт / App', 'Многостраничный прототип с Mobbin'],
     pmStatus: ['Статус', 'Сводка статуса задач'],
     pmRisks: ['Риски', 'Риски и узкие места'],
     links: ['Найти связи', 'Найти связанные задачи в Kanban'],
   };
 
   const SUGGESTION_SETS = {
-    designer: ['analyze', 'banner', 'bannerNano', 'figmaEdit', 'landing', 'make', 'links', 'split', 'labor'],
-    frontend: ['devPlan', 'devStandup', 'links', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'labor'],
+    designer: ['analyze', 'banner', 'bannerNano', 'figmaEdit', 'siteBuild', 'landing', 'make', 'links', 'split', 'labor'],
+    frontend: ['siteBuild', 'devPlan', 'devStandup', 'links', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'labor'],
     backend: ['devPlan', 'devStandup', 'links', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'labor'],
     pm: ['pmStatus', 'links', 'pmRisks', 'devPlan', 'split', 'devProductivity', 'labor'],
-    full: ['analyze', 'banner', 'bannerNano', 'figmaEdit', 'links', 'devPlan', 'devStandup', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'split', 'labor'],
+    full: ['analyze', 'banner', 'bannerNano', 'figmaEdit', 'siteBuild', 'links', 'devPlan', 'devStandup', 'devEstimate', 'devReview', 'devCommit', 'devProductivity', 'split', 'labor'],
   };
 
   function suggestionButtonHtml(key) {
@@ -2430,7 +2565,7 @@
     const sub = $('agent-chat-sub');
     if (sub) {
       const devRole = role === 'frontend' || role === 'backend';
-      if (devRole) sub.textContent = 'GigaChat · Kanban · продуктивность разработки';
+      if (devRole) sub.textContent = 'GigaChat · Mobbin · сайты и Kanban';
       else if (role === 'pm') sub.textContent = 'GigaChat · Kanban · статусы и риски';
       else sub.textContent = 'GigaChat · Kanban · промпты для дизайна';
     }
@@ -2566,6 +2701,14 @@
           sendFigmaPlan(prompt);
           return;
         }
+        if (key === 'siteBuild') {
+          if (promptEl) {
+            promptEl.value = prompt;
+            autoResize();
+          }
+          sendSiteBuild(prompt);
+          return;
+        }
         if (promptEl) {
           promptEl.value = prompt;
           autoResize();
@@ -2654,6 +2797,16 @@
         const token = cancelFigmaPlanBtn.getAttribute('data-figma-plan-cancel');
         pendingFigmaPlans.delete(token);
         markFigmaPlanDecision(token, 'Применение отменено');
+        return;
+      }
+      const copySiteBtn = event.target.closest('[data-site-build-copy]');
+      if (copySiteBtn) {
+        copySiteBuildBundle(copySiteBtn.getAttribute('data-site-build-copy'));
+        return;
+      }
+      const readmeSiteBtn = event.target.closest('[data-site-build-open-readme]');
+      if (readmeSiteBtn) {
+        showSiteBuildReadme(readmeSiteBtn.getAttribute('data-site-build-open-readme'));
         return;
       }
       const openTaskBtn = event.target.closest('[data-open-metask-task]');

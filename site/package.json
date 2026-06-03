@@ -1,0 +1,19 @@
+{
+  "name": "shkfolder-product-site",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@gsap/react": "latest",
+    "@vitejs/plugin-react": "latest",
+    "gsap": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest"
+  }
+}

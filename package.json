@@ -1,6 +1,6 @@
 {
   "name": "firuru",
-  "version": "1.2.13",
+  "version": "1.2.14",
   "description": "FIRURU — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",
@@ -15,6 +15,9 @@
     "build:portable": "node scripts/electron-build.js portable",
     "build:all": "node scripts/electron-build.js all",
     "server": "node server/index.js",
+    "site:dev": "npm --prefix site run dev",
+    "site:build": "npm --prefix site run build",
+    "site:preview": "npm --prefix site run preview",
     "seed:supabase": "node supabase/seed-users.mjs",
     "seed:employees": "node supabase/seed-employees.mjs"
   },

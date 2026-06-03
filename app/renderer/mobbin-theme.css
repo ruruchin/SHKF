@@ -1,0 +1,386 @@
+[data-theme="mobbin"] body {
+  background:
+    radial-gradient(circle at 12% -8%, rgba(110, 86, 207, 0.14), transparent 34%),
+    radial-gradient(circle at 86% 10%, rgba(19, 163, 110, 0.10), transparent 30%),
+    linear-gradient(180deg, #F8F5EF 0%, #F2EDE5 100%);
+}
+
+[data-theme="mobbin"] .shell {
+  gap: 10px;
+  padding: 10px;
+  background:
+    radial-gradient(circle at 16% 4%, rgba(255, 228, 209, 0.78), transparent 28%),
+    radial-gradient(circle at 92% 12%, rgba(238, 232, 255, 0.88), transparent 30%),
+    var(--shell);
+}
+
+[data-theme="mobbin"] .sidebar {
+  border: 1px solid rgba(42, 34, 25, 0.08);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--sidebar) 92%, transparent);
+  box-shadow: var(--mobbin-shadow-sm);
+  backdrop-filter: blur(20px);
+}
+
+[data-theme="mobbin"] .panel {
+  border: 1px solid rgba(42, 34, 25, 0.08);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,252,247,0.96)),
+    var(--panel);
+  box-shadow: var(--mobbin-shadow);
+}
+
+[data-theme="mobbin"] .brand {
+  padding: 10px 10px 14px;
+}
+
+[data-theme="mobbin"] .brand-mark,
+[data-theme="mobbin"] .auth-logo,
+[data-theme="mobbin"] .empty-icon {
+  background: linear-gradient(135deg, var(--accent), #13A36E);
+  color: #fff;
+  box-shadow: 0 10px 26px rgba(110, 86, 207, 0.22);
+}
+
+[data-theme="mobbin"] .nav-item {
+  min-height: 38px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: rgba(32, 26, 22, 0.70);
+  transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+[data-theme="mobbin"] .nav-item:hover {
+  color: var(--text);
+  background: rgba(110, 86, 207, 0.07);
+  transform: translateX(2px);
+}
+
+[data-theme="mobbin"] .nav-item.active {
+  color: var(--text);
+  border-color: rgba(110, 86, 207, 0.18);
+  background: linear-gradient(135deg, rgba(238,232,255,0.95), rgba(255,255,255,0.82));
+  box-shadow: 0 8px 22px rgba(110, 86, 207, 0.12);
+}
+
+[data-theme="mobbin"] .sidebar-user-card,
+[data-theme="mobbin"] .sidebar-update-btn {
+  border-radius: 18px;
+  border-color: rgba(42, 34, 25, 0.08);
+  background: rgba(255,255,255,0.76);
+  box-shadow: var(--mobbin-shadow-sm);
+}
+
+[data-theme="mobbin"] .sidebar-user-card:hover {
+  border-color: rgba(110, 86, 207, 0.22);
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+[data-theme="mobbin"] .sidebar-user-avatar {
+  background: linear-gradient(135deg, #6E56CF, #13A36E);
+  box-shadow: 0 8px 22px rgba(110, 86, 207, 0.20);
+}
+
+[data-theme="mobbin"] .page {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(238, 232, 255, 0.50), transparent 26%),
+    radial-gradient(circle at 8% 100%, rgba(221, 248, 238, 0.48), transparent 30%);
+}
+
+[data-theme="mobbin"] :is(.btn-play, .btn-secondary, .btn-ghost, .icon-btn, .pf-btn, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary, .magnific-secondary, .magnific-connect-btn) {
+  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease, opacity 0.16s ease;
+}
+
+[data-theme="mobbin"] :is(.btn-play, .pf-btn--primary, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary) {
+  border-color: transparent;
+  background: linear-gradient(135deg, var(--accent), #8268EA);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(110, 86, 207, 0.20);
+}
+
+[data-theme="mobbin"] :is(.btn-play, .btn-secondary, .btn-ghost, .icon-btn, .pf-btn, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary, .magnific-secondary, .magnific-connect-btn):hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(42, 34, 25, 0.12);
+}
+
+[data-theme="mobbin"] :is(.btn-play, .btn-secondary, .btn-ghost, .icon-btn, .pf-btn, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary, .magnific-secondary, .magnific-connect-btn):active:not(:disabled) {
+  transform: translateY(0) scale(0.99);
+}
+
+[data-theme="mobbin"] :is(button, input, textarea, select, [tabindex]):focus-visible {
+  outline: 3px solid rgba(110, 86, 207, 0.20);
+  outline-offset: 3px;
+}
+
+[data-theme="mobbin"] :is(input, textarea, select, .agent-composer-input, .make-composer-input, .nb-prompt) {
+  border-color: rgba(42, 34, 25, 0.10);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.70);
+}
+
+[data-theme="mobbin"] :is(input, textarea, select, .agent-composer-input, .make-composer-input, .nb-prompt):focus {
+  border-color: rgba(110, 86, 207, 0.46);
+  box-shadow: 0 0 0 4px rgba(110, 86, 207, 0.12);
+}
+
+[data-theme="mobbin"] :is(.chip, .search-filter-chip, .tpl-tab, .magnific-filter) {
+  border-radius: 999px;
+  border-color: rgba(42, 34, 25, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+[data-theme="mobbin"] :is(.chip.active, .search-filter-chip.active, .tpl-tab.active, .magnific-filter.active) {
+  border-color: rgba(110, 86, 207, 0.24);
+  background: var(--mobbin-lilac);
+  color: var(--text);
+}
+
+[data-theme="mobbin"] :is(.hotkey-row, .tpl-card, .bm-card, .nb-card, .note-card, .agent-header-card, .agent-link-card, .make-starter-card, .pf-card, .settings-card, .theme-card, .metask-card, .magnific-panel, .magnific-tool-result, .auth-card, .role-card, .upd-card) {
+  border-color: rgba(42, 34, 25, 0.08);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--mobbin-shadow-sm);
+}
+
+[data-theme="mobbin"] :is(.hotkey-row, .tpl-card, .bm-card, .nb-card, .note-card, .agent-link-card, .make-starter-card, .theme-card, .role-card):hover {
+  border-color: rgba(110, 86, 207, 0.18);
+  box-shadow: var(--mobbin-shadow);
+  transform: translateY(-2px);
+}
+
+[data-theme="mobbin"] :is(.empty-state, .templates-empty, .nb-preview-empty, .magnific-tool-empty, .metask-empty, .agent-session-empty, .custom-themes-empty) {
+  border: 1px dashed rgba(110, 86, 207, 0.24);
+  border-radius: var(--mobbin-radius-lg);
+  background:
+    radial-gradient(circle at 18% 10%, rgba(238, 232, 255, 0.70), transparent 34%),
+    rgba(255, 255, 255, 0.70);
+}
+
+[data-theme="mobbin"] .search-page-input-wrap,
+[data-theme="mobbin"] .make-composer,
+[data-theme="mobbin"] .agent-composer {
+  border-color: rgba(42, 34, 25, 0.08);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: var(--mobbin-shadow-sm);
+}
+
+[data-theme="mobbin"] .modal {
+  border-radius: 28px;
+  border-color: rgba(42, 34, 25, 0.10);
+  background: rgba(255, 252, 247, 0.96);
+  box-shadow: var(--mobbin-shadow-strong);
+}
+
+[data-theme="mobbin"] .auth-gate {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(238, 232, 255, 0.92), transparent 34%),
+    radial-gradient(circle at 84% 74%, rgba(221, 248, 238, 0.82), transparent 34%),
+    #F5F2EC;
+}
+
+[data-theme="mobbin"] .auth-card,
+[data-theme="mobbin"] .role-card,
+[data-theme="mobbin"] .ob-shell {
+  border-color: rgba(42, 34, 25, 0.08);
+  background: rgba(255, 252, 247, 0.88);
+  box-shadow: var(--mobbin-shadow-strong);
+  backdrop-filter: blur(24px);
+}
+
+[data-theme="mobbin"] .magnific-status-panel,
+[data-theme="mobbin"] .agent-status-banner,
+[data-theme="mobbin"] .tpl-import-banner,
+[data-theme="mobbin"] .magnific-session-banner {
+  border-color: rgba(110, 86, 207, 0.18);
+  background: linear-gradient(135deg, rgba(238,232,255,0.72), rgba(255,255,255,0.72));
+}
+
+[data-theme="mobbin"] .webtab-page,
+[data-theme="mobbin"] .mail-shell,
+[data-theme="mobbin"] .notes-layout {
+  background: transparent;
+}
+
+[data-theme="mobbin"] .webtab-toolbar,
+[data-theme="mobbin"] .mail-toolbar,
+[data-theme="mobbin"] .notes-sidebar {
+  border-color: rgba(42, 34, 25, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+[data-theme="mobbin"] :is(.hero, .page-header, .settings-page-header, .templates-head, .nb-hero, .bm-hero, .magnific-topbar, .agent-topbar, .make-header, .metask-header, .notes-header) {
+  border-color: rgba(42, 34, 25, 0.08);
+  background:
+    radial-gradient(circle at 84% 16%, rgba(238, 232, 255, 0.66), transparent 26%),
+    rgba(255, 255, 255, 0.62);
+}
+
+[data-theme="mobbin"] :is(.hero h1, .page-title, .settings-page-title, .templates-title, .nb-title, .bm-title, .magnific-title, .agent-title, .make-title, .metask-title, .notes-title) {
+  letter-spacing: -0.045em;
+}
+
+[data-theme="mobbin"] .hotkey-row {
+  border-radius: 18px;
+  background: rgba(255,255,255,0.74);
+}
+
+[data-theme="mobbin"] .row-icon,
+[data-theme="mobbin"] .combo-badge {
+  background: var(--mobbin-lilac);
+  color: var(--accent);
+}
+
+[data-theme="mobbin"] .detail-header,
+[data-theme="mobbin"] .detail-card {
+  border-color: rgba(42, 34, 25, 0.08);
+  border-radius: 26px;
+  background: rgba(255,255,255,0.76);
+  box-shadow: var(--mobbin-shadow-sm);
+}
+
+[data-theme="mobbin"] .search-result {
+  border-color: rgba(42, 34, 25, 0.08);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.72);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+[data-theme="mobbin"] .search-result:hover {
+  border-color: rgba(110, 86, 207, 0.18);
+  box-shadow: var(--mobbin-shadow-sm);
+  transform: translateY(-1px);
+}
+
+[data-theme="mobbin"] .tpl-card,
+[data-theme="mobbin"] .nb-card,
+[data-theme="mobbin"] .bm-card,
+[data-theme="mobbin"] .make-starter-card {
+  border-radius: 24px;
+}
+
+[data-theme="mobbin"] .tpl-card::before,
+[data-theme="mobbin"] .nb-card::before,
+[data-theme="mobbin"] .bm-card::before,
+[data-theme="mobbin"] .make-starter-card::before {
+  opacity: 0.55;
+}
+
+[data-theme="mobbin"] .agent-layout,
+[data-theme="mobbin"] .make-layout,
+[data-theme="mobbin"] .magnific-app {
+  background: transparent;
+}
+
+[data-theme="mobbin"] .agent-header-card {
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(221, 248, 238, 0.62), transparent 30%),
+    rgba(255,255,255,0.76);
+}
+
+[data-theme="mobbin"] .agent-composer,
+[data-theme="mobbin"] .make-composer {
+  border-radius: 28px;
+}
+
+[data-theme="mobbin"] .agent-message,
+[data-theme="mobbin"] .make-message {
+  border-radius: 20px;
+}
+
+[data-theme="mobbin"] .magnific-topbar {
+  border-bottom-color: rgba(42, 34, 25, 0.08);
+}
+
+[data-theme="mobbin"] .magnific-sidebar {
+  border-right-color: rgba(42, 34, 25, 0.08);
+  background: rgba(255,255,255,0.50);
+}
+
+[data-theme="mobbin"] .magnific-mode {
+  border-radius: 14px;
+}
+
+[data-theme="mobbin"] .magnific-mode.active {
+  background: var(--mobbin-lilac);
+  color: var(--text);
+}
+
+[data-theme="mobbin"] .nb-preview,
+[data-theme="mobbin"] .magnific-media-frame,
+[data-theme="mobbin"] .bm-preview,
+[data-theme="mobbin"] .image-preview {
+  border-color: rgba(42, 34, 25, 0.08);
+  border-radius: 24px;
+  background:
+    linear-gradient(135deg, rgba(238,232,255,0.38), rgba(221,248,238,0.22)),
+    rgba(255,255,255,0.68);
+}
+
+[data-theme="mobbin"] .metask-column,
+[data-theme="mobbin"] .metask-task,
+[data-theme="mobbin"] .note-card,
+[data-theme="mobbin"] .settings-section,
+[data-theme="mobbin"] .custom-theme-row {
+  border-color: rgba(42, 34, 25, 0.08);
+  border-radius: 22px;
+  background: rgba(255,255,255,0.72);
+  box-shadow: var(--mobbin-shadow-sm);
+}
+
+[data-theme="mobbin"] .theme-card {
+  background: rgba(255,255,255,0.74);
+}
+
+[data-theme="mobbin"] .theme-card.active {
+  border-color: rgba(110, 86, 207, 0.52);
+  box-shadow: 0 0 0 4px rgba(110, 86, 207, 0.12), var(--mobbin-shadow);
+}
+
+[data-theme="mobbin"] .upd-card {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(238,232,255,0.72), transparent 30%),
+    rgba(255,255,255,0.76);
+}
+
+@keyframes mobbinFloatIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes mobbinSoftPulse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0) scale(1.015);
+  }
+}
+
+[data-theme="mobbin"] .page.active :is(.hotkey-row, .tpl-card, .nb-card, .bm-card, .note-card, .pf-card, .agent-header-card, .make-starter-card) {
+  animation: mobbinFloatIn 0.36s ease both;
+}
+
+[data-theme="mobbin"] .pf-preview-glow,
+[data-theme="mobbin"] .pf-hero::after {
+  animation: mobbinSoftPulse 7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="mobbin"] *,
+  [data-theme="mobbin"] *::before,
+  [data-theme="mobbin"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+}

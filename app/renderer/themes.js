@@ -11,4 +11,5 @@ window.APP_THEMES = [
   { id: 'manga', label: 'Manga', swatch: 'manga' },
   { id: 'mangaplus', label: 'MangaPlus', swatch: 'mangaplus' },
   { id: 'studio', label: 'Studio', swatch: 'studio' },
+  { id: 'mobbin', label: 'Mobbin', swatch: 'mobbin' },
 ];

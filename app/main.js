@@ -42,6 +42,9 @@ import {
   extractNanobananaPrompt,
 } from '../shared/banner-nanobanana.js';
 import { DesignMemoryService } from '../server/design-memory-service.js';
+import { MobbinService } from '../server/mobbin-service.js';
+import { SiteBuilderService } from '../server/site-builder-service.js';
+import { isSiteBuildIntent } from '../shared/site-builder-prompts.js';
 import { MagnificMcpService } from '../server/magnific-mcp-service.js';
 import {
   FIGMA_DESIGN_CRITIC_PROMPT,
@@ -97,7 +100,20 @@ const designMemoryService = new DesignMemoryService(designReferencesSeedPath, {
   authService,
   agentService,
 });
+const mobbinService = new MobbinService();
+const siteBuilderService = new SiteBuilderService({
+  mobbinService,
+  designMemoryService,
+  agentService,
+});
 const magnificMcpService = new MagnificMcpService(service);
+
+function configureAgentIntegrations() {
+  const agentSettings = service.config.settings?.agent || {};
+  agentService.configure(agentSettings);
+  mobbinService.configure(agentSettings);
+  siteBuilderService.configure(agentSettings);
+}
 const { autoUpdater } = electronUpdater;
 const APP_UPDATE_FEED_URL = 'https://github.com/ruruchin/SHKF/releases/latest/download';
 const METASK_DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -563,7 +579,7 @@ service.on('action-fired', (a) => broadcast('action-fired', a));
 service.on('config-changed', (c) => {
   broadcast('config', c);
   scheduleMetaskPolling();
-  agentService.configure(c.settings?.agent || {});
+  configureAgentIntegrations();
   nanobananaService.configure(c.settings?.nanobanana || {});
 });
 service.on('library-updated', (data) => broadcast('library-updated', data));
@@ -754,7 +770,7 @@ app.whenReady().then(() => {
   startUpdaterPolling();
   scheduleMetaskPolling();
   zimbraService.configure(service.config.settings?.zimbra || {});
-  agentService.configure(service.config.settings?.agent || {});
+  configureAgentIntegrations();
 
   const metaskSession = session.fromPartition('persist:metask');
   metaskSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
@@ -1182,7 +1198,7 @@ app.whenReady().then(() => {
 
   ipcMain.handle('agent-get-status', () => agentService.getStatus());
   ipcMain.handle('agent-send-message', async (_e, payload) => {
-    agentService.configure(service.config.settings?.agent || {});
+    configureAgentIntegrations();
     let task = payload?.task || null;
     if (task?.id) {
       metaskService.configure(service.config.settings?.metask || {});
@@ -1192,8 +1208,20 @@ app.whenReady().then(() => {
       } catch { /* list fields only */ }
     }
     const role = payload?.role || service.config.settings?.user?.role || null;
+    let message = payload?.message;
+    const agentSettings = service.config.settings?.agent || {};
+    if (
+      agentSettings.siteBuilderEnabled !== false
+      && isSiteBuildIntent(message)
+      && !payload?.skipMobbinContext
+    ) {
+      const refsBundle = await siteBuilderService.gatherReferences(message);
+      if (refsBundle.context) {
+        message = `${refsBundle.context}\n\n---\n\n${message}`;
+      }
+    }
     const chatResult = await agentService.chat({
-      message: payload?.message,
+      message,
       history: payload?.history,
       task,
       systemPrompt: buildSystemPromptForRole(role),
@@ -1210,8 +1238,41 @@ app.whenReady().then(() => {
     return { ...chatResult, laborEntries };
   });
 
+  ipcMain.handle('agent-site-build', async (_e, payload) => {
+    configureAgentIntegrations();
+    if (!agentService.isConfigured()) {
+      return { ok: false, message: 'Подключите GigaChat: Настройки → ИИ Агент' };
+    }
+
+    let task = payload?.task || null;
+    if (task?.id) {
+      metaskService.configure(service.config.settings?.metask || {});
+      try {
+        const full = await metaskService.fetchIssueForAgent(task.id);
+        if (full) task = { ...task, ...full };
+      } catch { /* partial task */ }
+    }
+
+    const message = String(payload?.message || '').trim();
+    if (!message) {
+      return { ok: false, message: 'Опишите, какой сайт или приложение нужно собрать' };
+    }
+
+    return siteBuilderService.build({
+      message,
+      task,
+      history: payload?.history || [],
+    });
+  });
+
+  ipcMain.handle('agent-mobbin-status', () => ({
+    ok: true,
+    ...mobbinService.getStatus(),
+    designMemoryCount: designMemoryService.list().length,
+  }));
+
   ipcMain.handle('agent-figma-plan', async (_e, payload) => {
-    agentService.configure(service.config.settings?.agent || {});
+    configureAgentIntegrations();
     if (!agentService.isConfigured()) {
       return { ok: false, message: 'Подключите GigaChat: Настройки → ИИ Агент' };
     }
@@ -1239,10 +1300,19 @@ app.whenReady().then(() => {
     const forceDeterministicLayout = /(лендинг|landing|сайт|website|web\s*page|главная|homepage|hero)/i.test(message);
     const contextPrefix = buildFigmaContextBlock(selection);
     const retrievalMode = service.config.settings?.agent?.designMemoryMode || 'hybrid';
-    const refsResult = await designMemoryService.getPromptContext(message, {
+    let refsResult = await designMemoryService.getPromptContext(message, {
       limit: 6,
       mode: retrievalMode,
     });
+    if (service.config.settings?.agent?.mobbinEnabled !== false) {
+      const live = await siteBuilderService.gatherReferences(message);
+      if (live.refs?.length) {
+        refsResult = {
+          refs: live.refs,
+          context: live.context || refsResult.context,
+        };
+      }
+    }
     const refsPrefix = refsResult.context;
 
     if (forceDeterministicLayout) {
@@ -1402,7 +1472,7 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('agent-banner-to-nanobanana', async (_e, payload) => {
-    agentService.configure(service.config.settings?.agent || {});
+    configureAgentIntegrations();
     nanobananaService.configure(service.config.settings?.nanobanana || {});
 
     if (!agentService.isConfigured()) {
@@ -1543,7 +1613,7 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('agent-find-task-links', async (_e, payload) => {
-    agentService.configure(service.config.settings?.agent || {});
+    configureAgentIntegrations();
     const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
     const dismissedList = service.config.settings?.taskLinks?.dismissed || [];
     const dismissed = new Set(dismissedList);
@@ -1608,7 +1678,7 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('agent-test-connection', async () => {
-    agentService.configure(service.config.settings?.agent || {});
+    configureAgentIntegrations();
     return agentService.testConnection();
   });
   ipcMain.handle('agent-save-credentials', (_e, creds) => {
@@ -1618,7 +1688,7 @@ app.whenReady().then(() => {
         ...creds,
       },
     });
-    agentService.configure(config.settings?.agent || {});
+    configureAgentIntegrations();
     return config.settings?.agent;
   });
   ipcMain.handle('agent-open-gigachat-docs', () => {
@@ -1964,16 +2034,25 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('magnific-status', () => {
-    return { ok: true, isConnected: magnificMcpService.isConnected };
+    const status = magnificMcpService.getStatus();
+    return { ok: true, ...status };
   });
 
-  ipcMain.handle('magnific-connect', async () => {
+  ipcMain.handle('magnific-connect', async (_e, payload) => {
     try {
-      await magnificMcpService.connect();
-      return { ok: true, isConnected: magnificMcpService.isConnected };
+      const forceLogin = Boolean(payload?.forceLogin);
+      if (forceLogin) magnificMcpService.clearSession();
+      await magnificMcpService.connect({ forceLogin });
+      return { ok: true, ...magnificMcpService.getStatus() };
     } catch (err) {
-      return { ok: false, message: err.message || String(err) };
+      const status = magnificMcpService.getStatus();
+      return { ok: false, message: err.message || String(err), ...status };
     }
+  });
+
+  ipcMain.handle('magnific-disconnect', () => {
+    magnificMcpService.clearSession();
+    return { ok: true, ...magnificMcpService.getStatus() };
   });
 
   ipcMain.handle('magnific-get-tools', async () => {
@@ -1992,6 +2071,30 @@ app.whenReady().then(() => {
     } catch (err) {
       return { ok: false, message: err.message || String(err) };
     }
+  });
+
+  ipcMain.handle('magnific-pick-reference-images', async () => {
+    const { filePaths, canceled } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Референсы для Magnific',
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }],
+      properties: ['openFile', 'multiSelections'],
+    });
+    if (canceled || !filePaths?.length) return { ok: false, canceled: true };
+    const images = [];
+    for (const filePath of filePaths.slice(0, 8)) {
+      try {
+        const buf = readFileSync(filePath);
+        const ext = path.extname(filePath).toLowerCase().replace('.', '') || 'png';
+        const mime = ext === 'jpg' ? 'jpeg' : ext;
+        images.push({
+          name: path.basename(filePath),
+          dataUrl: `data:image/${mime};base64,${buf.toString('base64')}`,
+        });
+      } catch {
+        /* skip unreadable files */
+      }
+    }
+    return { ok: true, images };
   });
 });
 
