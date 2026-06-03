@@ -174,7 +174,7 @@ export class MagnificMcpService {
     
     const token = await this.getValidToken();
     
-    this.transport = new SSEClientTransport(new URL(MCP_URL), {
+    this.transport = new SSEClientTransport(new URL(`${MCP_URL}/sse`), {
       headers: {
         'Authorization': `Bearer ${token}`
       }
