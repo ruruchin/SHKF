@@ -58,6 +58,8 @@ import {
   buildDeterministicAppPlan,
   shouldBuildFigmaAppPlan,
 } from '../server/figma-app-plan.js';
+import { buildFigmaPlanFromMobbinScreen } from '../server/figma-from-mobbin.js';
+import { inferMobbinPlatform } from '../server/mobbin-service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const configPath = getConfigPath(__dirname);
@@ -1329,6 +1331,55 @@ app.whenReady().then(() => {
     designMemoryCount: designMemoryService.list().length,
   }));
 
+  ipcMain.handle('agent-mobbin-search', async (_e, payload) => {
+    configureAgentIntegrations();
+    const message = String(payload?.message || '').trim();
+    if (!message) return { ok: false, message: 'Введите запрос для поиска' };
+
+    const platform = inferMobbinPlatform(message);
+    const retrievalMode = service.config.settings?.agent?.designMemoryMode || 'hybrid';
+    const screens = [];
+    const seen = new Set();
+
+    if (mobbinService.isConfigured()) {
+      const live = await mobbinService.searchScreens(message, { platform, limit: 8, mode: 'deep' });
+      for (const s of live.screens || []) {
+        const key = s.id || s.url;
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          screens.push({
+            id: s.id,
+            app_name: s.title,
+            mobbin_url: s.url,
+            image_url: s.imageUrl,
+            platform: s.platform,
+          });
+        }
+      }
+    }
+
+    const local = await designMemoryService.retrieve(message, { limit: 8, mode: retrievalMode });
+    for (const ref of local) {
+      const key = ref.id || ref.url;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      screens.push({
+        id: ref.id,
+        app_name: ref.title,
+        mobbin_url: ref.url,
+        image_url: ref.imageUrl || null,
+        platform: ref.platform || platform,
+      });
+    }
+
+    return {
+      ok: true,
+      screens: screens.slice(0, 8),
+      live: mobbinService.isConfigured(),
+      platform,
+    };
+  });
+
   ipcMain.handle('agent-figma-plan', async (_e, payload) => {
     configureAgentIntegrations();
     if (!agentService.isConfigured()) {
@@ -1374,6 +1425,41 @@ app.whenReady().then(() => {
       }
     }
     const refsPrefix = refsResult.context;
+
+    const selectedScreen = payload?.selectedScreen || null;
+    if (selectedScreen?.mobbin_url || selectedScreen?.imageUrl || selectedScreen?.image_url) {
+      const normalized = {
+        app_name: selectedScreen.app_name || selectedScreen.title,
+        mobbin_url: selectedScreen.mobbin_url || selectedScreen.url,
+        imageUrl: selectedScreen.image_url || selectedScreen.imageUrl,
+        id: selectedScreen.id,
+      };
+      const visionResult = await buildFigmaPlanFromMobbinScreen({
+        message,
+        screen: normalized,
+        agentService,
+        expandApp: payload?.expandApp !== false && shouldBuildFigmaAppPlan(message),
+        refs: refsResult.refs,
+      });
+      if (!visionResult.ok) return visionResult;
+      return {
+        ok: true,
+        plan: visionResult.plan,
+        selection,
+        refs: refsResult.refs,
+        model: visionResult.model,
+        referenceScreen: normalized,
+      };
+    }
+
+    if (forceFigmaApp && !selectedScreen) {
+      return {
+        ok: false,
+        needsMobbinPick: true,
+        message: 'Выберите референс из галереи Mobbin — затем агент отрисует макет в Figma по превью.',
+        refs: refsResult.refs,
+      };
+    }
 
     if (forceFigmaApp || forceDeterministicLayout) {
       let plan = forceFigmaApp

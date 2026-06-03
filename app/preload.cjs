@@ -80,6 +80,7 @@ contextBridge.exposeInMainWorld('api', {
   agentSiteBuildCopy: (payload) => ipcRenderer.invoke('agent-site-build-copy', payload),
   agentSiteBuildExport: (payload) => ipcRenderer.invoke('agent-site-build-export', payload),
   agentMobbinStatus: () => ipcRenderer.invoke('agent-mobbin-status'),
+  agentMobbinSearch: (payload) => ipcRenderer.invoke('agent-mobbin-search', payload),
   designMemoryList: () => ipcRenderer.invoke('design-memory-list'),
   designMemoryAdd: (payload) => ipcRenderer.invoke('design-memory-add', payload),
   designMemorySync: (payload) => ipcRenderer.invoke('design-memory-sync', payload),

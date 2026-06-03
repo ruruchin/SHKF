@@ -16,7 +16,7 @@
     devReview: 'Дай чеклист для код-ревью этой задачи: что обязательно проверить (логика, edge-cases, безопасность, производительность, тесты, читаемость), на что обратить внимание ревьюеру именно в этой задаче.',
     devCommit: 'По описанию задачи предложи: 1) название ветки (feature/fix + краткий слаг), 2) сообщение коммита в стиле Conventional Commits, 3) заголовок и описание Pull Request (Что сделано / Как проверить / Связанная задача).',
     devProductivity: 'Проанализируй мои задачи из Kanban и список трудозатрат и дай честный разбор продуктивности: сколько задач в работе/закрыто, где застряло, что съедает время, и 3–5 конкретных советов как ускориться и улучшить показатели. Только реальные данные.',
-    siteBuild: 'Собери многостраничный макет в Figma (мобильные экраны): главная, вход, регистрация, онбординг, профиль и аналитика инвестиций — по референсам Mobbin. Примени план в Figma.',
+    siteBuild: 'Fintech приложение: сначала покажи варианты из Mobbin, я выберу референс — отрисуй его в Figma и добавь экраны login, register, profile, analytics.',
     pmStatus: 'Сделай сводку статуса по всем задачам команды из Kanban: что в работе, что готово, что просрочено или висит без движения. Кратко и структурировано для отчёта.',
     pmRisks: 'Найди риски и узкие места по задачам из Kanban: что может сорвать сроки, где перегруз, какие задачи без оценки или зависают. Предложи действия.',
   };
@@ -106,6 +106,7 @@
   let pendingAgentImage = null;
   const pendingMockupPosts = new Map();
   const pendingFigmaPlans = new Map();
+  const pendingMobbinSessions = new Map();
   const shownCommentNotifyKeys = new Set();
   let metaskCommentWatchdogTimer = null;
   let metaskCommentWatchdogBusy = false;
@@ -2208,29 +2209,140 @@
     }
   }
 
-  async function sendFigmaPlan(textOverride) {
+  function buildMobbinPickerHtml(screens, sessionToken, live) {
+    const cards = (screens || []).map((s) => {
+      const img = s.image_url
+        ? `<img class="mobbin-pick-img" src="${escapeAttr(s.image_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
+        : '<div class="mobbin-pick-placeholder">Нет превью</div>';
+      return `<button type="button" class="mobbin-pick-card" data-mobbin-pick="${escapeAttr(sessionToken)}" data-screen-id="${escapeAttr(s.id)}">
+        ${img}
+        <span class="mobbin-pick-title">${escapeHtml(s.app_name || 'Screen')}</span>
+        <span class="mobbin-pick-open" data-agent-href="${escapeAttr(s.mobbin_url || '#')}">Открыть в Mobbin ↗</span>
+      </button>`;
+    }).join('');
+    return `
+      <div class="mobbin-picker" data-mobbin-session="${escapeAttr(sessionToken)}">
+        <p><strong>Выберите референс Mobbin</strong></p>
+        <p class="agent-mockup-sub">${live ? 'Live-поиск Mobbin — клик по карточке отрисует этот UI в Figma (GigaChat Vision).' : 'Локальная библиотека. Добавьте Mobbin API key в настройках для live-поиска с превью.'}</p>
+        <p class="agent-mockup-sub">Нужна модель <strong>GigaChat-2-Pro</strong> для копирования экрана по картинке.</p>
+        <div class="mobbin-picker-grid">${cards || '<p>Ничего не найдено. Уточните запрос.</p>'}</div>
+      </div>`;
+  }
+
+  async function startMobbinPickerFlow(message, task) {
+    const cleanMessage = message.replace(/^\/(figma|site)\s*/i, '').trim();
+    const thinking = addThinking(task, [
+      'Ищу экраны в Mobbin…',
+      'Подбираю варианты под запрос…',
+      'Готовлю галерею…',
+    ]);
+    try {
+      const search = await window.api.agentMobbinSearch?.({ message: cleanMessage });
+      removeThinking(thinking);
+      if (!search?.ok || !search.screens?.length) {
+        addMessage('assistant', `<p>${escapeHtml(search?.message || 'Mobbin не вернул варианты. Добавьте API key или уточните запрос.')}</p>`, 'Mobbin');
+        return;
+      }
+      const sessionToken = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      pendingMobbinSessions.set(sessionToken, {
+        message: cleanMessage,
+        task,
+        screens: search.screens,
+      });
+      const wrap = addMessage('assistant', buildMobbinPickerHtml(search.screens, sessionToken, search.live), 'Mobbin · выбор референса', { pushHistory: false });
+      bindMobbinPicker(wrap);
+    } catch (err) {
+      removeThinking(thinking);
+      addMessage('assistant', `<p>${escapeHtml(err.message || 'Ошибка поиска Mobbin')}</p>`, 'Mobbin');
+    }
+  }
+
+  function bindMobbinPicker(root) {
+    root?.querySelectorAll('[data-mobbin-pick]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        if (e.target.closest('[data-agent-href]')) return;
+        const sessionToken = btn.getAttribute('data-mobbin-pick');
+        const screenId = btn.getAttribute('data-screen-id');
+        if (sessionToken && screenId) pickMobbinAndBuildFigma(sessionToken, screenId);
+      });
+    });
+  }
+
+  async function pickMobbinAndBuildFigma(sessionToken, screenId) {
+    const session = pendingMobbinSessions.get(sessionToken);
+    if (!session) return;
+    const screen = (session.screens || []).find((s) => s.id === screenId);
+    if (!screen) return;
+
+    pendingMobbinSessions.delete(sessionToken);
+    const pickerRoot = document.querySelector(`[data-mobbin-session="${sessionToken}"]`);
+    if (pickerRoot) {
+      pickerRoot.querySelectorAll('.mobbin-pick-card').forEach((c) => c.disabled = true);
+    }
+
+    addMessage('user', `Референс: ${screen.app_name}`, { pushHistory: true });
+    chatHistory.push({ role: 'user', content: `Выбран Mobbin: ${screen.app_name}` });
+    saveHistory();
+
+    await sendFigmaPlan(session.message, {
+      selectedScreen: screen,
+      task: session.task,
+      skipMobbinPicker: true,
+    });
+  }
+
+  async function sendFigmaPlan(textOverride, options = {}) {
     const text = (textOverride ?? promptEl?.value ?? '').trim();
     if (!text || sending) return;
+
+    const selectedScreen = options.selectedScreen || null;
+    const isAppMockup = /приложени|onboarding|login|register|инвест|fintech|многостранич|\/site\b/i.test(text);
+
+    if (isAppMockup && !selectedScreen && !options.skipMobbinPicker) {
+      updateTaskThread(text);
+      sending = true;
+      updateSendState();
+      addMessage('user', escapeHtml(text).replace(/\n/g, '<br>'));
+      chatHistory.push({ role: 'user', content: text, taskThread: taskThreadActive });
+      saveHistory();
+      if (window.appSettings?.agent?.clearInputAfterSend !== false && promptEl && textOverride == null) {
+        promptEl.value = '';
+        autoResize();
+      }
+      const task = options.task ?? (taskThreadActive && getSelectedTask() ? getSelectedTask() : null);
+      try {
+        await startMobbinPickerFlow(text, task);
+      } finally {
+        sending = false;
+        updateSendState();
+        promptEl?.focus();
+      }
+      return;
+    }
 
     updateTaskThread(text);
     sending = true;
     updateSendState();
 
-    addMessage('user', escapeHtml(text).replace(/\n/g, '<br>'));
-    chatHistory.push({ role: 'user', content: text, taskThread: taskThreadActive });
-    saveHistory();
+    if (!options.skipMobbinPicker) {
+      addMessage('user', escapeHtml(text).replace(/\n/g, '<br>'));
+      chatHistory.push({ role: 'user', content: text, taskThread: taskThreadActive });
+      saveHistory();
+    }
 
     if (window.appSettings?.agent?.clearInputAfterSend !== false && promptEl && textOverride == null) {
       promptEl.value = '';
       autoResize();
     }
 
-    const task = getSelectedTask();
-    const useTaskContext = taskThreadActive
-      && task
-      && window.appSettings?.agent?.useTaskContext !== false;
-    const isAppMockup = /приложени|onboarding|login|register|инвест|fintech|многостранич|\/site\b/i.test(text);
-    const thinking = addThinking(useTaskContext ? task : null, isAppMockup ? [
+    const task = options.task ?? (taskThreadActive && getSelectedTask() ? getSelectedTask() : null);
+    const useTaskContext = !!(task && window.appSettings?.agent?.useTaskContext !== false);
+    const thinking = addThinking(useTaskContext ? task : null, selectedScreen ? [
+      'Анализирую выбранный экран Mobbin…',
+      'Копирую layout в Figma (Vision)…',
+      'Добавляю экраны приложения…',
+      'Готовлю план…',
+    ] : isAppMockup ? [
       'Ищу референсы Mobbin…',
       'Планирую экраны приложения…',
       'Собираю фреймы и UI-блоки в Figma…',
@@ -2244,11 +2356,17 @@
 
     try {
       const result = await window.api.agentFigmaPlan?.({
-        message: text.replace(/^\/figma\s*/i, ''),
+        message: text.replace(/^\/(figma|site)\s*/i, ''),
         history: chatHistory.slice(0, -1),
         task: useTaskContext ? task : null,
+        selectedScreen,
+        expandApp: !!selectedScreen && isAppMockup,
       });
       removeThinking(thinking);
+      if (result?.needsMobbinPick) {
+        await startMobbinPickerFlow(text, task);
+        return;
+      }
       if (!result?.ok || !result?.plan?.operations?.length) {
         addMessage('assistant', `<p>${escapeHtml(result?.message || 'Не удалось построить план правок')}</p>`, 'Figma');
         return;

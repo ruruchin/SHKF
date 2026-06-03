@@ -258,6 +258,7 @@ export class AgentService {
     systemPrompt,
     allowFollowups = false,
     images = [],
+    maxTokens = 4096,
   }) {
     const hasImages = Array.isArray(images) && images.length > 0;
     if (!String(message || '').trim() && !hasImages) {
@@ -294,7 +295,7 @@ export class AgentService {
           attachmentFileIds,
         }),
         temperature: 0.78,
-        max_tokens: 4096,
+        max_tokens: Math.max(512, Math.min(8192, Number(maxTokens) || 4096)),
       });
 
       const res = await httpsJson(CHAT_URL, {
