@@ -16,7 +16,7 @@
     devReview: 'Дай чеклист для код-ревью этой задачи: что обязательно проверить (логика, edge-cases, безопасность, производительность, тесты, читаемость), на что обратить внимание ревьюеру именно в этой задаче.',
     devCommit: 'По описанию задачи предложи: 1) название ветки (feature/fix + краткий слаг), 2) сообщение коммита в стиле Conventional Commits, 3) заголовок и описание Pull Request (Что сделано / Как проверить / Связанная задача).',
     devProductivity: 'Проанализируй мои задачи из Kanban и список трудозатрат и дай честный разбор продуктивности: сколько задач в работе/закрыто, где застряло, что съедает время, и 3–5 конкретных советов как ускориться и улучшить показатели. Только реальные данные.',
-    siteBuild: 'Собери многостраничный web-прототип (React + Vite): найди референсы в Mobbin, опиши структуру страниц и выдай готовые файлы проекта с роутингом и стилями в духе сильных SaaS.',
+    siteBuild: 'Собери многостраничный fintech web-прототип: главная, вход, регистрация с онбордингом, профиль и аналитика инвестиций — отдельные страницы с hero, формами, таблицами и графиками.',
     pmStatus: 'Сделай сводку статуса по всем задачам команды из Kanban: что в работе, что готово, что просрочено или висит без движения. Кратко и структурировано для отчёта.',
     pmRisks: 'Найди риски и узкие места по задачам из Kanban: что может сорвать сроки, где перегруз, какие задачи без оценки или зависают. Предложи действия.',
   };
@@ -2050,9 +2050,12 @@
     markFigmaPlanDecision(token, res?.message || 'Не удалось применить правки');
   }
 
-  function buildSiteBuildHtml({ token, plan, refs, mobbinLive }) {
+  function buildSiteBuildHtml({ token, plan, refs, mobbinLive, buildMode }) {
     const pages = (plan.pages || [])
-      .map((p) => `<li><code>${escapeHtml(p.route || '/')}</code> — ${escapeHtml(p.name || p.purpose || '')}</li>`)
+      .map((p) => {
+        const blocks = String(p.purpose || '').split(',').filter(Boolean).map((b) => `<code class="agent-site-block">${escapeHtml(b.trim())}</code>`).join(' ');
+        return `<li><code>${escapeHtml(p.route || '/')}</code> — ${escapeHtml(p.name || '')} ${blocks ? `<span class="agent-site-blocks">${blocks}</span>` : ''}</li>`;
+      })
       .join('');
     const files = (plan.files || [])
       .map((f) => `<li><code>${escapeHtml(f.path || '')}</code></li>`)
@@ -2062,20 +2065,26 @@
         `<li><a href="#" class="agent-md-link" data-agent-href="${escapeAttr(r.url)}">${escapeHtml(r.title || r.url)}</a></li>`
       )).join('')}</ul>`
       : '';
-    const assumptions = (plan.assumptions || [])
-      .map((x) => `<li>${escapeHtml(x)}</li>`)
-      .join('');
+    const readme = (plan.files || []).find((f) => /readme\.md$/i.test(f.path || ''));
+    const readmePreview = readme?.content
+      ? `<pre class="agent-code-block agent-code-block--compact">${escapeHtml(readme.content.slice(0, 1200))}${readme.content.length > 1200 ? '\n…' : ''}</pre>`
+      : '';
+    const modeLabel = buildMode === 'llm+scaffold'
+      ? 'Mobbin blueprint + детерминированный scaffold'
+      : 'Детерминированный scaffold (стабильные блоки UI)';
     return `
       <div class="agent-mockup-ready agent-site-build" data-site-build-token="${escapeHtml(token)}">
         <p><strong>Проект готов.</strong> ${plan.summary ? escapeHtml(plan.summary) : ''}</p>
-        ${mobbinLive ? '<p class="agent-mockup-sub">Референсы: live Mobbin + design memory</p>' : '<p class="agent-mockup-sub">Референсы: design memory (добавьте Mobbin API key для live-поиска)</p>'}
+        <p class="agent-mockup-sub">${escapeHtml(modeLabel)} · ${plan.files?.length || 0} файлов</p>
+        ${mobbinLive ? '<p class="agent-mockup-sub">Референсы: live Mobbin + design memory</p>' : '<p class="agent-mockup-sub">Референсы: design memory (Mobbin API key — live-поиск)</p>'}
         ${refList ? `<p class="agent-mockup-sub"><strong>Mobbin:</strong></p>${refList}` : ''}
-        ${pages ? `<p class="agent-mockup-sub"><strong>Страницы:</strong></p><ul class="agent-md-ul">${pages}</ul>` : ''}
-        ${assumptions ? `<ul class="agent-md-ul">${assumptions}</ul>` : ''}
-        ${files ? `<p class="agent-mockup-sub"><strong>Файлы (${plan.files.length}):</strong></p><ul class="agent-md-ul agent-site-files">${files}</ul>` : ''}
+        ${pages ? `<p class="agent-mockup-sub"><strong>Страницы и блоки:</strong></p><ul class="agent-md-ul agent-site-pages">${pages}</ul>` : ''}
+        ${files ? `<p class="agent-mockup-sub"><strong>Файлы:</strong></p><ul class="agent-md-ul agent-site-files">${files}</ul>` : ''}
+        ${readmePreview ? `<p class="agent-mockup-sub"><strong>README</strong></p>${readmePreview}` : ''}
         <div class="agent-mockup-actions">
-          <button type="button" class="agent-link-btn agent-link-btn--apply" data-site-build-copy="${escapeHtml(token)}">Скопировать все файлы</button>
-          <button type="button" class="agent-link-btn agent-link-btn--dismiss" data-site-build-open-readme="${escapeHtml(token)}">Показать README</button>
+          <button type="button" class="agent-link-btn agent-link-btn--apply" data-site-build-export="${escapeHtml(token)}">Сохранить на диск</button>
+          <button type="button" class="agent-link-btn" data-site-build-copy="${escapeHtml(token)}">Копировать в буфер</button>
+          <button type="button" class="agent-link-btn agent-link-btn--dismiss" data-site-build-open-readme="${escapeHtml(token)}">README целиком</button>
         </div>
       </div>`;
   }
@@ -2085,15 +2094,26 @@
   async function copySiteBuildBundle(token) {
     const payload = pendingSiteBuilds.get(token);
     if (!payload?.plan?.files?.length) return;
-    const bundle = payload.plan.files
-      .map((f) => `// === ${f.path} ===\n${f.content || ''}`)
-      .join('\n\n');
-    try {
-      await navigator.clipboard.writeText(bundle);
-      showAgentToast('Файлы скопированы в буфер', 'ok');
-    } catch {
-      showAgentToast('Не удалось скопировать — откройте README', 'error');
+    const res = await window.api.agentSiteBuildCopy?.({ plan: payload.plan });
+    if (res?.ok) {
+      showAgentToast(`Скопировано ${payload.plan.files.length} файлов`, 'ok');
+      return;
     }
+    showAgentToast(res?.message || 'Не удалось скопировать', 'error');
+  }
+
+  async function exportSiteBuild(token) {
+    const payload = pendingSiteBuilds.get(token);
+    if (!payload?.plan?.files?.length) return;
+    const res = await window.api.agentSiteBuildExport?.({ plan: payload.plan });
+    if (res?.ok) {
+      showAgentToast(`Сохранено ${res.fileCount} файлов`, 'ok');
+      if (res.dir) {
+        addMessage('assistant', `<p class="agent-mockup-sub">Папка проекта: <code>${escapeHtml(res.dir)}</code></p><p class="agent-mockup-sub">В терминале: <code>cd "${escapeHtml(res.dir)}" &amp;&amp; npm install &amp;&amp; npm run dev</code></p>`, 'Site Builder', { pushHistory: false });
+      }
+      return;
+    }
+    showAgentToast(res?.message || 'Не удалось сохранить', 'error');
   }
 
   function showSiteBuildReadme(token) {
@@ -2152,6 +2172,7 @@
         plan: result.plan,
         refs: result.refs,
         mobbinLive: result.mobbinLive,
+        buildMode: result.buildMode,
       }), result.model ? `Site Builder · ${result.model}` : 'Site Builder');
       chatHistory.push({
         role: 'assistant',
@@ -2797,6 +2818,11 @@
         const token = cancelFigmaPlanBtn.getAttribute('data-figma-plan-cancel');
         pendingFigmaPlans.delete(token);
         markFigmaPlanDecision(token, 'Применение отменено');
+        return;
+      }
+      const exportSiteBtn = event.target.closest('[data-site-build-export]');
+      if (exportSiteBtn) {
+        exportSiteBuild(exportSiteBtn.getAttribute('data-site-build-export'));
         return;
       }
       const copySiteBtn = event.target.closest('[data-site-build-copy]');

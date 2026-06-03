@@ -1,8 +1,8 @@
-import { app, BrowserWindow, BrowserView, ipcMain, Tray, Menu, nativeImage, shell, dialog, session, Notification } from 'electron';
+import { app, BrowserWindow, BrowserView, ipcMain, Tray, Menu, nativeImage, shell, dialog, session, Notification, clipboard } from 'electron';
 import electronUpdater from 'electron-updater';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { HotkeyService } from '../server/hotkey-service.js';
 import { AuthService } from '../server/auth-service.js';
 import { CloudSettingsService } from '../server/cloud-settings-service.js';
@@ -1263,6 +1263,60 @@ app.whenReady().then(() => {
       task,
       history: payload?.history || [],
     });
+  });
+
+  ipcMain.handle('agent-site-build-copy', (_e, payload) => {
+    const files = payload?.plan?.files || payload?.files || [];
+    if (!files.length) {
+      return { ok: false, message: 'Нет файлов для копирования' };
+    }
+    const bundle = files
+      .map((f) => `// === ${f.path} ===\n${f.content || ''}`)
+      .join('\n\n');
+    try {
+      clipboard.writeText(bundle);
+      return { ok: true, chars: bundle.length };
+    } catch (err) {
+      return { ok: false, message: err.message || 'Не удалось записать в буфер обмена' };
+    }
+  });
+
+  ipcMain.handle('agent-site-build-export', async (_e, payload) => {
+    const plan = payload?.plan;
+    const files = plan?.files || [];
+    if (!files.length) {
+      return { ok: false, message: 'Нет файлов для экспорта' };
+    }
+
+    let baseDir = String(payload?.dir || '').trim();
+    if (!baseDir) {
+      const picked = await dialog.showOpenDialog(mainWindow, {
+        title: 'Выберите папку для проекта',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      if (picked.canceled || !picked.filePaths?.[0]) {
+        return { ok: false, message: 'Экспорт отменён' };
+      }
+      const slug = String(plan?.summary || 'generated-site')
+        .toLowerCase()
+        .replace(/[^a-z0-9а-яё]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 40) || 'generated-site';
+      baseDir = path.join(picked.filePaths[0], slug);
+    }
+
+    try {
+      for (const file of files) {
+        const rel = String(file.path || '').replace(/^\/+/, '');
+        if (!rel || rel.includes('..')) continue;
+        const full = path.join(baseDir, rel);
+        mkdirSync(path.dirname(full), { recursive: true });
+        writeFileSync(full, String(file.content || ''), 'utf8');
+      }
+      return { ok: true, dir: baseDir, fileCount: files.length };
+    } catch (err) {
+      return { ok: false, message: err.message || 'Ошибка записи файлов' };
+    }
   });
 
   ipcMain.handle('agent-mobbin-status', () => ({

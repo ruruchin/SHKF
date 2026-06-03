@@ -77,6 +77,8 @@ contextBridge.exposeInMainWorld('api', {
   agentFigmaPlan: (payload) => ipcRenderer.invoke('agent-figma-plan', payload),
   agentFigmaApply: (payload) => ipcRenderer.invoke('agent-figma-apply', payload),
   agentSiteBuild: (payload) => ipcRenderer.invoke('agent-site-build', payload),
+  agentSiteBuildCopy: (payload) => ipcRenderer.invoke('agent-site-build-copy', payload),
+  agentSiteBuildExport: (payload) => ipcRenderer.invoke('agent-site-build-export', payload),
   agentMobbinStatus: () => ipcRenderer.invoke('agent-mobbin-status'),
   designMemoryList: () => ipcRenderer.invoke('design-memory-list'),
   designMemoryAdd: (payload) => ipcRenderer.invoke('design-memory-add', payload),

@@ -2303,6 +2303,24 @@ html[data-no-anim] .agent-followups--animate {
   font-size: 12px;
 }
 
+.agent-site-pages .agent-site-blocks {
+  display: block;
+  margin-top: 4px;
+}
+
+.agent-site-block {
+  display: inline-block;
+  margin: 2px 4px 2px 0;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--accent-soft, rgba(110, 86, 207, 0.12));
+  font-size: 11px;
+}
+
+.agent-code-block--compact {
+  max-height: 200px;
+}
+
 .agent-mockup-actions {
   display: flex;
   gap: 8px;

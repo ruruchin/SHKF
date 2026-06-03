@@ -4,6 +4,13 @@ import {
   extractSiteBuildPlan,
   isSiteBuildIntent,
 } from '../shared/site-builder-prompts.js';
+import {
+  BLUEPRINT_SYSTEM_PROMPT,
+  extractBlueprint,
+  inferBlueprintFromMessage,
+  normalizeBlueprint,
+} from '../shared/site-builder-blueprint.js';
+import { buildProjectFromBlueprint } from '../shared/site-builder-scaffold.js';
 import { buildTaskContextBlock } from '../shared/agent-prompts.js';
 import { MobbinService, inferMobbinPlatform } from './mobbin-service.js';
 
@@ -20,6 +27,7 @@ export class SiteBuilderService {
     this.mobbinService.configure(agentSettings);
     this.retrievalMode = agentSettings.designMemoryMode || 'hybrid';
     this.useMobbinLive = agentSettings.mobbinEnabled !== false;
+    this.useLlmBlueprint = agentSettings.siteBuilderLlmBlueprint !== false;
   }
 
   async gatherReferences(message, options = {}) {
@@ -31,8 +39,8 @@ export class SiteBuilderService {
     if (this.useMobbinLive && this.mobbinService.isConfigured()) {
       const liveResult = await this.mobbinService.gatherReferences(message, {
         platform,
-        screenLimit: options.screenLimit ?? 6,
-        flowLimit: options.flowLimit ?? 3,
+        screenLimit: options.screenLimit ?? 8,
+        flowLimit: options.flowLimit ?? 4,
       });
       if (liveResult.refs?.length) {
         refs.push(...liveResult.refs);
@@ -43,7 +51,7 @@ export class SiteBuilderService {
 
     if (this.designMemoryService) {
       const local = await this.designMemoryService.retrieve(message, {
-        limit: 6,
+        limit: 8,
         mode: this.retrievalMode,
       });
       const merged = new Map();
@@ -70,69 +78,87 @@ export class SiteBuilderService {
     return { refs, context: mobbinContext, platform, live };
   }
 
-  async build({ message, task = null, history = [], systemPromptExtra = '' } = {}) {
+  async resolveBlueprint(message, refsBundle, task = null) {
+    const fallback = inferBlueprintFromMessage(message, refsBundle.refs);
+
+    if (!this.useLlmBlueprint || !this.agentService?.isConfigured()) {
+      return { blueprint: fallback, source: 'deterministic' };
+    }
+
+    const userMessage = buildSiteBuilderUserMessage({
+      message,
+      refsContext: refsBundle.context,
+      taskContext: task?.id ? buildTaskContextBlock(task) : '',
+    });
+
+    try {
+      const chatResult = await this.agentService.chat({
+        message: userMessage,
+        history: [],
+        task,
+        systemPrompt: BLUEPRINT_SYSTEM_PROMPT,
+        allowFollowups: false,
+      });
+      if (chatResult?.ok) {
+        const parsed = extractBlueprint(chatResult.content);
+        if (parsed?.pages?.length >= 2) {
+          return { blueprint: normalizeBlueprint({ ...parsed, tokens: { ...fallback.tokens, ...parsed.tokens } }), source: 'llm+scaffold' };
+        }
+      }
+    } catch {
+      /* fallback */
+    }
+
+    return { blueprint: fallback, source: 'deterministic' };
+  }
+
+  async build({ message, task = null, history = [] } = {}) {
     if (!this.agentService?.isConfigured()) {
       return { ok: false, message: 'Подключите GigaChat: Настройки → ИИ Агент' };
     }
 
     const refsBundle = await this.gatherReferences(message);
-    const taskBlock = task?.id ? buildTaskContextBlock(task) : '';
-    const userMessage = buildSiteBuilderUserMessage({
-      message,
-      refsContext: refsBundle.context,
-      taskContext: taskBlock,
-    });
-
-    const systemPrompt = systemPromptExtra
-      ? `${SITE_BUILD_SYSTEM_PROMPT}\n\n---\n${systemPromptExtra}`
-      : SITE_BUILD_SYSTEM_PROMPT;
-
-    const chatResult = await this.agentService.chat({
-      message: userMessage,
-      history,
-      task,
-      systemPrompt,
-      allowFollowups: false,
-    });
-
-    if (!chatResult?.ok) {
-      return { ok: false, message: chatResult?.message || 'Ошибка генерации сайта' };
-    }
-
-    let plan = extractSiteBuildPlan(chatResult.content);
-    if (!plan?.files?.length && chatResult.content) {
-      const repair = await this.agentService.chat({
-        message: [
-          'Преобразуй ответ в строгий JSON для SITE_BUILD_JSON.',
-          'Верни только блок <<<SITE_BUILD_JSON ... SITE_BUILD_JSON>>> с полем files (массив path+content).',
-          '',
-          'Исходный ответ:',
-          chatResult.content,
-        ].join('\n'),
-        history: [],
-        task,
-        systemPrompt: SITE_BUILD_SYSTEM_PROMPT,
-        allowFollowups: false,
-      });
-      if (repair?.ok) plan = extractSiteBuildPlan(repair.content);
-    }
+    const { blueprint, source } = await this.resolveBlueprint(message, refsBundle, task);
+    const plan = buildProjectFromBlueprint(blueprint);
 
     if (!plan?.files?.length) {
-      return {
-        ok: false,
-        message: 'Модель не вернула файлы проекта. Уточните запрос (тип продукта, страницы, стиль).',
-        refs: refsBundle.refs,
-        raw: chatResult.content?.slice(0, 2000),
-      };
+      return { ok: false, message: 'Не удалось собрать файлы проекта', refs: refsBundle.refs };
     }
 
     return {
       ok: true,
       plan,
+      blueprint,
+      buildMode: source,
       refs: refsBundle.refs,
       platform: refsBundle.platform,
       mobbinLive: refsBundle.live,
-      model: chatResult.model || null,
+      model: source === 'llm+scaffold' ? 'site-scaffold-v2' : 'site-scaffold-v2-deterministic',
     };
+  }
+
+  /** Legacy: full LLM file dump (fallback only). */
+  async buildLegacyLlm({ message, task = null, history = [] } = {}) {
+    const refsBundle = await this.gatherReferences(message);
+    const userMessage = buildSiteBuilderUserMessage({
+      message,
+      refsContext: refsBundle.context,
+      taskContext: task?.id ? buildTaskContextBlock(task) : '',
+    });
+    const chatResult = await this.agentService.chat({
+      message: userMessage,
+      history,
+      task,
+      systemPrompt: SITE_BUILD_SYSTEM_PROMPT,
+      allowFollowups: false,
+    });
+    if (!chatResult?.ok) {
+      return { ok: false, message: chatResult?.message || 'Ошибка генерации сайта' };
+    }
+    let plan = extractSiteBuildPlan(chatResult.content);
+    if (!plan?.files?.length) {
+      return { ok: false, message: 'Модель не вернула файлы', refs: refsBundle.refs };
+    }
+    return { ok: true, plan, refs: refsBundle.refs, buildMode: 'llm-legacy', model: chatResult.model };
   }
 }
