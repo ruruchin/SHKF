@@ -1915,10 +1915,26 @@
                   <div class="settings-item settings-item--stack" id="set-agent-konstancia-panel">
                     <div class="settings-item-info">
                       <div class="settings-label">Локальная модель</div>
-                      <div class="settings-hint" id="set-konstancia-llm-hint">Обучение: <code>npm run ml:train:chat</code> · диалоги в <code>config/konstancia-chat-feedback.jsonl</code></div>
+                      <div class="settings-hint" id="set-konstancia-llm-hint">Обучение: <code>npm run ml:train:knowledge</code> · диалоги <code>config/konstancia-chat-feedback.jsonl</code> · план: <code>ml/KNOWLEDGE.md</code></div>
                     </div>
                     <div class="settings-control settings-inline">
                       <span class="settings-badge" id="set-konstancia-llm-status">…</span>
+                    </div>
+                  </div>
+                  <div class="settings-item settings-item--stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">База знаний из интернета</div>
+                      <div class="settings-hint">Статьи Habr, Wikipedia, курсы ML — индекс для RAG и дообучения. Источники: <code>config/konstancia-knowledge-sources.json</code></div>
+                    </div>
+                    <div class="settings-control settings-stack">
+                      <label class="toggle settings-control"><input type="checkbox" id="set-knowledge-learning-enabled" checked /><span class="toggle-slider"></span><span class="toggle-label">RAG по статьям</span></label>
+                      <label class="toggle settings-control"><input type="checkbox" id="set-knowledge-auto-ingest" /><span class="toggle-slider"></span><span class="toggle-label">Авто-индекс при старте (если пусто)</span></label>
+                      <div class="settings-hint" id="set-knowledge-learning-stats">—</div>
+                      <div class="settings-inline">
+                        <button type="button" class="btn-secondary btn-sm" id="set-knowledge-learning-ingest">Индексировать статьи</button>
+                        <button type="button" class="btn-secondary btn-sm" id="set-knowledge-learning-clear">Очистить</button>
+                      </div>
+                      <div class="settings-hint" id="set-knowledge-learning-progress"></div>
                     </div>
                   </div>
                   <div class="settings-item settings-item--stack">

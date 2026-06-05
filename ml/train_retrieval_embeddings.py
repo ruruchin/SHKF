@@ -13,19 +13,30 @@ from sentence_transformers import InputExample, SentenceTransformer, losses
 from torch.utils.data import DataLoader
 
 ROOT = Path(__file__).resolve().parent
-DATA_PATH = ROOT / "data" / "konstancia-retrieval.jsonl"
+DATA_FILES = [
+    ROOT / "data" / "konstancia-retrieval.jsonl",
+    ROOT / "data" / "konstancia-knowledge-retrieval.jsonl",
+]
 OUT_DIR = ROOT / "models" / "konstancia-retrieval"
 BASE_MODEL = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
 
 
 def load_pairs():
     pairs = []
-    for line in DATA_PATH.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
+    seen = set()
+    for data_path in DATA_FILES:
+        if not data_path.exists():
             continue
-        row = json.loads(line)
-        pairs.append(InputExample(texts=[row["query"], row["positive"]]))
+        for line in data_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            row = json.loads(line)
+            key = f"{row.get('query', '')}::{row.get('positive', '')[:80]}"
+            if key in seen:
+                continue
+            seen.add(key)
+            pairs.append(InputExample(texts=[row["query"], row["positive"]]))
     return pairs
 
 

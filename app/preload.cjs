@@ -124,6 +124,14 @@ contextBridge.exposeInMainWorld('api', {
   taskKnowledgePin: (payload) => ipcRenderer.invoke('task-knowledge-pin', payload),
   taskKnowledgeSaveSettings: (patch) => ipcRenderer.invoke('task-knowledge-save-settings', patch),
   taskKnowledgeAttachment: (payload) => ipcRenderer.invoke('task-knowledge-attachment', payload),
+  knowledgeLearningStats: () => ipcRenderer.invoke('knowledge-learning-stats'),
+  knowledgeLearningIngest: () => ipcRenderer.invoke('knowledge-learning-ingest'),
+  knowledgeLearningClear: () => ipcRenderer.invoke('knowledge-learning-clear'),
+  onKnowledgeLearningIngestProgress: (cb) => {
+    const fn = (_e, payload) => cb(payload);
+    ipcRenderer.on('knowledge-learning-ingest-progress', fn);
+    return () => ipcRenderer.removeListener('knowledge-learning-ingest-progress', fn);
+  },
   agentRedmineFileSearch: (payload) => ipcRenderer.invoke('agent-redmine-file-search', payload),
   live2dGetModel: () => ipcRenderer.invoke('live2d-get-model'),
   live2dFetchAsset: (url) => ipcRenderer.invoke('live2d-fetch-asset', url),

@@ -32,6 +32,7 @@ import { getLive2dModelHttpUrl, stopAllLive2dStaticServers } from '../server/liv
 import { isRedmineFileSearch, wantsLearnedExperience, wantsProcessInsights, wantsRedmineKnowledge, wantsFileSearch, wantsReindexTasks, requiresCurrentTask, isLearnedExperienceQuery, TASK_REQUIRED_REPLY } from '../shared/task-learning-intent.js';
 import { isGeneralKnowledgeQuery, wantsWebSearch } from '../shared/general-knowledge-intent.js';
 import { searchWeb, formatWebSearchBlock } from '../server/web-search-service.js';
+import { KnowledgeIngestService, formatKnowledgeRagBlock } from '../server/knowledge-ingest-service.js';
 import { getTopMlIntent, mlOverridesTaskRequirement, mlWantsFileSearch, mlWantsReindex, mlWantsLearnedExperience } from '../shared/konstancia-intent-ml.js';
 import { classifyIntent as classifyMlIntent, getMlStatus } from '../server/hf-ml-service.js';
 import { getKonstanciaLlmStatus, configureKonstanciaCloud } from '../server/konstancia-llm-service.js';
@@ -351,6 +352,9 @@ const taskKnowledgeService = new TaskKnowledgeService(app.getPath('userData'), {
   agentService,
   authService,
 });
+const knowledgeIngestService = new KnowledgeIngestService(app.getPath('userData'), {
+  agentService,
+});
 const processAnalyticsService = new ProcessAnalyticsService({
   taskKnowledge: taskKnowledgeService,
   taskLinker: taskLinkerService,
@@ -369,7 +373,24 @@ function configureAgentIntegrations() {
   agentService.configure(agentSettings);
   mobbinService.configure(agentSettings);
   siteBuilderService.configure(agentSettings);
+  knowledgeIngestService.configure({
+    enabled: agentSettings.knowledgeLearningEnabled !== false,
+    autoIngestOnStart: agentSettings.knowledgeAutoIngest === true,
+  });
   configureTaskLearning();
+}
+
+let knowledgeAutoIngestStarted = false;
+async function maybeAutoIngestKnowledge() {
+  const agentSettings = service.config.settings?.agent || {};
+  if (agentSettings.knowledgeAutoIngest !== true) return;
+  if (knowledgeAutoIngestStarted) return;
+  const stats = knowledgeIngestService.stats();
+  if (stats.chunks > 0) return;
+  knowledgeAutoIngestStarted = true;
+  knowledgeIngestService.ingestAll().catch((err) => {
+    console.warn('[knowledge-ingest]', err?.message || err);
+  });
 }
 
 async function handleRedmineFileSearchIpc(_e, payload) {
@@ -1195,6 +1216,7 @@ app.whenReady().then(() => {
   scheduleMetaskPolling();
   zimbraService.configure(service.config.settings?.zimbra || {});
   configureAgentIntegrations();
+  maybeAutoIngestKnowledge();
 
   const metaskSession = session.fromPartition('persist:metask');
   metaskSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
@@ -1744,6 +1766,11 @@ app.whenReady().then(() => {
         || wantsRedmineKnowledge(message)
         || wantsFileSearch(message));
 
+    if (generalKnowledgeMode && agentSettings.knowledgeLearningEnabled !== false) {
+      const ragHits = await knowledgeIngestService.search(messageText, { limit: 5 });
+      const ragBlock = formatKnowledgeRagBlock(ragHits);
+      if (ragBlock) message = `${ragBlock}\n\n---\n\n${message}`;
+    }
     if (generalKnowledgeMode && agentSettings.webSearchEnabled !== false) {
       const web = await searchWeb(messageText, { limit: wantsWebSearch(messageText) ? 6 : 4 });
       const block = formatWebSearchBlock(web);
@@ -2824,6 +2851,23 @@ app.whenReady().then(() => {
     });
     configureTaskLearning();
     return config.settings?.taskLearning;
+  });
+
+  ipcMain.handle('knowledge-learning-stats', () => {
+    configureAgentIntegrations();
+    return { ok: true, stats: knowledgeIngestService.stats() };
+  });
+
+  ipcMain.handle('knowledge-learning-ingest', async () => {
+    configureAgentIntegrations();
+    return knowledgeIngestService.ingestAll({
+      onProgress: (p) => broadcast('knowledge-learning-ingest-progress', p),
+    });
+  });
+
+  ipcMain.handle('knowledge-learning-clear', () => {
+    knowledgeIngestService.clearAll();
+    return { ok: true };
   });
 
   ipcMain.handle('agent-process-insights', async (_e, payload) => {

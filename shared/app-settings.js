@@ -48,6 +48,8 @@ export const DEFAULT_APP_SETTINGS = {
     cursorModel: 'composer-2.5',
     cursorFigmaBuildEnabled: false,
     webSearchEnabled: true,
+    knowledgeLearningEnabled: true,
+    knowledgeAutoIngest: false,
     konstanciaCloudUrl: '',
     konstanciaCloudApiKey: '',
   },

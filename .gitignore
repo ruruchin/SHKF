@@ -11,5 +11,8 @@ supabase/employees.json
 релиз.rar
 image.png
 ml/models/
+ml/data/konstancia-knowledge-chunks.jsonl
+ml/data/konstancia-knowledge-retrieval.jsonl
+ml/data/konstancia-knowledge-qa.jsonl
 build/
 .cursor/mcp.json

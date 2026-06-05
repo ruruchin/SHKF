@@ -27,6 +27,8 @@
     "ml:train:chat": "npm run ml:export-chat && python ml/train_chat_model.py",
     "ml:train:intent": "npm run ml:export-dataset && python ml/train_intent_classifier.py",
     "ml:train:retrieval": "python ml/train_retrieval_embeddings.py",
+    "ml:ingest-knowledge": "node scripts/ingest-knowledge-sources.mjs",
+    "ml:train:knowledge": "npm run ml:ingest-knowledge && npm run ml:export-chat && npm run ml:train:chat && npm run ml:train:retrieval",
     "ml:serve": "cd ml && uvicorn serve_api:app --host 0.0.0.0 --port 8080",
     "ml:upload-hf": "node scripts/upload-konstancia-to-hf.mjs"
   },

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "description": "Курируемые источники для Konstancia — по материалам Habr и открытым курсам ML/NLP",
+  "sources": [
+    {
+      "id": "habr-ml-resources",
+      "title": "Основные ресурсы нейронных сетей для начинающих",
+      "url": "https://habr.com/ru/articles/753920/",
+      "category": "ml-curriculum",
+      "tags": ["habr", "обучение", "нейросети", "курсы"]
+    },
+    {
+      "id": "hf-transformers",
+      "title": "Hugging Face Transformers",
+      "url": "https://huggingface.co/docs/transformers/index",
+      "category": "nlp",
+      "tags": ["transformers", "bert", "gpt", "fine-tuning"]
+    },
+    {
+      "id": "fastai-course",
+      "title": "Fast.ai Practical Deep Learning",
+      "url": "https://course.fast.ai/",
+      "category": "deep-learning",
+      "tags": ["fastai", "transfer-learning", "практика"]
+    },
+    {
+      "id": "wiki-ml-ru",
+      "title": "Машинное обучение — Wikipedia",
+      "url": "https://ru.wikipedia.org/wiki/%D0%9C%D0%B0%D1%88%D0%B8%D0%BD%D0%BD%D0%BE%D0%B5_%D0%BE%D0%B1%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D0%B5",
+      "category": "ml-basics",
+      "tags": ["ml", "обучение", "алгоритмы"]
+    },
+    {
+      "id": "wiki-neural-net-ru",
+      "title": "Нейронная сеть — Wikipedia",
+      "url": "https://ru.wikipedia.org/wiki/%D0%9D%D0%B5%D0%B9%D1%80%D0%BE%D0%BD%D0%BD%D0%B0%D1%8F_%D1%81%D0%B5%D1%82%D1%8C",
+      "category": "ml-basics",
+      "tags": ["нейросеть", "перцептрон", "слои"]
+    },
+    {
+      "id": "wiki-transfer-learning-ru",
+      "title": "Перенос обучения — Wikipedia",
+      "url": "https://ru.wikipedia.org/wiki/%D0%9F%D0%B5%D1%80%D0%B5%D0%BD%D0%BE%D1%81_%D0%BE%D0%B1%D1%83%D1%87%D0%B5%D0%BD%D0%B8%D1%8F",
+      "category": "deep-learning",
+      "tags": ["transfer-learning", "fine-tuning", "донастройка"]
+    },
+    {
+      "id": "pytorch-beginner",
+      "title": "PyTorch Learn the Basics",
+      "url": "https://pytorch.org/tutorials/beginner/basics/intro.html",
+      "category": "frameworks",
+      "tags": ["pytorch", "тензоры", "autograd"]
+    },
+    {
+      "id": "stanford-cs231n",
+      "title": "Stanford CS231n CNN",
+      "url": "https://cs231n.stanford.edu/",
+      "category": "cv",
+      "tags": ["cnn", "computer-vision", "курсы"]
+    }
+  ]
+}

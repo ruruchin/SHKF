@@ -389,6 +389,20 @@
       konstPanel?.classList.toggle('hidden', !isKonstancia);
     }
 
+    async function refreshKnowledgeLearningStats() {
+      const el = $('set-knowledge-learning-stats');
+      if (!el) return;
+      try {
+        const res = await window.api.knowledgeLearningStats?.();
+        const st = res?.stats || {};
+        el.textContent = st.chunks
+          ? `Чанков: ${st.chunks} · источников: ${st.sources || 0}`
+          : 'Пусто — нажмите «Индексировать статьи» или npm run ml:ingest-knowledge';
+      } catch {
+        el.textContent = 'Статус недоступен';
+      }
+    }
+
     async function refreshKonstanciaLlmStatus() {
       if (!konstStatus) return;
       try {
@@ -411,6 +425,11 @@
       const cloudKey = $('set-konstancia-cloud-key');
       if (cloudUrl) cloudUrl.value = a.konstanciaCloudUrl || '';
       if (cloudKey) cloudKey.value = a.konstanciaCloudApiKey || '';
+      const knowledgeEnabled = $('set-knowledge-learning-enabled');
+      if (knowledgeEnabled) knowledgeEnabled.checked = a.knowledgeLearningEnabled !== false;
+      const knowledgeAuto = $('set-knowledge-auto-ingest');
+      if (knowledgeAuto) knowledgeAuto.checked = a.knowledgeAutoIngest === true;
+      refreshKnowledgeLearningStats();
       if (credentials && a.credentials) credentials.value = a.credentials;
       if (model) model.value = a.model || 'GigaChat';
       const mobbinKey = $('set-mobbin-api-key');
@@ -429,6 +448,36 @@
 
     fillFromConfig();
     provider?.addEventListener('change', syncProviderPanels);
+
+    $('set-knowledge-learning-ingest')?.addEventListener('click', async () => {
+      const progress = $('set-knowledge-learning-progress');
+      const btn = $('set-knowledge-learning-ingest');
+      if (btn) btn.disabled = true;
+      if (progress) progress.textContent = 'Загрузка статей…';
+      const unsub = window.api.onKnowledgeLearningIngestProgress?.((p) => {
+        if (progress) progress.textContent = `${p.index}/${p.total}: ${p.title || p.sourceId}`;
+      });
+      try {
+        const res = await window.api.knowledgeLearningIngest?.();
+        if (progress) {
+          progress.textContent = res?.ok
+            ? `Готово: ${res.ingested} источников, ${res.export?.chunks || 0} чанков для обучения`
+            : (res?.message || 'Ошибка');
+        }
+        await refreshKnowledgeLearningStats();
+      } catch (err) {
+        if (progress) progress.textContent = err?.message || String(err);
+      } finally {
+        unsub?.();
+        if (btn) btn.disabled = false;
+      }
+    });
+
+    $('set-knowledge-learning-clear')?.addEventListener('click', async () => {
+      if (!confirm('Очистить индекс статей Konstancia?')) return;
+      await window.api.knowledgeLearningClear?.();
+      await refreshKnowledgeLearningStats();
+    });
 
     $('set-agent-docs-link')?.addEventListener('click', (event) => {
       event.preventDefault();
@@ -459,6 +508,8 @@
         cursorFigmaBuildEnabled: $('set-cursor-figma-build')?.checked === true,
         konstanciaCloudUrl: $('set-konstancia-cloud-url')?.value?.trim() || '',
         konstanciaCloudApiKey: $('set-konstancia-cloud-key')?.value?.trim() || '',
+        knowledgeLearningEnabled: $('set-knowledge-learning-enabled')?.checked !== false,
+        knowledgeAutoIngest: $('set-knowledge-auto-ingest')?.checked === true,
       };
       if (agentProvider === 'gigachat' && !creds.credentials) {
         alert('Вставьте ключ Authorization (Base64) из GigaChat Studio');
