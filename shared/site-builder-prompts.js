@@ -4,7 +4,7 @@ const SITE_BUILD_BLOCK_RE = /<<<SITE_BUILD_JSON\s*([\s\S]*?)\s*SITE_BUILD_JSON>>
 
 export const SITE_BUILD_INTENT_RE = /(?:сверст|верст|собери|сделай|создай|напиши|build|scaffold|generate).{0,40}(?:сайт|website|лендинг|landing|веб.?прилож|web\s*app|приложени[ея]|dashboard|админк|портал|многостранич|multi.?page)|(?:сайт|website|лендинг|landing|веб.?прилож|react\s*app|next\.?js).{0,40}(?:сверст|верст|собери|сделай|создай|напиши)/i;
 
-export const SITE_BUILD_SYSTEM_PROMPT = `Ты — senior front-end разработчик и продуктовый дизайнер в FIRURU.
+export const SITE_BUILD_SYSTEM_PROMPT = `Ты — senior front-end разработчик и продуктовый дизайнер в SHKF.
 Твоя задача: по запросу пользователя и блоку Mobbin/design reference signals собрать **готовый многостраничный прототип** (сайт или web-приложение).
 
 Правила:

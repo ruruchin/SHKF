@@ -65,7 +65,7 @@ export const ACTION_META = {
     demo: 'tablet-frame',
   },
   createButton: {
-    description: 'Создаёт primary-кнопку с pill-скруглением и текстом «Добавить» в стиле FIRURU Studio.',
+    description: 'Создаёт primary-кнопку с pill-скруглением и текстом «Добавить» в стиле SHKF Studio.',
     whyUseful: 'Готовый UI-элемент для форм и CTA — сразу в auto layout.',
     demo: 'create-button',
   },

@@ -1,5 +1,5 @@
 /**
- * Windows build helper — stops FIRURU, picks a writable output dir, runs electron-builder.
+ * Windows build helper — stops SHKF, picks a writable output dir, runs electron-builder.
  * Usage: node scripts/electron-build.js [nsis|portable|all]
  */
 import { spawnSync, execSync } from 'child_process';
@@ -21,9 +21,9 @@ function log(msg) {
 function stopProcesses() {
   if (process.platform !== 'win32') return;
   const cmds = [
-    'taskkill /F /IM FIRURU.exe /T 2>nul',
-    'powershell -NoProfile -Command "Get-Process -Name FIRURU -ErrorAction SilentlyContinue | Stop-Process -Force"',
-    'powershell -NoProfile -Command "Get-Process -Name electron -ErrorAction SilentlyContinue | Where-Object { $_.Path -match \'figma-hotkeys|FIRURU|\\\\out\\\\|\\\\release\\\\|\\\\release-build\' } | Stop-Process -Force"',
+    'taskkill /F /IM SHKF.exe /T 2>nul',
+    'powershell -NoProfile -Command "Get-Process -Name SHKF -ErrorAction SilentlyContinue | Stop-Process -Force"',
+    'powershell -NoProfile -Command "Get-Process -Name electron -ErrorAction SilentlyContinue | Where-Object { $_.Path -match \'figma-hotkeys|SHKF|\\\\out\\\\|\\\\release\\\\|\\\\release-build\' } | Stop-Process -Force"',
   ];
   for (const cmd of cmds) {
     try {
@@ -114,10 +114,10 @@ async function main() {
   log('Done!');
   log(`Check: ${outputDir}/`);
   if (target === 'nsis' || target === 'all') {
-    log('  Installer → FIRURU-Setup-*.exe');
+    log('  Installer → SHKF-Setup-*.exe');
   }
   if (target === 'portable' || target === 'all') {
-    log('  Portable  → FIRURU-*-portable.exe');
+    log('  Portable  → SHKF-*-portable.exe');
   }
 }
 

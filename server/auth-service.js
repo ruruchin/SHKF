@@ -7,6 +7,16 @@ function readEnv(name) {
   return process.env[name] || process.env[`VITE_${name}`] || '';
 }
 
+export function isSupabaseNetworkError(err) {
+  const msg = String(err?.message || err || '');
+  const code = String(err?.code || err?.cause?.code || '');
+  return /fetch failed|network|timeout|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|UND_ERR_CONNECT_TIMEOUT|Connect Timeout/i.test(msg)
+    || /^UND_ERR_/.test(code);
+}
+
+export const SUPABASE_OFFLINE_HINT =
+  'Supabase недоступен (сеть или таймаут 10 с). Проверьте интернет/VPN. Локальные функции и сохранённый вход работают без облака.';
+
 function safeUser(user) {
   if (!user) return null;
   return {
@@ -42,7 +52,7 @@ export class AuthService {
     this.sessionPath = path.join(userDataPath, 'auth-session.json');
     this.supabaseUrl = readEnv('SUPABASE_URL') || SUPABASE_CONFIG.url;
     this.supabaseAnonKey = readEnv('SUPABASE_ANON_KEY') || SUPABASE_CONFIG.anonKey;
-    this.emailDomain = (readEnv('EMPLOYEE_EMAIL_DOMAIN') || SUPABASE_CONFIG.emailDomain || 'firuru.local').toLowerCase();
+    this.emailDomain = (readEnv('EMPLOYEE_EMAIL_DOMAIN') || SUPABASE_CONFIG.emailDomain || 'shkf.local').toLowerCase();
     this.client = null;
     this.session = null;
     this.profile = null;
@@ -95,43 +105,100 @@ export class AuthService {
   async refreshSession() {
     if (!this.session?.refresh_token) return null;
     this.ensureConfigured();
-    const { data, error } = await this.client.auth.refreshSession({
-      refresh_token: this.session.refresh_token,
-    });
-    if (error) {
-      this.session = null;
-      this.profile = null;
-      this.persistSession(null);
-      return null;
+    try {
+      const { data, error } = await this.client.auth.refreshSession({
+        refresh_token: this.session.refresh_token,
+      });
+      if (error) {
+        this.session = null;
+        this.profile = null;
+        this.persistSession(null);
+        return null;
+      }
+      this.session = data.session;
+      this.persistSession(this.session);
+      return this.session;
+    } catch (err) {
+      if (isSupabaseNetworkError(err)) return this.session;
+      throw err;
     }
-    this.session = data.session;
-    this.persistSession(this.session);
-    return this.session;
+  }
+
+  buildOfflineSessionResponse() {
+    const user = this.session?.user;
+    if (!this.profile && user) {
+      this.profile = buildFallbackProfile(user);
+    }
+    return {
+      ok: true,
+      configured: true,
+      offline: true,
+      networkError: true,
+      message: SUPABASE_OFFLINE_HINT,
+      session: this.session ? { expires_at: this.session.expires_at } : null,
+      user: safeUser(user),
+      profile: this.profile,
+    };
   }
 
   async getSession() {
     if (!this.isConfigured()) {
       return { ok: false, configured: false, session: null, user: null, profile: null };
     }
-    if (this.session) {
-      const expiresAt = Number(this.session.expires_at || 0) * 1000;
-      if (expiresAt && expiresAt - Date.now() < 60_000) {
-        await this.refreshSession();
-      } else {
-        // Привязать восстановленную сессию к http-клиенту, чтобы профиль грузился без повторного входа.
-        await this.ensureClientSession().catch(() => null);
+    try {
+      if (this.session) {
+        const expiresAt = Number(this.session.expires_at || 0) * 1000;
+        if (expiresAt && expiresAt - Date.now() < 60_000) {
+          try {
+            await this.refreshSession();
+          } catch (err) {
+            if (isSupabaseNetworkError(err) && this.session) {
+              return this.buildOfflineSessionResponse();
+            }
+            throw err;
+          }
+        } else {
+          await this.ensureClientSession();
+        }
       }
+      if (this.session && !this.profile) {
+        try {
+          await this.fetchProfile();
+        } catch (err) {
+          if (isSupabaseNetworkError(err)) {
+            this.profile = buildFallbackProfile(this.session.user);
+          }
+        }
+      }
+      return {
+        ok: true,
+        configured: true,
+        offline: false,
+        session: this.session ? { expires_at: this.session.expires_at } : null,
+        user: safeUser(this.session?.user),
+        profile: this.profile,
+      };
+    } catch (err) {
+      if (isSupabaseNetworkError(err) && this.session) {
+        return this.buildOfflineSessionResponse();
+      }
+      throw err;
     }
-    if (this.session && !this.profile) {
-      await this.fetchProfile().catch(() => null);
+  }
+
+  formatAuthError(error) {
+    const raw = String(error?.message || error || '').trim();
+    const code = String(error?.code || '').toLowerCase();
+    if (/invalid login credentials/i.test(raw) || code === 'invalid_credentials') {
+      return 'Неверный логин или пароль. Аккаунты создаёт администратор — уточните пароль или попросите сбросить.';
     }
-    return {
-      ok: true,
-      configured: true,
-      session: this.session ? { expires_at: this.session.expires_at } : null,
-      user: safeUser(this.session?.user),
-      profile: this.profile,
-    };
+    if (/email not confirmed/i.test(raw)) {
+      return 'Email не подтверждён. Обратитесь к администратору.';
+    }
+    if (/too many requests/i.test(raw)) {
+      return 'Слишком много попыток входа. Подождите минуту и попробуйте снова.';
+    }
+    return raw || 'Ошибка авторизации';
   }
 
   /** Логин вида "k.zorenko" -> внутренний email "k.zorenko@<domain>". Email пропускаем как есть. */
@@ -152,8 +219,10 @@ export class AuthService {
         access_token: this.session.access_token,
         refresh_token: this.session.refresh_token,
       });
-    } catch {
-      /* токен мог протухнуть — операция вернёт ошибку ниже */
+      return true;
+    } catch (err) {
+      if (isSupabaseNetworkError(err)) return false;
+      return false;
     }
   }
 
@@ -162,7 +231,7 @@ export class AuthService {
     const email = this.loginToEmail(login);
     try {
       const { data, error } = await this.client.auth.signInWithPassword({ email, password });
-      if (error) return { ok: false, message: error.message };
+      if (error) return { ok: false, message: this.formatAuthError(error) };
       this.session = data.session;
       this.persistSession(this.session);
       let profile = null;
@@ -178,7 +247,10 @@ export class AuthService {
       this.profile = profile;
       return { ok: true, user: safeUser(data.user), profile };
     } catch (err) {
-      return { ok: false, message: err?.message || 'Ошибка авторизации' };
+      const message = isSupabaseNetworkError(err)
+        ? SUPABASE_OFFLINE_HINT
+        : (err?.message || 'Ошибка авторизации');
+      return { ok: false, message };
     }
   }
 
@@ -200,14 +272,22 @@ export class AuthService {
   async fetchProfile() {
     this.ensureConfigured();
     if (!this.session?.access_token) return null;
-    const { data, error } = await this.client
-      .from('profiles')
-      .select(PROFILE_COLUMNS)
-      .eq('id', this.session.user.id)
-      .maybeSingle();
-    if (error) throw error;
-    this.profile = data || buildFallbackProfile(this.session.user);
-    return this.profile;
+    try {
+      const { data, error } = await this.client
+        .from('profiles')
+        .select(PROFILE_COLUMNS)
+        .eq('id', this.session.user.id)
+        .maybeSingle();
+      if (error) throw error;
+      this.profile = data || buildFallbackProfile(this.session.user);
+      return this.profile;
+    } catch (err) {
+      if (isSupabaseNetworkError(err)) {
+        this.profile = buildFallbackProfile(this.session.user);
+        return this.profile;
+      }
+      throw err;
+    }
   }
 
   /** Сменить пароль (на экране входа / в профиле) и снять флаг must_change_password. */
@@ -289,13 +369,18 @@ export class AuthService {
   async fetchUserSettings() {
     this.ensureConfigured();
     if (!this.session?.user?.id) return { settings: {}, app_state: {} };
-    const { data, error } = await this.client
-      .from('user_settings')
-      .select('settings,app_state,updated_at')
-      .eq('user_id', this.session.user.id)
-      .maybeSingle();
-    if (error) throw error;
-    return data || { settings: {}, app_state: {} };
+    try {
+      const { data, error } = await this.client
+        .from('user_settings')
+        .select('settings,app_state,updated_at')
+        .eq('user_id', this.session.user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data || { settings: {}, app_state: {} };
+    } catch (err) {
+      if (isSupabaseNetworkError(err)) return { settings: {}, app_state: {} };
+      throw err;
+    }
   }
 
   async updateUserSettings(settings, appState = undefined) {

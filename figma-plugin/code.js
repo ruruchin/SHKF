@@ -1,4 +1,4 @@
-// FIRURU Bridge — main thread (Figma plugin sandbox)
+// SHKF Bridge — main thread (Figma plugin sandbox)
 figma.showUI(__html__, { width: 480, height: 780, themeColors: false });
 
 figma.ui.onmessage = function (msg) {
@@ -1186,7 +1186,16 @@ function readSelectionBrief(payload, requestId) {
   return Promise.resolve();
 }
 
-function parseTargetNodes(operation) {
+function parseTargetNodes(operation, ctx) {
+  if (operation && operation.targetKey && ctx && ctx.created && ctx.created[operation.targetKey]) {
+    return [ctx.created[operation.targetKey]];
+  }
+  if (operation && operation.targetName) {
+    var byName = figma.currentPage.findOne(function (n) {
+      return n.name === String(operation.targetName);
+    });
+    return byName && !byName.removed ? [byName] : [];
+  }
   if (operation && operation.target === 'nodeId' && operation.nodeId) {
     var node = figma.getNodeById(operation.nodeId);
     return node && !node.removed ? [node] : [];
@@ -1197,6 +1206,23 @@ function parseTargetNodes(operation) {
 function resolveParentNode(operation, ctx) {
   if (operation && operation.parentKey && ctx && ctx.created && ctx.created[operation.parentKey]) {
     return ctx.created[operation.parentKey];
+  }
+  if (operation && operation.parentName) {
+    var parentName = String(operation.parentName);
+    var candidates = figma.currentPage.findAll(function (n) {
+      return n.name === parentName && 'appendChild' in n;
+    });
+    if (candidates.length) {
+      if (operation.parentX != null) {
+        var px = Number(operation.parentX);
+        var matched = [];
+        for (var ci = 0; ci < candidates.length; ci++) {
+          if (Math.abs(candidates[ci].x - px) < 2) matched.push(candidates[ci]);
+        }
+        if (matched.length) return matched[matched.length - 1];
+      }
+      return candidates[candidates.length - 1];
+    }
   }
   if (operation && operation.target === 'nodeId' && operation.nodeId) {
     var explicit = figma.getNodeById(operation.nodeId);
@@ -1233,6 +1259,34 @@ function appendToParent(node, parent) {
   host.appendChild(node);
 }
 
+function normalizeLayoutGrid(grid) {
+  if (!grid || typeof grid !== 'object') return null;
+  var pattern = String(grid.pattern || 'COLUMNS').toUpperCase();
+  if (pattern !== 'COLUMNS') return null;
+  var alignment = String(grid.alignment || 'STRETCH').toUpperCase();
+  if (alignment !== 'CENTER') alignment = 'STRETCH';
+  var color = grid.color || { r: 1, g: 0, b: 0, a: 0.1 };
+  var cr = color.r != null && color.r <= 1 ? color.r : (Number(color.r) || 255) / 255;
+  var cg = color.g != null && color.g <= 1 ? color.g : (Number(color.g) || 0) / 255;
+  var cb = color.b != null && color.b <= 1 ? color.b : (Number(color.b) || 0) / 255;
+  var ca = color.a != null ? color.a : 0.1;
+  return {
+    pattern: 'COLUMNS',
+    alignment: alignment,
+    visible: grid.visible !== false,
+    color: { r: cr, g: cg, b: cb, a: ca },
+    count: Math.max(1, Number(grid.count || 4)),
+    gutterSize: Number(grid.gutterSize != null ? grid.gutterSize : 12),
+    offset: Number(grid.offset != null ? grid.offset : 16),
+  };
+}
+
+function applyLayoutGridsToFrame(frame, grids) {
+  if (!frame || !('layoutGrids' in frame) || !Array.isArray(grids)) return;
+  var normalized = grids.map(normalizeLayoutGrid).filter(Boolean);
+  if (normalized.length) frame.layoutGrids = normalized;
+}
+
 function applyFrameStyle(frame, operation) {
   if (!frame || !operation) return;
   if (operation.name != null) frame.name = String(operation.name);
@@ -1245,6 +1299,16 @@ function applyFrameStyle(frame, operation) {
   if (operation.fill) {
     var fill = toSolidPaint(operation.fill);
     if (fill && 'fills' in frame) frame.fills = [fill];
+  }
+  if (operation.stroke) {
+    var strokePaint = toSolidPaint(operation.stroke);
+    if (strokePaint && 'strokes' in frame) {
+      frame.strokes = [strokePaint];
+      frame.strokeWeight = Number(operation.strokeWeight) || 1;
+    }
+  }
+  if (operation.layoutGrids && Array.isArray(operation.layoutGrids)) {
+    applyLayoutGridsToFrame(frame, operation.layoutGrids);
   }
   if (operation.layoutMode) {
     var mode = String(operation.layoutMode).toUpperCase();
@@ -1296,7 +1360,66 @@ function createTextNode(operation) {
     if (operation.y != null) node.y = Number(operation.y);
     var fill = toSolidPaint(operation.fill);
     if (fill) node.fills = [fill];
+    if (operation.width != null && Number(operation.width) > 0) {
+      var resizeMode = String(operation.textAutoResize || 'HEIGHT').toUpperCase();
+      if (resizeMode === 'WIDTH_AND_HEIGHT' || resizeMode === 'HEIGHT' || resizeMode === 'NONE' || resizeMode === 'TRUNCATE') {
+        node.textAutoResize = resizeMode;
+      } else {
+        node.textAutoResize = 'HEIGHT';
+      }
+      if (node.textAutoResize === 'HEIGHT' || node.textAutoResize === 'NONE') {
+        node.resize(Number(operation.width), node.height);
+      }
+    }
+    if (operation.lineHeight != null && 'lineHeight' in node) {
+      node.lineHeight = { value: Number(operation.lineHeight), unit: 'PIXELS' };
+    }
     return node;
+  });
+}
+
+function createInputFromOperation(operation) {
+  return loadFontByWeight(500).then(function (labelFont) {
+    return loadFontByWeight(400).then(function (fieldFont) {
+      var wrap = figma.createFrame();
+      wrap.name = String(operation.name || operation.label || 'Input');
+      wrap.fills = solidColor(255, 255, 255, 0);
+      layoutVertical(wrap, 6, 0);
+      if (operation.x != null) wrap.x = Number(operation.x);
+      if (operation.y != null) wrap.y = Number(operation.y);
+
+      var label = figma.createText();
+      label.fontName = labelFont;
+      label.characters = String(operation.label || 'Label');
+      label.fontSize = 12;
+      var labelFill = toSolidPaint(operation.labelFill || { r: 100, g: 116, b: 139, a: 1 });
+      if (labelFill) label.fills = [labelFill];
+      wrap.appendChild(label);
+
+      var field = figma.createFrame();
+      field.name = 'Field';
+      var fieldFill = toSolidPaint(operation.fieldFill || { r: 255, g: 255, b: 255, a: 1 });
+      if (fieldFill) field.fills = [fieldFill];
+      var border = toSolidPaint(operation.border || { r: 226, g: 232, b: 240, a: 1 });
+      if (border) {
+        field.strokes = [border];
+        field.strokeWeight = 1;
+      }
+      field.cornerRadius = operation.radius != null ? Number(operation.radius) : 10;
+      layoutHorizontal(field, 0, 14, 12);
+      var placeholder = figma.createText();
+      placeholder.fontName = fieldFont;
+      placeholder.characters = String(operation.placeholder || '');
+      placeholder.fontSize = 14;
+      var phFill = toSolidPaint(operation.placeholderFill || { r: 148, g: 163, b: 184, a: 1 });
+      if (phFill) placeholder.fills = [phFill];
+      field.appendChild(placeholder);
+      var w = Number(operation.width || 280);
+      field.resize(w, 44);
+      wrap.appendChild(field);
+      wrap.resize(w, 68);
+      return wrap;
+    });
   });
 }
 
@@ -1398,7 +1521,32 @@ function applyOperation(operation, ctx) {
     });
   }
 
-  var targets = parseTargetNodes(operation);
+  if (op === 'create_input') {
+    return createInputFromOperation(operation).then(function (node) {
+      appendToParent(node, resolveParentNode(operation, ctx));
+      if (operation.key && ctx && ctx.created) ctx.created[operation.key] = node;
+      return { ok: true };
+    });
+  }
+
+  if (op === 'set_image_fill') {
+    var imgNode = operation.key && ctx && ctx.created ? ctx.created[operation.key] : null;
+    if (!imgNode || !('fills' in imgNode)) return Promise.resolve({ ok: false, reason: 'image-target-not-found' });
+    var bytesPromise;
+    if (operation.imageBase64) {
+      bytesPromise = Promise.resolve(decodeBase64ToBytes(String(operation.imageBase64)));
+    } else if (operation.imageUrl) {
+      bytesPromise = fetchImageBytes(String(operation.imageUrl));
+    } else {
+      return Promise.resolve({ ok: false, reason: 'no-image-data' });
+    }
+    return bytesPromise.then(function (bytes) {
+      if (setImageFillOnNode(imgNode, bytes)) return { ok: true };
+      return { ok: false, reason: 'fill-failed' };
+    });
+  }
+
+  var targets = parseTargetNodes(operation, ctx);
   if (!targets.length) return Promise.resolve({ ok: false, reason: 'target-not-found' });
   var tasks = [];
   for (var i = 0; i < targets.length; i++) {
@@ -1465,6 +1613,14 @@ function applyOperation(operation, ctx) {
       } else if (op === 'set_visibility') {
         if (operation.visible != null) node.visible = !!operation.visible;
         tasks.push(Promise.resolve());
+      } else if (op === 'set_layout_grids' || op === 'set_layoutGrids') {
+        if (node.type === 'FRAME' || node.type === 'COMPONENT') {
+          tasks.push(Promise.resolve().then(function () {
+            applyLayoutGridsToFrame(node, operation.layoutGrids || []);
+          }));
+        } else {
+          tasks.push(Promise.resolve());
+        }
       }
     })(targets[i]);
   }
@@ -1474,7 +1630,7 @@ function applyOperation(operation, ctx) {
 }
 
 function applyDesignOps(payload, requestId) {
-  var operations = payload && Array.isArray(payload.operations) ? payload.operations.slice(0, 80) : [];
+  var operations = payload && Array.isArray(payload.operations) ? payload.operations.slice(0, 220) : [];
   if (!operations.length) {
     sendTemplateResult(requestId, false, 'Пустой список операций');
     return Promise.resolve();

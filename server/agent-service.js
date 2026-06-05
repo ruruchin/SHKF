@@ -7,6 +7,13 @@ import {
   MAX_AGENT_IMAGE_BYTES,
   MAX_AGENT_IMAGES_PER_MESSAGE,
 } from '../shared/gigachat-vision.js';
+import { normalizeImageForGigaChat } from './gigachat-image.js';
+import {
+  konstanciaChat,
+  konstanciaEmbed,
+  isKonstanciaLlmReady,
+  isKonstanciaLlmTrained,
+} from './konstancia-llm-service.js';
 
 const OAUTH_URL = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
 const CHAT_URL = 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions';
@@ -14,6 +21,24 @@ const FILES_URL = 'https://gigachat.devices.sberbank.ru/api/v1/files';
 const EMBEDDINGS_URL = 'https://gigachat.devices.sberbank.ru/api/v1/embeddings';
 
 export { isGigaChatVisionModel, GIGACHAT_VISION_HINT };
+
+export function isGigaChatBillingError(message) {
+  return /payment required|402|quota|лимит|insufficient|баланс|подписк/i.test(String(message || ''));
+}
+
+export function formatGigaChatApiError(status, rawMessage) {
+  const msg = String(rawMessage || '').trim();
+  if (status === 402 || /payment required/i.test(msg)) {
+    return 'GigaChat: нет токенов на выбранной модели (Payment Required). Выберите GigaChat (Lite) в шапке агента — чат и макеты Mobbin по тексту; для копии скрина нужны Pro/Max.';
+  }
+  if (status === 401 || /unauthorized|invalid.*token/i.test(msg)) {
+    return 'GigaChat: неверный или просроченный ключ. Обновите Authorization (Base64) в Настройки → Konstancia.';
+  }
+  if (status === 429 || /rate limit|too many/i.test(msg)) {
+    return 'GigaChat: слишком много запросов. Подождите минуту и повторите.';
+  }
+  return msg || `GigaChat HTTP ${status || 'error'}`;
+}
 
 function httpsRequest(url, { method = 'GET', headers = {}, body = null, rejectUnauthorized = false } = {}) {
   return new Promise((resolve, reject) => {
@@ -74,14 +99,18 @@ function buildMultipartBody(boundary, fields, file) {
   return Buffer.concat(chunks);
 }
 
-export function parseAgentImagePayload(image) {
+export async function parseAgentImagePayload(image) {
   if (!image) return null;
   if (image.buffer && image.mimeType) {
-    return {
-      buffer: Buffer.isBuffer(image.buffer) ? image.buffer : Buffer.from(image.buffer),
+    const buffer = Buffer.isBuffer(image.buffer) ? image.buffer : Buffer.from(image.buffer);
+    if (buffer.length > MAX_AGENT_IMAGE_BYTES) {
+      throw new Error('Изображение больше 15 МБ — уменьшите размер файла');
+    }
+    return normalizeImageForGigaChat({
+      buffer,
       mimeType: image.mimeType,
       filename: image.filename || 'image.png',
-    };
+    });
   }
   const dataUrl = String(image.dataUrl || image.url || '').trim();
   const match = dataUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);
@@ -91,20 +120,20 @@ export function parseAgentImagePayload(image) {
     throw new Error('Изображение больше 15 МБ — уменьшите размер файла');
   }
   const ext = match[1].includes('jpeg') || match[1].includes('jpg') ? 'jpg' : 'png';
-  return {
+  return normalizeImageForGigaChat({
     buffer,
     mimeType: match[1],
     filename: image.filename || `image.${ext}`,
-  };
+  });
 }
 
 export class AgentService {
   constructor() {
     this.settings = {
-      provider: 'gigachat',
+      provider: 'konstancia',
       credentials: '',
       scope: 'GIGACHAT_API_PERS',
-      model: 'GigaChat-2-Pro',
+      model: 'Konstancia',
       ignoreTls: true,
     };
     this._token = null;
@@ -117,7 +146,8 @@ export class AgentService {
       ...settings,
       credentials: (settings.credentials || '').trim(),
       scope: settings.scope || 'GIGACHAT_API_PERS',
-      model: settings.model || 'GigaChat-2-Pro',
+      provider: settings.provider || 'konstancia',
+      model: settings.model || 'Konstancia',
     };
     if (settings.credentials && settings.credentials !== this._lastCredentials) {
       this._token = null;
@@ -126,23 +156,31 @@ export class AgentService {
     this._lastCredentials = this.settings.credentials;
   }
 
+  isKonstanciaProvider() {
+    return (this.settings.provider || 'konstancia') === 'konstancia';
+  }
+
   isConfigured() {
+    if (this.isKonstanciaProvider()) return isKonstanciaLlmReady();
     return this.settings.provider === 'gigachat' && !!this.settings.credentials;
   }
 
   getStatus() {
+    const konstancia = this.isKonstanciaProvider();
     return {
       configured: this.isConfigured(),
-      provider: this.settings.provider,
-      model: this.settings.model,
+      provider: konstancia ? 'konstancia' : this.settings.provider,
+      model: konstancia ? 'Konstancia' : this.settings.model,
       scope: this.settings.scope,
-      visionCapable: isGigaChatVisionModel(this.settings.model),
+      visionCapable: konstancia ? false : isGigaChatVisionModel(this.settings.model),
+      konstanciaTrained: konstancia ? isKonstanciaLlmTrained() : false,
+      konstanciaLocal: konstancia,
     };
   }
 
   async getAccessToken() {
     if (!this.isConfigured()) {
-      throw new Error('Укажите ключ GigaChat в настройках → ИИ Агент');
+      throw new Error('Укажите ключ GigaChat в настройках → Konstancia');
     }
     const now = Date.now();
     if (this._token && now < this._tokenExpiresAt - 60_000) {
@@ -206,7 +244,7 @@ export class AgentService {
   async uploadImages(images = []) {
     const fileIds = [];
     for (const img of images.slice(0, MAX_AGENT_IMAGES_PER_MESSAGE)) {
-      const parsed = parseAgentImagePayload(img);
+      const parsed = await parseAgentImagePayload(img);
       if (!parsed) continue;
       const id = await this.uploadImageFile(parsed);
       fileIds.push(id);
@@ -221,13 +259,17 @@ export class AgentService {
     systemPrompt = AGENT_SYSTEM_PROMPT,
     allowFollowups = false,
     attachmentFileIds = [],
+    learnedExperienceBlock = '',
   }) {
     let system = systemPrompt;
     if (!allowFollowups) {
-      system = `${systemPrompt}\n\n---\nСейчас разговор не про работу над задачей. Не добавляй блок FOLLOWUPS. Не привязывай ответ к задаче, если пользователь о ней не спрашивал.`;
+      system = `${system}\n\n---\nНе добавляй блок FOLLOWUPS. Отвечай только на последнее сообщение пользователя, без шаблона «анализ задачи» и без оценки часов, если об этом не спросили.`;
     }
     if (task?.id) {
-      system = `${system}\n\n---\nКонтекст задачи (используй только если пользователь спрашивает про задачу):\n${buildTaskContextBlock(task)}`;
+      system = `${system}\n\n---\nКонтекст задачи Redmine (только если пользователь явно просит разбор/оценку/промпт по задаче — иначе игнорируй):\n${buildTaskContextBlock(task)}`;
+    }
+    if (learnedExperienceBlock) {
+      system = `${system}\n\n---\n${learnedExperienceBlock}`;
     }
     const messages = [{ role: 'system', content: system.slice(0, 28000) }];
     for (const item of history.slice(-10)) {
@@ -259,18 +301,55 @@ export class AgentService {
     allowFollowups = false,
     images = [],
     maxTokens = 4096,
+    temperature = 0.78,
+    modelOverride = null,
+    learnedExperienceBlock = '',
   }) {
     const hasImages = Array.isArray(images) && images.length > 0;
     if (!String(message || '').trim() && !hasImages) {
       return { ok: false, message: 'Пустое сообщение' };
     }
+    if (this.isKonstanciaProvider()) {
+      if (hasImages) {
+        return { ok: false, message: 'Локальная Konstancia пока без vision — опишите картинку текстом или переключитесь на GigaChat.' };
+      }
+      if (!isKonstanciaLlmReady()) {
+        return {
+          ok: false,
+          message: 'Локальная нейросеть Konstancia не установлена. Выполните: pip install -r ml/requirements.txt && npm run ml:train:chat',
+        };
+      }
+      const messages = this.buildMessages({
+        message,
+        history,
+        task,
+        systemPrompt,
+        allowFollowups,
+        learnedExperienceBlock,
+      });
+      const result = await konstanciaChat({
+        messages,
+        maxTokens: maxTokens,
+        temperature,
+      });
+      if (!result.ok) return result;
+      const { content, followups } = parseAgentResponse(result.content);
+      return {
+        ok: true,
+        content: content || result.content,
+        followups,
+        model: result.model || 'konstancia',
+        usage: null,
+      };
+    }
+
     if (hasImages && !isGigaChatVisionModel(this.settings.model)) {
       return { ok: false, message: GIGACHAT_VISION_HINT };
     }
     if (!this.isConfigured()) {
       return {
         ok: false,
-        message: 'Подключите GigaChat: Настройки → ИИ Агент → ключ Authorization (Base64) с developers.sber.ru/studio',
+        message: 'Подключите GigaChat: Настройки → Konstancia → ключ Authorization (Base64) с developers.sber.ru/studio',
       };
     }
 
@@ -285,7 +364,7 @@ export class AgentService {
       }
 
       const payload = JSON.stringify({
-        model: this.settings.model,
+        model: modelOverride || this.settings.model,
         messages: this.buildMessages({
           message,
           history,
@@ -293,8 +372,9 @@ export class AgentService {
           systemPrompt,
           allowFollowups,
           attachmentFileIds,
+          learnedExperienceBlock,
         }),
-        temperature: 0.78,
+        temperature: Math.max(0, Math.min(1.5, Number(temperature) || 0.78)),
         max_tokens: Math.max(512, Math.min(8192, Number(maxTokens) || 4096)),
       });
 
@@ -310,12 +390,17 @@ export class AgentService {
       });
 
       if (res.status !== 200) {
-        const errMsg = res.json?.message || res.json?.error?.message || res.text?.slice(0, 300) || `HTTP ${res.status}`;
+        const raw = res.json?.message || res.json?.error?.message || res.text?.slice(0, 300) || `HTTP ${res.status}`;
         if (res.status === 401) {
           this._token = null;
           this._tokenExpiresAt = 0;
         }
-        return { ok: false, message: errMsg };
+        return {
+          ok: false,
+          message: formatGigaChatApiError(res.status, raw),
+          status: res.status,
+          billing: res.status === 402 || isGigaChatBillingError(raw),
+        };
       }
 
       const raw = res.json?.choices?.[0]?.message?.content?.trim();
@@ -350,7 +435,12 @@ export class AgentService {
     const list = (Array.isArray(texts) ? texts : [])
       .map((t) => String(t || '').slice(0, 3500))
       .filter((t) => t.trim());
-    if (!list.length || !this.isConfigured()) return null;
+    if (!list.length) return null;
+
+    if (this.isKonstanciaProvider()) {
+      return konstanciaEmbed(list);
+    }
+    if (!this.isConfigured()) return null;
 
     try {
       const token = await this.getAccessToken();

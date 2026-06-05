@@ -1,108 +1,214 @@
+/* v0 Web — default theme (id: mobbin) — ref: mobbin.com/apps/v-0-web */
+
 [data-theme="mobbin"] body {
-  background:
-    radial-gradient(circle at 12% -8%, rgba(110, 86, 207, 0.14), transparent 34%),
-    radial-gradient(circle at 86% 10%, rgba(19, 163, 110, 0.10), transparent 30%),
-    linear-gradient(180deg, #F8F5EF 0%, #F2EDE5 100%);
+  font-family: 'Geist', Inter, 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: -0.02em;
+  background: var(--shell);
 }
 
+[data-theme="mobbin"] .manga-scene,
+[data-theme="mobbin"] .anime-scene,
+[data-theme="mobbin"] .manga-character-layer,
+[data-theme="mobbin"] .sidebar-character {
+  display: none !important;
+}
+
+/* ——— Shell & layout ——— */
 [data-theme="mobbin"] .shell {
-  gap: 10px;
-  padding: 10px;
-  background:
-    radial-gradient(circle at 16% 4%, rgba(255, 228, 209, 0.78), transparent 28%),
-    radial-gradient(circle at 92% 12%, rgba(238, 232, 255, 0.88), transparent 30%),
-    var(--shell);
+  gap: 0;
+  padding: 0;
+  background: var(--shell);
 }
 
 [data-theme="mobbin"] .sidebar {
-  border: 1px solid rgba(42, 34, 25, 0.08);
-  border-radius: 24px;
-  background: color-mix(in srgb, var(--sidebar) 92%, transparent);
-  box-shadow: var(--mobbin-shadow-sm);
-  backdrop-filter: blur(20px);
+  width: 232px;
+  padding: 14px 10px;
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--sidebar);
+  box-shadow: none;
+  backdrop-filter: none;
 }
 
 [data-theme="mobbin"] .panel {
-  border: 1px solid rgba(42, 34, 25, 0.08);
-  border-radius: 26px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,252,247,0.96)),
-    var(--panel);
-  box-shadow: var(--mobbin-shadow);
+  border: none;
+  border-radius: 0;
+  background: var(--panel);
+  box-shadow: none;
 }
 
-[data-theme="mobbin"] .brand {
-  padding: 10px 10px 14px;
-}
-
-[data-theme="mobbin"] .brand-mark,
-[data-theme="mobbin"] .auth-logo,
-[data-theme="mobbin"] .empty-icon {
-  background: linear-gradient(135deg, var(--accent), #13A36E);
-  color: #fff;
-  box-shadow: 0 10px 26px rgba(110, 86, 207, 0.22);
-}
-
-[data-theme="mobbin"] .nav-item {
-  min-height: 38px;
-  border: 1px solid transparent;
-  border-radius: 14px;
-  color: rgba(32, 26, 22, 0.70);
-  transition: transform 0.16s ease, background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
-}
-
-[data-theme="mobbin"] .nav-item:hover {
-  color: var(--text);
-  background: rgba(110, 86, 207, 0.07);
-  transform: translateX(2px);
-}
-
-[data-theme="mobbin"] .nav-item.active {
-  color: var(--text);
-  border-color: rgba(110, 86, 207, 0.18);
-  background: linear-gradient(135deg, rgba(238,232,255,0.95), rgba(255,255,255,0.82));
-  box-shadow: 0 8px 22px rgba(110, 86, 207, 0.12);
-}
-
-[data-theme="mobbin"] .sidebar-user-card,
-[data-theme="mobbin"] .sidebar-update-btn {
-  border-radius: 18px;
-  border-color: rgba(42, 34, 25, 0.08);
-  background: rgba(255,255,255,0.76);
-  box-shadow: var(--mobbin-shadow-sm);
-}
-
-[data-theme="mobbin"] .sidebar-user-card:hover {
-  border-color: rgba(110, 86, 207, 0.22);
-  background: #fff;
-  transform: translateY(-1px);
-}
-
-[data-theme="mobbin"] .sidebar-user-avatar {
-  background: linear-gradient(135deg, #6E56CF, #13A36E);
-  box-shadow: 0 8px 22px rgba(110, 86, 207, 0.20);
+[data-theme="mobbin"] .main-wrap {
+  gap: 0;
 }
 
 [data-theme="mobbin"] .page {
   background:
-    radial-gradient(circle at 90% 0%, rgba(238, 232, 255, 0.50), transparent 26%),
-    radial-gradient(circle at 8% 100%, rgba(221, 248, 238, 0.48), transparent 30%);
+    radial-gradient(circle at 88% 4%, var(--v0-lavender), transparent 28%),
+    radial-gradient(circle at 6% 96%, var(--v0-blue), transparent 26%),
+    var(--panel);
+  background-attachment: fixed;
+}
+
+[data-theme="mobbin"] .page.active {
+  animation: v0PageIn 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes v0PageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ——— Brand & nav ——— */
+[data-theme="mobbin"] .brand {
+  padding: 6px 10px 18px;
+}
+
+[data-theme="mobbin"] .brand-name {
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: -0.04em;
+}
+
+[data-theme="mobbin"] .auth-logo:not(.auth-logo--key),
+[data-theme="mobbin"] .empty-icon {
+  background: #0a0a0a;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+}
+
+[data-theme="mobbin"] .auth-logo:not(.auth-logo--key) {
+  background: transparent;
+  box-shadow: 0 8px 24px rgba(192, 0, 0, 0.16);
+}
+
+[data-theme="mobbin"] .nav-group-label {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+[data-theme="mobbin"] .nav-group-figma .nav-group-label {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
+[data-theme="mobbin"] .nav-divider {
+  background: var(--border);
+  margin: 6px 8px;
+}
+
+[data-theme="mobbin"] .nav-item {
+  min-height: 36px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: calc(13px * var(--font-scale));
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+[data-theme="mobbin"] .nav-item:hover {
+  color: var(--text);
+  background: rgba(0, 0, 0, 0.04);
+  transform: none;
+}
+
+[data-theme="mobbin"] .nav-item.active {
+  color: var(--text);
+  border-color: var(--border);
+  background: rgba(0, 0, 0, 0.05);
+  box-shadow: none;
+}
+
+[data-theme="mobbin"] .sidebar-user-card,
+[data-theme="mobbin"] .sidebar-update-btn {
+  border-radius: 10px;
+  border-color: var(--border);
+  background: var(--panel-hover);
+  box-shadow: none;
+}
+
+[data-theme="mobbin"] .sidebar-user-card:hover {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: #f5f5f5;
+  transform: none;
+}
+
+[data-theme="mobbin"] .sidebar-user-avatar {
+  background: #0a0a0a;
+  color: #fff;
+  box-shadow: none;
+}
+
+[data-theme="mobbin"] .sidebar-update-btn {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+/* ——— Buttons & inputs ——— */
+[data-theme="mobbin"] .btn-secondary,
+[data-theme="mobbin"] .agent-btn-secondary {
+  border-color: var(--border);
+  background: #fff;
+  color: var(--text);
+  border-radius: 10px;
+  box-shadow: none;
+}
+
+[data-theme="mobbin"] .btn-secondary:hover:not(:disabled),
+[data-theme="mobbin"] .agent-btn-secondary:hover:not(:disabled) {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: #f5f5f5;
+}
+
+[data-theme="mobbin"] kbd,
+[data-theme="mobbin"] .combo-key {
+  border-color: var(--border);
+  background: #f5f5f5;
+  color: var(--text);
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+[data-theme="mobbin"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="mobbin"] ::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.18);
+  background-clip: padding-box;
+}
+
+[data-theme="mobbin"] ::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 [data-theme="mobbin"] :is(.btn-play, .btn-secondary, .btn-ghost, .icon-btn, .pf-btn, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary, .magnific-secondary, .magnific-connect-btn) {
-  transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease, opacity 0.16s ease;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.14s ease, box-shadow 0.16s ease, opacity 0.16s ease;
 }
 
 [data-theme="mobbin"] :is(.btn-play, .pf-btn--primary, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary) {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--accent), #8268EA);
-  color: #fff;
-  box-shadow: 0 10px 24px rgba(110, 86, 207, 0.20);
+  background: var(--accent);
+  color: var(--accent-text);
+  border-radius: 10px;
+  box-shadow: none;
 }
 
 [data-theme="mobbin"] :is(.btn-play, .btn-secondary, .btn-ghost, .icon-btn, .pf-btn, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary, .magnific-secondary, .magnific-connect-btn):hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 12px 30px rgba(42, 34, 25, 0.12);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="mobbin"] :is(.btn-play, .pf-btn--primary, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary):hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 [data-theme="mobbin"] :is(.btn-play, .btn-secondary, .btn-ghost, .icon-btn, .pf-btn, .auth-submit, .role-picker-confirm, .make-composer-send, .nb-generate-btn, .bm-action-btn, .magnific-primary, .magnific-secondary, .magnific-connect-btn):active:not(:disabled) {
@@ -110,91 +216,87 @@
 }
 
 [data-theme="mobbin"] :is(button, input, textarea, select, [tabindex]):focus-visible {
-  outline: 3px solid rgba(110, 86, 207, 0.20);
-  outline-offset: 3px;
+  outline: 2px solid var(--v0-focus);
+  outline-offset: 2px;
 }
 
 [data-theme="mobbin"] :is(input, textarea, select, .agent-composer-input, .make-composer-input, .nb-prompt) {
-  border-color: rgba(42, 34, 25, 0.10);
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.70);
+  border-color: var(--border);
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: none;
 }
 
 [data-theme="mobbin"] :is(input, textarea, select, .agent-composer-input, .make-composer-input, .nb-prompt):focus {
-  border-color: rgba(110, 86, 207, 0.46);
-  box-shadow: 0 0 0 4px rgba(110, 86, 207, 0.12);
+  border-color: var(--v0-focus);
+  box-shadow: 0 0 0 4px var(--v0-focus-ring);
 }
 
+/* ——— Cards & surfaces ——— */
 [data-theme="mobbin"] :is(.chip, .search-filter-chip, .tpl-tab, .magnific-filter) {
   border-radius: 999px;
-  border-color: rgba(42, 34, 25, 0.08);
-  background: rgba(255, 255, 255, 0.72);
+  border-color: var(--border);
+  background: #fff;
 }
 
 [data-theme="mobbin"] :is(.chip.active, .search-filter-chip.active, .tpl-tab.active, .magnific-filter.active) {
-  border-color: rgba(110, 86, 207, 0.24);
-  background: var(--mobbin-lilac);
+  border-color: rgba(0, 0, 0, 0.16);
+  background: #f5f5f5;
   color: var(--text);
 }
 
 [data-theme="mobbin"] :is(.hotkey-row, .tpl-card, .bm-card, .nb-card, .note-card, .agent-header-card, .agent-link-card, .make-starter-card, .pf-card, .settings-card, .theme-card, .metask-card, .magnific-panel, .magnific-tool-result, .auth-card, .role-card, .upd-card) {
-  border-color: rgba(42, 34, 25, 0.08);
-  background: rgba(255, 255, 255, 0.78);
+  border-color: var(--border);
+  background: #fff;
+  border-radius: var(--mobbin-radius-lg);
   box-shadow: var(--mobbin-shadow-sm);
 }
 
 [data-theme="mobbin"] :is(.hotkey-row, .tpl-card, .bm-card, .nb-card, .note-card, .agent-link-card, .make-starter-card, .theme-card, .role-card):hover {
-  border-color: rgba(110, 86, 207, 0.18);
+  border-color: rgba(0, 0, 0, 0.12);
   box-shadow: var(--mobbin-shadow);
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 [data-theme="mobbin"] :is(.empty-state, .templates-empty, .nb-preview-empty, .magnific-tool-empty, .metask-empty, .agent-session-empty, .custom-themes-empty) {
-  border: 1px dashed rgba(110, 86, 207, 0.24);
+  border: 1px dashed rgba(0, 0, 0, 0.12);
   border-radius: var(--mobbin-radius-lg);
-  background:
-    radial-gradient(circle at 18% 10%, rgba(238, 232, 255, 0.70), transparent 34%),
-    rgba(255, 255, 255, 0.70);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 [data-theme="mobbin"] .search-page-input-wrap,
 [data-theme="mobbin"] .make-composer,
 [data-theme="mobbin"] .agent-composer {
-  border-color: rgba(42, 34, 25, 0.08);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.86);
+  border-color: var(--border);
+  border-radius: 14px;
+  background: #fff;
   box-shadow: var(--mobbin-shadow-sm);
 }
 
 [data-theme="mobbin"] .modal {
-  border-radius: 28px;
-  border-color: rgba(42, 34, 25, 0.10);
-  background: rgba(255, 252, 247, 0.96);
+  border-radius: 16px;
+  border-color: var(--border);
+  background: #fff;
   box-shadow: var(--mobbin-shadow-strong);
 }
 
 [data-theme="mobbin"] .auth-gate {
-  background:
-    radial-gradient(circle at 20% 20%, rgba(238, 232, 255, 0.92), transparent 34%),
-    radial-gradient(circle at 84% 74%, rgba(221, 248, 238, 0.82), transparent 34%),
-    #F5F2EC;
+  background: #000;
 }
 
-[data-theme="mobbin"] .auth-card,
 [data-theme="mobbin"] .role-card,
 [data-theme="mobbin"] .ob-shell {
-  border-color: rgba(42, 34, 25, 0.08);
-  background: rgba(255, 252, 247, 0.88);
+  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--mobbin-shadow-strong);
-  backdrop-filter: blur(24px);
 }
 
 [data-theme="mobbin"] .magnific-status-panel,
 [data-theme="mobbin"] .agent-status-banner,
 [data-theme="mobbin"] .tpl-import-banner,
 [data-theme="mobbin"] .magnific-session-banner {
-  border-color: rgba(110, 86, 207, 0.18);
-  background: linear-gradient(135deg, rgba(238,232,255,0.72), rgba(255,255,255,0.72));
+  border-color: var(--border);
+  background: #f5f5f5;
 }
 
 [data-theme="mobbin"] .webtab-page,
@@ -206,49 +308,48 @@
 [data-theme="mobbin"] .webtab-toolbar,
 [data-theme="mobbin"] .mail-toolbar,
 [data-theme="mobbin"] .notes-sidebar {
-  border-color: rgba(42, 34, 25, 0.08);
-  background: rgba(255, 255, 255, 0.72);
+  border-color: var(--border);
+  background: #fff;
 }
 
 [data-theme="mobbin"] :is(.hero, .page-header, .settings-page-header, .templates-head, .nb-hero, .bm-hero, .magnific-topbar, .agent-topbar, .make-header, .metask-header, .notes-header) {
-  border-color: rgba(42, 34, 25, 0.08);
-  background:
-    radial-gradient(circle at 84% 16%, rgba(238, 232, 255, 0.66), transparent 26%),
-    rgba(255, 255, 255, 0.62);
+  border-color: var(--border);
+  background: #fff;
+  border-radius: var(--mobbin-radius-lg);
 }
 
 [data-theme="mobbin"] :is(.hero h1, .page-title, .settings-page-title, .templates-title, .nb-title, .bm-title, .magnific-title, .agent-title, .make-title, .metask-title, .notes-title) {
-  letter-spacing: -0.045em;
+  letter-spacing: -0.04em;
+  font-weight: 600;
 }
 
 [data-theme="mobbin"] .hotkey-row {
-  border-radius: 18px;
-  background: rgba(255,255,255,0.74);
+  border-radius: 12px;
 }
 
 [data-theme="mobbin"] .row-icon,
 [data-theme="mobbin"] .combo-badge {
-  background: var(--mobbin-lilac);
-  color: var(--accent);
+  background: #f5f5f5;
+  color: var(--text);
+  border-radius: 8px;
 }
 
 [data-theme="mobbin"] .detail-header,
 [data-theme="mobbin"] .detail-card {
-  border-color: rgba(42, 34, 25, 0.08);
-  border-radius: 26px;
-  background: rgba(255,255,255,0.76);
-  box-shadow: var(--mobbin-shadow-sm);
+  border-color: var(--border);
+  border-radius: var(--mobbin-radius-lg);
+  background: #fff;
 }
 
 [data-theme="mobbin"] .search-result {
-  border-color: rgba(42, 34, 25, 0.08);
-  border-radius: 20px;
-  background: rgba(255,255,255,0.72);
-  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  border-color: var(--border);
+  border-radius: 12px;
+  background: #fff;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
 }
 
 [data-theme="mobbin"] .search-result:hover {
-  border-color: rgba(110, 86, 207, 0.18);
+  border-color: rgba(0, 0, 0, 0.12);
   box-shadow: var(--mobbin-shadow-sm);
   transform: translateY(-1px);
 }
@@ -257,14 +358,14 @@
 [data-theme="mobbin"] .nb-card,
 [data-theme="mobbin"] .bm-card,
 [data-theme="mobbin"] .make-starter-card {
-  border-radius: 24px;
+  border-radius: 14px;
 }
 
 [data-theme="mobbin"] .tpl-card::before,
 [data-theme="mobbin"] .nb-card::before,
 [data-theme="mobbin"] .bm-card::before,
 [data-theme="mobbin"] .make-starter-card::before {
-  opacity: 0.55;
+  opacity: 0.2;
 }
 
 [data-theme="mobbin"] .agent-layout,
@@ -273,38 +374,178 @@
   background: transparent;
 }
 
+[data-theme="mobbin"] #page-agent.active {
+  background: transparent;
+  padding: 0;
+}
+
+/* ——— Konstancia / agent (v0 chat) ——— */
+[data-theme="mobbin"] .agent-chat {
+  --agent-bg: #fafafa;
+  --agent-card: #ffffff;
+  --agent-surface: #f5f5f5;
+  --agent-ink: #0a0a0a;
+  --agent-muted: rgba(10, 10, 10, 0.55);
+  --agent-line: rgba(0, 0, 0, 0.08);
+  --agent-accent: #0a0a0a;
+  --agent-accent-soft: rgba(0, 0, 0, 0.06);
+  --agent-radius-xl: 16px;
+  --agent-radius-lg: 14px;
+  --agent-radius-md: 10px;
+  --agent-shadow: var(--mobbin-shadow-sm);
+}
+
+[data-theme="mobbin"] .agent-sidebar {
+  background: #fff;
+  border-right-color: var(--border);
+}
+
 [data-theme="mobbin"] .agent-header-card {
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 90% 10%, rgba(221, 248, 238, 0.62), transparent 30%),
-    rgba(255,255,255,0.76);
+  border-radius: 16px;
+  background: #fff;
 }
 
 [data-theme="mobbin"] .agent-composer,
 [data-theme="mobbin"] .make-composer {
-  border-radius: 28px;
+  border-radius: 14px;
 }
 
 [data-theme="mobbin"] .agent-message,
 [data-theme="mobbin"] .make-message {
-  border-radius: 20px;
+  border-radius: 12px;
 }
 
-[data-theme="mobbin"] .magnific-topbar {
-  border-bottom-color: rgba(42, 34, 25, 0.08);
+[data-theme="mobbin"] .agent-sidebar-new,
+[data-theme="mobbin"] .agent-chat-new,
+[data-theme="mobbin"] .agent-model-select,
+[data-theme="mobbin"] .agent-task-picker-trigger {
+  border-color: var(--border);
+  background: #fff;
+  border-radius: 10px;
+  color: var(--agent-ink);
+  box-shadow: none;
 }
 
-[data-theme="mobbin"] .magnific-sidebar {
-  border-right-color: rgba(42, 34, 25, 0.08);
-  background: rgba(255,255,255,0.50);
+[data-theme="mobbin"] .agent-session-item {
+  border-radius: 8px;
+  border-color: var(--border);
+  background: transparent;
 }
 
-[data-theme="mobbin"] .magnific-mode {
+[data-theme="mobbin"] .agent-session-item:hover {
+  border-color: var(--border);
+  background: #f5f5f5;
+}
+
+[data-theme="mobbin"] .agent-session-item.is-active {
+  border-color: rgba(0, 0, 0, 0.14);
+  background: #f5f5f5;
+  box-shadow: none;
+}
+
+[data-theme="mobbin"] .agent-header-card,
+[data-theme="mobbin"] .agent-msg-bubble,
+[data-theme="mobbin"] .agent-link-card,
+[data-theme="mobbin"] .agent-brief-panel,
+[data-theme="mobbin"] .agent-labor-panel,
+[data-theme="mobbin"] .agent-followup,
+[data-theme="mobbin"] .agent-sug,
+[data-theme="mobbin"] .mobbin-picker,
+[data-theme="mobbin"] .mobbin-style-picker {
+  border-color: var(--border);
+  background: #fff;
+}
+
+[data-theme="mobbin"] .agent-msg-user .agent-msg-bubble {
+  background: #0a0a0a;
+  border-color: transparent;
+  color: #fff;
+}
+
+[data-theme="mobbin"] .agent-msg-assistant .agent-msg-bubble {
+  background: #fff;
+}
+
+[data-theme="mobbin"] .agent-composer-send,
+[data-theme="mobbin"] .agent-followup-btn--primary {
+  background: #0a0a0a;
+  border-color: transparent;
+  color: #fff;
+  border-radius: 10px;
+}
+
+[data-theme="mobbin"] .agent-sug:hover {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: #f5f5f5;
+}
+
+[data-theme="mobbin"] .agent-sug-icon {
+  background: #f5f5f5;
+  color: var(--text);
+}
+
+[data-theme="mobbin"] .mobbin-pick-card,
+[data-theme="mobbin"] .mobbin-style-card {
   border-radius: 14px;
 }
 
+[data-theme="mobbin"] .mobbin-pick-card:hover:not(:disabled),
+[data-theme="mobbin"] .mobbin-style-card:hover:not(:disabled) {
+  border-color: rgba(0, 0, 0, 0.14);
+  transform: translateY(-1px);
+}
+
+[data-theme="mobbin"] .mobbin-style-cta,
+[data-theme="mobbin"] .mobbin-pick-open {
+  color: var(--text);
+  font-weight: 600;
+}
+
+[data-theme="mobbin"] #page-search.active {
+  background:
+    radial-gradient(circle at 50% 20%, var(--v0-lavender), transparent 42%),
+    radial-gradient(circle at 80% 90%, var(--v0-blue), transparent 36%),
+    var(--panel);
+}
+
+[data-theme="mobbin"] .search-page-header h1 {
+  font-weight: 600;
+  font-size: 32px;
+  letter-spacing: -0.045em;
+}
+
+[data-theme="mobbin"] .search-page-input-wrap {
+  border-radius: 14px;
+  min-height: 52px;
+  box-shadow: var(--mobbin-shadow-sm);
+}
+
+[data-theme="mobbin"] .search-page-input-wrap.is-focused,
+[data-theme="mobbin"] .search-page-input-wrap:focus-within {
+  border-color: var(--v0-focus);
+  box-shadow: 0 0 0 4px var(--v0-focus-ring);
+}
+
+[data-theme="mobbin"] .role-picker-overlay {
+  background: rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(6px);
+}
+
+[data-theme="mobbin"] .magnific-topbar {
+  border-bottom-color: var(--border);
+}
+
+[data-theme="mobbin"] .magnific-sidebar {
+  border-right-color: var(--border);
+  background: #fafafa;
+}
+
+[data-theme="mobbin"] .magnific-mode {
+  border-radius: 8px;
+}
+
 [data-theme="mobbin"] .magnific-mode.active {
-  background: var(--mobbin-lilac);
+  background: #f0f0f0;
   color: var(--text);
 }
 
@@ -312,11 +553,9 @@
 [data-theme="mobbin"] .magnific-media-frame,
 [data-theme="mobbin"] .bm-preview,
 [data-theme="mobbin"] .image-preview {
-  border-color: rgba(42, 34, 25, 0.08);
-  border-radius: 24px;
-  background:
-    linear-gradient(135deg, rgba(238,232,255,0.38), rgba(221,248,238,0.22)),
-    rgba(255,255,255,0.68);
+  border-color: var(--border);
+  border-radius: 14px;
+  background: #fafafa;
 }
 
 [data-theme="mobbin"] .metask-column,
@@ -324,54 +563,47 @@
 [data-theme="mobbin"] .note-card,
 [data-theme="mobbin"] .settings-section,
 [data-theme="mobbin"] .custom-theme-row {
-  border-color: rgba(42, 34, 25, 0.08);
-  border-radius: 22px;
-  background: rgba(255,255,255,0.72);
-  box-shadow: var(--mobbin-shadow-sm);
-}
-
-[data-theme="mobbin"] .theme-card {
-  background: rgba(255,255,255,0.74);
+  border-color: var(--border);
+  border-radius: 12px;
+  background: #fff;
 }
 
 [data-theme="mobbin"] .theme-card.active {
-  border-color: rgba(110, 86, 207, 0.52);
-  box-shadow: 0 0 0 4px rgba(110, 86, 207, 0.12), var(--mobbin-shadow);
+  border-color: #0a0a0a;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.06), var(--mobbin-shadow-sm);
 }
 
-[data-theme="mobbin"] .upd-card {
-  background:
-    radial-gradient(circle at 20% 10%, rgba(238,232,255,0.72), transparent 30%),
-    rgba(255,255,255,0.76);
+[data-theme="mobbin"] .make-chat {
+  --make-accent: #0a0a0a;
+  --make-surface: #f5f5f5;
+  --make-ink: #0a0a0a;
 }
 
-@keyframes mobbinFloatIn {
+[data-theme="mobbin"] #page-make.active {
+  background: transparent;
+}
+
+/* Staggered card entrance */
+@keyframes v0FloatIn {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.985);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes mobbinSoftPulse {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(0, -6px, 0) scale(1.015);
+    transform: translateY(0);
   }
 }
 
 [data-theme="mobbin"] .page.active :is(.hotkey-row, .tpl-card, .nb-card, .bm-card, .note-card, .pf-card, .agent-header-card, .make-starter-card) {
-  animation: mobbinFloatIn 0.36s ease both;
+  animation: v0FloatIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-[data-theme="mobbin"] .pf-preview-glow,
-[data-theme="mobbin"] .pf-hero::after {
-  animation: mobbinSoftPulse 7s ease-in-out infinite;
+[data-theme="mobbin"] .search-page-input-wrap:focus-within,
+[data-theme="mobbin"] .agent-composer:focus-within,
+[data-theme="mobbin"] .make-composer:focus-within {
+  border-color: var(--v0-focus);
+  box-shadow: 0 0 0 4px var(--v0-focus-ring);
 }
 
 @media (prefers-reduced-motion: reduce) {

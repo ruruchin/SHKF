@@ -30,10 +30,10 @@ export const DEFAULT_APP_SETTINGS = {
     speechLanguage: 'ru-RU',
   },
   agent: {
-    provider: 'gigachat',
+    provider: 'konstancia',
     credentials: '',
     scope: 'GIGACHAT_API_PERS',
-    model: 'GigaChat-2-Pro',
+    model: 'Konstancia',
     ignoreTls: true,
     keepChatHistory: true,
     clearInputAfterSend: true,
@@ -41,8 +41,28 @@ export const DEFAULT_APP_SETTINGS = {
     designMemoryMode: 'hybrid',
     figmaCriticEnabled: true,
     mobbinApiKey: '',
+    figmaNanobananaImages: false,
     mobbinEnabled: true,
     siteBuilderEnabled: false,
+    cursorApiKey: '',
+    cursorModel: 'composer-2.5',
+    cursorFigmaBuildEnabled: false,
+    webSearchEnabled: true,
+    konstanciaCloudUrl: '',
+    konstanciaCloudApiKey: '',
+  },
+  vtubeStudio: {
+    enabled: false,
+    live2dModelPath: '',
+    live2dCostume: 'costume_v0000.exp3.json',
+    showDock: true,
+    emotions: {
+      neutral: '',
+      joy: '',
+      anger: '',
+      thoughtful: '',
+      epiphany: '',
+    },
   },
   nanobanana: {
     apiKey: '',
@@ -65,6 +85,21 @@ export const DEFAULT_APP_SETTINGS = {
     apiKey: '',
     notifyOnUpdate: true,
     pollIntervalMinutes: 5,
+  },
+  taskLearning: {
+    enabled: true,
+    scope: 'all_visible',
+    maxIssuesPerSync: 100,
+    distillOnClose: true,
+    indexComments: true,
+    indexAttachments: true,
+    catalogOnlyOnSync: true,
+    maxChunks: 80000,
+    cloudSync: false,
+    hfMl: {
+      enabled: true,
+      intentThreshold: 0.45,
+    },
   },
   zimbra: {
     baseUrl: '',
@@ -92,6 +127,23 @@ export const DEFAULT_APP_SETTINGS = {
   },
 };
 
+function normalizeLive2dSettings(raw = {}) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    enabled: src.enabled === true,
+    live2dModelPath: String(src.live2dModelPath || '').trim(),
+    live2dCostume: String(src.live2dCostume || 'costume_v0000.exp3.json').trim() || 'costume_v0000.exp3.json',
+    showDock: src.showDock !== false,
+    emotions: {
+      neutral: String(src.emotions?.neutral || '').trim(),
+      joy: String(src.emotions?.joy || '').trim(),
+      anger: String(src.emotions?.anger || '').trim(),
+      thoughtful: String(src.emotions?.thoughtful || '').trim(),
+      epiphany: String(src.emotions?.epiphany || '').trim(),
+    },
+  };
+}
+
 function deepMerge(target, source) {
   const out = { ...target };
   for (const key of Object.keys(source || {})) {
@@ -116,11 +168,13 @@ export function normalizeConfig(config) {
     settings.user.role = String(settings.user.role).trim() || null;
   }
 
+  settings.vtubeStudio = normalizeLive2dSettings(settings.vtubeStudio);
+
   return {
     ...config,
     port: settings.connection.pluginPort,
     figmaCdpPort: settings.connection.cdpPort,
-    theme: config.theme || 'dark',
+    theme: config.theme || 'mobbin',
     settings,
   };
 }

@@ -12,7 +12,7 @@ import {
 } from '../shared/site-builder-blueprint.js';
 import { buildProjectFromBlueprint } from '../shared/site-builder-scaffold.js';
 import { buildTaskContextBlock } from '../shared/agent-prompts.js';
-import { MobbinService, inferMobbinPlatform } from './mobbin-service.js';
+import { MobbinService, inferMobbinPlatform, mobbinNetworkErrorMessage } from './mobbin-service.js';
 
 export { isSiteBuildIntent };
 
@@ -31,29 +31,41 @@ export class SiteBuilderService {
   }
 
   async gatherReferences(message, options = {}) {
+    const { extractMobbinSearchQuery } = await import('../shared/mobbin-search-query.js');
+    const searchQuery = extractMobbinSearchQuery(message);
     const platform = options.platform || inferMobbinPlatform(message);
     const refs = [];
     let mobbinContext = '';
     let live = false;
 
     if (this.useMobbinLive && this.mobbinService.isConfigured()) {
-      const liveResult = await this.mobbinService.gatherReferences(message, {
-        platform,
-        screenLimit: options.screenLimit ?? 8,
-        flowLimit: options.flowLimit ?? 4,
-      });
-      if (liveResult.refs?.length) {
-        refs.push(...liveResult.refs);
-        mobbinContext = this.mobbinService.buildContextBlock(liveResult.refs, { platform });
-        live = true;
+      try {
+        const liveResult = await this.mobbinService.gatherReferences(searchQuery, {
+          platform,
+          screenLimit: options.screenLimit ?? 8,
+          flowLimit: options.flowLimit ?? 4,
+        });
+        if (liveResult.refs?.length) {
+          refs.push(...liveResult.refs);
+          mobbinContext = this.mobbinService.buildContextBlock(liveResult.refs, { platform });
+          live = true;
+        } else if (liveResult.message) {
+          mobbinContext = `## Mobbin\n${liveResult.message}`;
+        }
+      } catch (err) {
+        mobbinContext = `## Mobbin\n${mobbinNetworkErrorMessage(err)}`;
       }
     }
 
     if (this.designMemoryService) {
-      const local = await this.designMemoryService.retrieve(message, {
-        limit: 8,
-        mode: this.retrievalMode,
-      });
+      const useLocal = !live || refs.length < 3;
+      const local = useLocal
+        ? await this.designMemoryService.retrieve(searchQuery, {
+          limit: 8,
+          mode: this.retrievalMode,
+          platform,
+        })
+        : [];
       const merged = new Map();
       for (const item of [...refs, ...local]) {
         const key = item.url || item.id;
@@ -114,7 +126,7 @@ export class SiteBuilderService {
 
   async build({ message, task = null, history = [] } = {}) {
     if (!this.agentService?.isConfigured()) {
-      return { ok: false, message: 'Подключите GigaChat: Настройки → ИИ Агент' };
+      return { ok: false, message: 'Подключите GigaChat: Настройки → Konstancia' };
     }
 
     const refsBundle = await this.gatherReferences(message);

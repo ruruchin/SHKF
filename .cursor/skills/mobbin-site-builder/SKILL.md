@@ -1,6 +1,6 @@
 ---
 name: mobbin-site-builder
-description: Build multi-page sites and web apps using Mobbin UI references. Use when the user asks to scaffold, layout, or code landing pages, dashboards, SaaS apps, or multi-page React sites in the figma-hotkeys / FIRURU repo.
+description: Build multi-page sites and web apps using Mobbin UI references. Use when the user asks to scaffold, layout, or code landing pages, dashboards, SaaS apps, or multi-page React sites in the figma-hotkeys / SHKF repo.
 ---
 
 # Mobbin-backed site builder
@@ -22,7 +22,7 @@ description: Build multi-page sites and web apps using Mobbin UI references. Use
    - For greenfield prototypes: React 18 + Vite + react-router-dom, CSS variables, semantic HTML, Russian copy.
 5. **Cite refs** in summary: Mobbin URLs used, what pattern each informed.
 
-## FIRURU in-app agent
+## SHKF in-app agent
 
 The Electron app exposes **ИИ Агент → «Сайт / App»** or `/site …` which calls `agent-site-build` with Mobbin + design memory. User can set **Mobbin API key** in Settings → ИИ Агент.
 

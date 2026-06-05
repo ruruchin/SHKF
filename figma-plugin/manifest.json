@@ -1,6 +1,6 @@
 {
-  "name": "FIRURU Bridge",
-  "id": "firuru-bridge-v2",
+  "name": "SHKF Bridge",
+  "id": "shkf-bridge-v2",
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
@@ -8,12 +8,39 @@
   "documentAccess": "dynamic-page",
   "networkAccess": {
     "allowedDomains": [
-      "ws://localhost:3847"
+      "ws://localhost:3847",
+      "ws://localhost:3848",
+      "ws://localhost:3849",
+      "ws://localhost:3850",
+      "ws://localhost:3851",
+      "ws://localhost:3852",
+      "ws://localhost:3853",
+      "ws://localhost:3854",
+      "ws://localhost:3855",
+      "ws://localhost:3856"
     ],
     "devAllowedDomains": [
       "ws://localhost:3847",
-      "http://localhost:3847"
+      "ws://localhost:3848",
+      "ws://localhost:3849",
+      "ws://localhost:3850",
+      "ws://localhost:3851",
+      "ws://localhost:3852",
+      "ws://localhost:3853",
+      "ws://localhost:3854",
+      "ws://localhost:3855",
+      "ws://localhost:3856",
+      "http://localhost:3847",
+      "http://localhost:3848",
+      "http://localhost:3849",
+      "http://localhost:3850",
+      "http://localhost:3851",
+      "http://localhost:3852",
+      "http://localhost:3853",
+      "http://localhost:3854",
+      "http://localhost:3855",
+      "http://localhost:3856"
     ],
-    "reasoning": "Плагин подключается к локальному приложению FIRURU на компьютере пользователя через WebSocket (порт 3847 по умолчанию)."
+    "reasoning": "Плагин подключается к локальному приложению SHKF через WebSocket на localhost (порты 3847–3856)."
   }
 }

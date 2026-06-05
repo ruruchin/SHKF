@@ -240,6 +240,41 @@ export function formatHoursDisplay(hours) {
   return String(rounded).replace('.', ',');
 }
 
+/** Однострочная сводка трудозатрат для контекста агента (прошлые задачи). */
+export function buildLaborSummaryCompact(task) {
+  if (!task?.id) return '';
+  const entries = getLaborDisplayEntries(task);
+  const withHours = entries.filter((e) => e.hours != null);
+  const total = withHours.reduce((sum, e) => sum + e.hours, 0);
+  const est = parseHoursValue(task.estimatedHours);
+  if (!withHours.length && est == null) return '';
+
+  const parts = [];
+  if (total > 0) {
+    const byPerson = summarizeLaborByPerson(withHours);
+    parts.push(`факт **${formatHours(total)} ч**`);
+    if (byPerson.length === 1) {
+      parts.push(`(${byPerson[0].user})`);
+    } else if (byPerson.length > 1) {
+      parts.push(`(${byPerson.map((p) => `${p.user}: ${formatHours(p.hours)} ч`).join(', ')})`);
+    }
+  } else {
+    parts.push('факт: часы не зафиксированы');
+  }
+
+  if (est != null) {
+    parts.push(`оценка **${formatHours(est)} ч**`);
+    if (total > 0 && est > 0) {
+      const ratio = total / est;
+      if (ratio > 1.25) parts.push('→ недооценка');
+      else if (ratio < 0.75) parts.push('→ переоценка');
+      else parts.push('→ в оценку');
+    }
+  }
+
+  return parts.join(' · ');
+}
+
 /** Текст комментария для журнала Redmine (плагин трудозатрат). */
 export function formatLaborLogNotes(hours, description) {
   const h = formatHoursDisplay(Number(hours));

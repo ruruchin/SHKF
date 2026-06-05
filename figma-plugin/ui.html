@@ -656,7 +656,7 @@
         </div>
         <div class="connect-bar-port">
           <label for="port">Порт</label>
-          <input id="port" type="number" value="3847" min="1024" max="65535" aria-label="Порт сервера" />
+          <input id="port" type="number" value="3847" min="3847" max="3856" aria-label="Порт сервера (3847–3856, авто-поиск)" title="SHKF ищет свободный порт 3847–3856. Плагин подберёт автоматически." />
         </div>
         <button class="btn-play" id="connect" type="button">Подключиться</button>
       </div>
@@ -794,7 +794,7 @@
       error: {
         cls: 'error',
         hero: 'Нет связи',
-        sub: 'Проверьте, что SHKF запущен и порт верный',
+        sub: 'Запустите SHKF — плагин ищет порты 3847–3856',
         btn: 'Повторить',
       },
     };
@@ -861,24 +861,61 @@
       lastActionEl.classList.add('visible');
     }
 
-    function connect() {
-      if (ws) {
-        ws.close();
-        ws = null;
+    const BRIDGE_PORT_MIN = 3847;
+    const BRIDGE_PORT_MAX = 3856;
+    let connectGen = 0;
+
+    function bridgePortCandidates(preferred) {
+      const ports = [];
+      const pref = Number(preferred);
+      if (pref >= BRIDGE_PORT_MIN && pref <= BRIDGE_PORT_MAX) ports.push(pref);
+      for (let p = BRIDGE_PORT_MIN; p <= BRIDGE_PORT_MAX; p += 1) {
+        if (!ports.includes(p)) ports.push(p);
       }
-      clearTimeout(reconnectTimer);
-      const port = portInput.value || '3847';
-      shouldReconnect = true;
-      setStatus('connecting');
+      return ports;
+    }
 
-      ws = new WebSocket('ws://localhost:' + port);
+    function tryConnectPort(port, timeoutMs) {
+      return new Promise((resolve, reject) => {
+        let settled = false;
+        const socket = new WebSocket('ws://localhost:' + port);
+        const timer = setTimeout(() => {
+          if (settled) return;
+          settled = true;
+          try { socket.close(); } catch (e) { /* */ }
+          reject(new Error('timeout'));
+        }, timeoutMs || 1600);
 
-      ws.onopen = () => {
-        setStatus('connected');
-        ws.send(JSON.stringify({ type: 'register', client: 'figma-plugin' }));
-      };
+        socket.onopen = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          resolve({ port, socket });
+        };
 
-      ws.onmessage = (event) => {
+        socket.onerror = () => {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          reject(new Error('error'));
+        };
+      });
+    }
+
+    async function discoverBridge() {
+      const ports = bridgePortCandidates(portInput.value || BRIDGE_PORT_MIN);
+      for (const port of ports) {
+        try {
+          return await tryConnectPort(port);
+        } catch (e) {
+          /* try next port */
+        }
+      }
+      return null;
+    }
+
+    function bindSocket(socket) {
+      socket.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
           if (msg.type === 'action') {
@@ -932,8 +969,8 @@
         }
       };
 
-      ws.onclose = () => {
-        ws = null;
+      socket.onclose = () => {
+        if (ws === socket) ws = null;
         if (shouldReconnect) {
           setStatus('error');
           reconnectTimer = setTimeout(connect, 3000);
@@ -942,9 +979,36 @@
         }
       };
 
-      ws.onerror = () => {
-        setStatus('error');
+      socket.onerror = () => {
+        if (ws === socket) setStatus('error');
       };
+    }
+
+    async function connect() {
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+      clearTimeout(reconnectTimer);
+      shouldReconnect = true;
+      setStatus('connecting');
+
+      const gen = ++connectGen;
+      const found = await discoverBridge();
+      if (gen !== connectGen) return;
+
+      if (!found) {
+        setStatus('error');
+        reconnectTimer = setTimeout(connect, 3000);
+        return;
+      }
+
+      portInput.value = String(found.port);
+      ws = found.socket;
+      bindSocket(ws);
+      setStatus('connected');
+      statusSub.textContent = 'SHKF Bridge · порт ' + found.port + ' — можно свернуть окно';
+      ws.send(JSON.stringify({ type: 'register', client: 'figma-plugin' }));
     }
 
     function renderActions(hotkeys) {

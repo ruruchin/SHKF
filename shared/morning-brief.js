@@ -44,9 +44,9 @@ function scoreTask(task, updateIds, now) {
 }
 
 /**
- * @param {{ tasks?: object[], updates?: object[], userName?: string }} input
+ * @param {{ tasks?: object[], updates?: object[], userName?: string, processInsights?: object[] }} input
  */
-export function buildMorningBrief({ tasks = [], updates = [], userName = '' } = {}) {
+export function buildMorningBrief({ tasks = [], updates = [], userName = '', processInsights = [] } = {}) {
   const now = Date.now();
   const list = Array.isArray(tasks) ? tasks : [];
   const updateIds = new Set((updates || []).map((t) => t.id));
@@ -74,6 +74,8 @@ export function buildMorningBrief({ tasks = [], updates = [], userName = '' } = 
 
   const greetingName = userName?.trim() || 'дизайнер';
 
+  const insights = Array.isArray(processInsights) ? processInsights.slice(0, 6) : [];
+
   return {
     dateLabel: formatBriefDate(),
     greeting: `Доброе утро, ${greetingName}`,
@@ -82,6 +84,7 @@ export function buildMorningBrief({ tasks = [], updates = [], userName = '' } = 
     staleTasks,
     recentTasks,
     topStart,
+    processInsights: insights,
     empty: list.length === 0,
   };
 }

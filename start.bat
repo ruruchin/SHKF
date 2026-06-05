@@ -1,4 +1,4 @@
 @echo off
-title FIRURU
+title SHKF
 cd /d "%~dp0"
 npm start

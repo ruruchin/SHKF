@@ -12,7 +12,7 @@ const customThemeAssetsDir = join(__dirname, '..', 'config', 'custom-theme-asset
 const notesLibraryPath = join(__dirname, '..', 'config', 'notes-library.json');
 const service = new HotkeyService(configPath, userLibraryPaths, customThemeAssetsDir, notesLibraryPath);
 
-service.on('log', (msg) => console.log('[firuru]', msg));
+service.on('log', (msg) => console.log('[SHKF]', msg));
 service.start();
 
 process.on('SIGINT', () => {

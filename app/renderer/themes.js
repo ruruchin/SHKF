@@ -1,4 +1,5 @@
 window.APP_THEMES = [
+  { id: 'mobbin', label: 'v0 Web', swatch: 'mobbin' },
   { id: 'dark', label: 'Тёмная', swatch: 'dark' },
   { id: 'light', label: 'Светлая', swatch: 'light' },
   { id: 'system', label: 'Система', swatch: 'system' },
@@ -11,5 +12,4 @@ window.APP_THEMES = [
   { id: 'manga', label: 'Manga', swatch: 'manga' },
   { id: 'mangaplus', label: 'MangaPlus', swatch: 'mangaplus' },
   { id: 'studio', label: 'Studio', swatch: 'studio' },
-  { id: 'mobbin', label: 'Mobbin', swatch: 'mobbin' },
 ];

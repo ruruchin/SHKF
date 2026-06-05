@@ -26,7 +26,7 @@ async function init() {
   actions = await window.api.getActions();
   actionMeta = await window.api.getActionMeta();
   window.customThemeEngine?.injectCustomThemeStyles(config);
-  applyTheme(config.theme || 'light');
+  applyTheme(config.theme || 'mobbin');
   window.applyAppSettings?.(config.settings);
   await window.initRoleNav?.(config, { requirePicker: !auth?.profile });
   updateStatus(await window.api.getStatus());
@@ -391,6 +391,7 @@ function bindEvents() {
       if (btn.dataset.page === 'github' || btn.dataset.page === 'outline') window.activateWebtab?.(btn.dataset.page);
       if (btn.dataset.page === 'notes') window.activateNotesPage?.();
       if (btn.dataset.page === 'search') window.activateSearchPage?.();
+      if (btn.dataset.page === 'pikfolder') window.activatePikFolderPage?.();
     };
   });
 
@@ -434,7 +435,7 @@ function bindEvents() {
   bindSidebarUpdater();
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-    if ((config.theme || 'light') === 'system') applyTheme('system');
+    if ((config.theme || 'mobbin') === 'system') applyTheme('system');
   });
 }
 

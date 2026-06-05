@@ -113,10 +113,11 @@
   justify-content: center;
   color: var(--text);
 }
-.ob-brand-mark svg {
+.ob-brand-mark .brand-logo {
   width: 28px;
   height: 28px;
   display: block;
+  border-radius: 4px;
 }
 .ob-brand-icon {
   width: 32px;
@@ -325,10 +326,11 @@
   color: var(--text);
   animation: obLogoPop 3s ease-in-out infinite;
 }
-.ob-visual-welcome .ob-logo svg {
+.ob-visual-welcome .ob-logo .brand-logo {
   width: 48px;
   height: 48px;
   display: block;
+  border-radius: 6px;
 }
 @keyframes obSpin { to { transform: rotate(360deg); } }
 @keyframes obLogoPop {

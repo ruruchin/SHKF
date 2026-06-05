@@ -283,41 +283,45 @@ html[data-font-size="large"] { --font-scale: 1.12; }
 }
 
 [data-theme="mobbin"] {
-  --shell: #F5F2EC;
-  --sidebar: rgba(255, 255, 255, 0.82);
-  --panel: #FFFCF7;
-  --panel-hover: #F7F2EA;
+  --shell: #FAFAFA;
+  --sidebar: #FFFFFF;
+  --panel: #FFFFFF;
+  --panel-hover: #F5F5F5;
   --elevated: #FFFFFF;
-  --border: rgba(42, 34, 25, 0.10);
-  --text: #201A16;
-  --text-secondary: rgba(32, 26, 22, 0.66);
-  --text-muted: rgba(32, 26, 22, 0.42);
-  --accent: #6E56CF;
+  --border: rgba(0, 0, 0, 0.08);
+  --text: #0A0A0A;
+  --text-secondary: rgba(10, 10, 10, 0.62);
+  --text-muted: rgba(10, 10, 10, 0.42);
+  --accent: #0A0A0A;
   --accent-text: #FFFFFF;
-  --accent-hover: #5B46B2;
-  --accent-dim: rgba(110, 86, 207, 0.13);
-  --green: #13A36E;
-  --orange: #E0792D;
-  --red: #D93D4A;
+  --accent-hover: #262626;
+  --accent-dim: rgba(10, 10, 10, 0.08);
+  --green: #16A34A;
+  --orange: #EA580C;
+  --red: #DC2626;
   --input-bg: #FFFFFF;
-  --modal-bg: #FFFCF7;
-  --shadow: rgba(42, 34, 25, 0.12);
-  --cursor-bg: #201A16;
-  --cursor-arrow: #FFFCF7;
-  --mobbin-cream: #FFFCF7;
-  --mobbin-lilac: #EEE8FF;
-  --mobbin-mint: #DDF8EE;
-  --mobbin-peach: #FFE4D1;
-  --mobbin-sky: #E4F1FF;
-  --mobbin-rose: #FFE3ED;
-  --mobbin-radius: 18px;
-  --mobbin-radius-lg: 28px;
-  --mobbin-shadow-sm: 0 1px 2px rgba(42, 34, 25, 0.04), 0 6px 18px rgba(42, 34, 25, 0.06);
-  --mobbin-shadow: 0 1px 2px rgba(42, 34, 25, 0.05), 0 18px 48px rgba(42, 34, 25, 0.10);
-  --mobbin-shadow-strong: 0 24px 70px rgba(110, 86, 207, 0.18), 0 12px 32px rgba(42, 34, 25, 0.10);
+  --modal-bg: #FFFFFF;
+  --shadow: rgba(0, 0, 0, 0.08);
+  --cursor-bg: #0A0A0A;
+  --cursor-arrow: #FFFFFF;
+  --mobbin-cream: #FAFAFA;
+  --mobbin-lilac: #F0F4FF;
+  --mobbin-mint: #F0FDF4;
+  --mobbin-peach: #FFF7ED;
+  --mobbin-sky: #EFF6FF;
+  --mobbin-rose: #FFF1F2;
+  --mobbin-radius: 10px;
+  --mobbin-radius-lg: 16px;
+  --mobbin-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --mobbin-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --mobbin-shadow-strong: 0 12px 48px rgba(0, 0, 0, 0.10);
+  --v0-blue: #DCE8F8;
+  --v0-lavender: #EDE8F8;
+  --v0-focus: rgba(59, 130, 246, 0.40);
+  --v0-focus-ring: rgba(59, 130, 246, 0.14);
 }
 
-/* anime / manga decor → anime-theme.css, manga-theme.css, mangaplus-theme.css, studio-theme.css, mobbin-theme.css */
+/* anime / manga decor → anime-theme.css, manga-theme.css, mangaplus-theme.css, studio-theme.css, mobbin-theme.css (v0 Web) */
 
 /* ===== BASE ===== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -399,6 +403,8 @@ body {
   width: 28px;
   height: 28px;
   display: block;
+  object-fit: contain;
+  border-radius: 4px;
 }
 .brand-icon {
   width: 36px; height: 36px;
@@ -568,14 +574,14 @@ html[data-no-anim] .sidebar-update-btn.is-installing .sidebar-update-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent);
-  color: var(--accent-text);
-  box-shadow: 0 10px 28px var(--accent-dim);
+  background: transparent;
+  box-shadow: 0 10px 28px rgba(192, 0, 0, 0.18);
 }
 
-.upd-icon svg {
+.upd-icon .brand-logo {
   width: 46px;
   height: 46px;
+  border-radius: 8px;
 }
 
 .upd-badge {
@@ -815,12 +821,122 @@ html[data-no-anim] .upd-btn--primary.is-installing .upd-btn-icon {
   transition: background 0.15s, color 0.15s;
 }
 .nav-item svg { flex-shrink: 0; opacity: 0.7; }
+
+.nav-item .nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: block;
+  object-fit: contain;
+  border-radius: 4px;
+  opacity: 0.92;
+}
+.nav-item .nav-item-avatar { flex-shrink: 0; }
 .nav-item:hover { background: var(--panel-hover); color: var(--text); }
 .nav-item.active {
   background: var(--elevated);
   color: var(--text);
 }
 .nav-item.active svg { opacity: 1; color: var(--accent); }
+.nav-item.active .nav-icon { opacity: 1; }
+
+.agent-brand-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--panel-hover);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.nav-item .agent-brand-avatar {
+  width: 18px;
+  height: 18px;
+}
+
+.agent-brand-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.agent-brand-avatar-img:not([src]),
+.agent-brand-avatar-img[src=""] {
+  opacity: 0;
+}
+
+.agent-brand-avatar:not(.agent-brand-avatar--live2d):not(:has(.agent-brand-avatar-img[src]))::after {
+  content: 'K';
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text-secondary);
+}
+
+.nav-item .agent-brand-avatar:not(.agent-brand-avatar--live2d):not(:has(.agent-brand-avatar-img[src]))::after {
+  font-size: 8px;
+}
+
+.agent-brand-avatar--live2d .agent-brand-avatar-img,
+.agent-brand-avatar-img[data-live2d="1"] {
+  object-position: center 12%;
+  transform: scale(1.12);
+  transform-origin: center 20%;
+}
+
+.agent-brand-avatar.is-blinking .agent-brand-avatar-img,
+.agent-brand-avatar.is-blinking .agent-avatar-img {
+  animation: agent-brand-avatar-blink 0.16s ease-out;
+}
+
+@keyframes agent-brand-avatar-blink {
+  0%, 100% {
+    transform: scale(1.12);
+    filter: none;
+  }
+  42% {
+    transform: scale(1.12) scaleY(0.82);
+    filter: brightness(0.9);
+  }
+}
+
+.agent-brand-avatar.is-blinking .agent-brand-avatar-img[data-live2d="1"],
+.agent-brand-avatar.is-blinking .agent-avatar-img[data-live2d="1"] {
+  transform-origin: center 20%;
+}
+
+.agent-brand-avatar.is-goofing .agent-brand-avatar-img,
+.agent-brand-avatar.is-goofing .agent-avatar-img {
+  animation: agent-brand-avatar-goof 0.52s cubic-bezier(0.34, 1.35, 0.52, 1);
+}
+
+@keyframes agent-brand-avatar-goof {
+  0%, 100% {
+    transform: scale(1.12) rotate(0deg);
+  }
+  28% {
+    transform: scale(1.12) rotate(-8deg) scaleY(0.94);
+  }
+  52% {
+    transform: scale(1.12) rotate(7deg) scaleY(1.04);
+  }
+  76% {
+    transform: scale(1.12) rotate(-3deg);
+  }
+}
+
+.agent-brand-avatar.is-goofing .agent-brand-avatar-img[data-live2d="1"],
+.agent-brand-avatar.is-goofing .agent-avatar-img[data-live2d="1"] {
+  transform-origin: center 20%;
+}
+
+.nav-item.active .agent-brand-avatar {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 28%, transparent);
+}
 
 /* ===== HERO ===== */
 .hero {
@@ -1486,6 +1602,7 @@ select { cursor: pointer; }
   font-weight: 700;
 }
 .nav-item.active svg { opacity: 1; color: var(--accent); }
+.nav-item.active .nav-icon { opacity: 1; }
 
 .nav-group-label {
   font-weight: 700;

@@ -1,4 +1,23 @@
 const PLAN_BLOCK_RE = /<<<FIGMA_PLAN_JSON\s*([\s\S]*?)\s*FIGMA_PLAN_JSON>>>/i;
+const PLAN_BLOCK_OPEN_RE = /<<<FIGMA_PLAN_JSON\s*([\s\S]+)/i;
+
+const OP_ALIASES = {
+  createframe: 'create_frame',
+  createtext: 'create_text',
+  createrect: 'create_rect',
+  createbutton: 'create_button',
+  createinput: 'create_input',
+  setfillsolid: 'set_fill_solid',
+  setstrokesolid: 'set_stroke_solid',
+  setcornerradius: 'set_corner_radius',
+  setautolayout: 'set_auto_layout',
+  setpadding: 'set_padding',
+  setspacing: 'set_spacing',
+  setvisibility: 'set_visibility',
+  setlayoutgrids: 'set_layout_grids',
+  setimagefill: 'set_image_fill',
+  settext: 'set_text',
+};
 const CRITIC_BLOCK_RE = /<<<FIGMA_CRITIC_JSON\s*([\s\S]*?)\s*FIGMA_CRITIC_JSON>>>/i;
 
 const ALLOWED_OPS = new Set([
@@ -6,6 +25,7 @@ const ALLOWED_OPS = new Set([
   'create_text',
   'create_rect',
   'create_button',
+  'create_input',
   'rename',
   'set_text',
   'resize',
@@ -17,6 +37,9 @@ const ALLOWED_OPS = new Set([
   'set_padding',
   'set_spacing',
   'set_visibility',
+  'set_layout_grids',
+  'set_layoutGrids',
+  'set_image_fill',
 ]);
 
 function clampNumber(value, min, max, fallback = 0) {
@@ -87,6 +110,57 @@ function extractFirstJsonArray(text) {
   return extractBalancedChunk(text, '[', ']');
 }
 
+function camelToSnakeOp(name) {
+  return String(name || '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[-\s]+/g, '_')
+    .toLowerCase();
+}
+
+export function normalizeOpKind(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  if (ALLOWED_OPS.has(s)) return s;
+  const compact = s.replace(/[_\s-]/g, '').toLowerCase();
+  if (OP_ALIASES[compact]) return OP_ALIASES[compact];
+  const snake = camelToSnakeOp(s);
+  if (ALLOWED_OPS.has(snake)) return snake;
+  const snakeCompact = snake.replace(/_/g, '');
+  if (OP_ALIASES[snakeCompact]) return OP_ALIASES[snakeCompact];
+  return snake;
+}
+
+function extractOperationsArrayLoose(text) {
+  const src = String(text || '');
+  const marker = src.search(/"operations"\s*:/i);
+  if (marker < 0) return null;
+  const after = src.slice(marker);
+  const arrStart = after.indexOf('[');
+  if (arrStart < 0) return null;
+  const chunk = extractBalancedChunk(after.slice(arrStart), '[', ']');
+  if (!chunk) return null;
+  try {
+    const arr = JSON.parse(normalizeJsonText(chunk));
+    if (Array.isArray(arr) && arr.some((x) => x && typeof x === 'object')) return arr;
+  } catch {
+    // try line-by-line op objects
+    const opObjects = [];
+    const re = /\{\s*"(?:op|type|operation)"\s*:\s*"[^"]+"/g;
+    let m;
+    while ((m = re.exec(chunk))) {
+      const piece = extractBalancedChunk(chunk.slice(m.index), '{', '}');
+      if (!piece) continue;
+      try {
+        opObjects.push(JSON.parse(normalizeJsonText(piece)));
+      } catch {
+        // skip
+      }
+    }
+    if (opObjects.length) return opObjects;
+  }
+  return null;
+}
+
 function parseJsonLoose(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
@@ -96,6 +170,8 @@ function parseJsonLoose(raw) {
   if (fenced?.[1]) attempts.push(fenced[1].trim());
   const block = text.match(PLAN_BLOCK_RE);
   if (block?.[1]) attempts.push(block[1].trim());
+  const blockOpen = text.match(PLAN_BLOCK_OPEN_RE);
+  if (blockOpen?.[1] && !block) attempts.push(blockOpen[1].trim());
   const firstObj = extractFirstJsonObject(text);
   if (firstObj) attempts.push(firstObj.trim());
   const firstArr = extractFirstJsonArray(text);
@@ -132,6 +208,10 @@ function parseJsonLoose(raw) {
       }
     }
   }
+  const looseOps = extractOperationsArrayLoose(text);
+  if (looseOps?.length) {
+    return { summary: '', assumptions: [], operations: looseOps };
+  }
   return null;
 }
 
@@ -153,7 +233,26 @@ function parseCriticJsonLoose(raw) {
       // next attempt
     }
   }
+  const looseOps = extractOperationsArrayLoose(text);
+  if (looseOps?.length) {
+    return { summary: '', assumptions: [], operations: looseOps };
+  }
   return null;
+}
+
+export function diagnoseFigmaPlanParse(raw) {
+  const text = String(raw || '');
+  const parsed = parseJsonLoose(text);
+  const rawOps = Array.isArray(parsed?.operations) ? parsed.operations : [];
+  const sanitized = rawOps.map((op) => sanitizeOperation(op)).filter(Boolean);
+  const sampleKinds = rawOps.slice(0, 8).map((op) => String(op?.op || op?.type || op?.operation || '?'));
+  return {
+    hasJson: !!parsed,
+    rawOpCount: rawOps.length,
+    sanitizedOpCount: sanitized.length,
+    sampleKinds,
+    textLen: text.length,
+  };
 }
 
 export function extractFigmaPlan(raw) {
@@ -164,15 +263,108 @@ export function extractFigmaPlan(raw) {
   const sanitizedOps = operations
     .map((op) => sanitizeOperation(op))
     .filter(Boolean)
-    .slice(0, 80);
+    .slice(0, 220);
+
+  if (!sanitizedOps.length) return null;
 
   return {
     summary: String(parsed.summary || '').trim(),
     assumptions: Array.isArray(parsed.assumptions)
       ? parsed.assumptions.map((x) => String(x || '').trim()).filter(Boolean).slice(0, 10)
       : [],
-    operations: sanitizedOps,
+    operations: normalizeFigmaPlanOperations(sanitizedOps),
   };
+}
+
+/** Индекс страницы из key/parentKey (page2, p2_hero, …). */
+export function pageIndexFromOpKey(op) {
+  if (!op) return null;
+  const key = String(op.key || '');
+  const pk = String(op.parentKey || '');
+  let m = key.match(/^page(\d+)$/) || pk.match(/^page(\d+)$/);
+  if (m) return Number(m[1]);
+  m = key.match(/^p(\d+)_/) || pk.match(/^p(\d+)_/);
+  if (m) return Number(m[1]);
+  return null;
+}
+
+export function reorderFigmaOperations(operations) {
+  const list = [...(operations || [])];
+  const keyToOp = new Map();
+  for (const op of list) {
+    if (op?.key) keyToOp.set(op.key, op);
+  }
+  const out = [];
+  const seen = new Set();
+  const visit = (op) => {
+    if (!op || seen.has(op)) return;
+    if (op.parentKey && keyToOp.has(op.parentKey)) visit(keyToOp.get(op.parentKey));
+    seen.add(op);
+    out.push(op);
+  };
+  list.forEach(visit);
+  return out.length ? out : list;
+}
+
+function stackChildrenUnderParent(ops, parentKey, startY = 56) {
+  const children = ops.filter((o) => o.parentKey === parentKey);
+  if (children.length < 2) return;
+  const ys = children.map((c) => Number(c.y) || 0);
+  const allSameY = ys.every((y) => Math.abs(y - ys[0]) < 3);
+  if (!allSameY) return;
+  let y = startY;
+  const x = 24;
+  for (const child of children) {
+    child.x = child.x != null && child.x > 0 ? child.x : x;
+    child.y = y;
+    const h = Number(child.height)
+      || (child.op === 'create_text' ? Math.max(20, Number(child.fontSize) || 16) + 8 : 0)
+      || (child.op === 'create_input' ? 72 : 0)
+      || (child.op === 'create_button' ? 48 : 0)
+      || (child.op === 'create_frame' ? Number(child.height) || 80 : 48);
+    y += h + 12;
+  }
+}
+
+export function normalizeFigmaPlanOperations(operations) {
+  if (!Array.isArray(operations) || !operations.length) return operations || [];
+  const ops = reorderFigmaOperations(operations).map((o) => ({ ...o }));
+
+  for (const op of ops) {
+    const isVisionScreen = op.op === 'create_frame' && !op.parentKey
+      && /^screen/i.test(String(op.key || ''))
+      && Number(op.width) >= 360 && Number(op.width) <= 430;
+    if (isVisionScreen && !op.layoutMode) {
+      op.layoutMode = 'VERTICAL';
+      op.padding = op.padding ?? 0;
+      op.spacing = op.spacing ?? 0;
+    }
+    const isSectionCard = op.op === 'create_frame' && op.parentKey
+      && (String(op.parentKey).includes('content') || String(op.parentKey).includes('screen'));
+    if (isSectionCard && !op.layoutMode && Number(op.height) >= 48) {
+      op.layoutMode = op.layoutMode || 'VERTICAL';
+      op.padding = op.padding ?? 16;
+      op.spacing = op.spacing ?? 10;
+      if (op.radius == null) op.radius = 14;
+    }
+    if (op.op === 'create_frame' && op.parentKey) {
+      const parent = ops.find((p) => p.key === op.parentKey);
+      const parentIsScreen = parent && /^screen/i.test(String(parent.key || ''));
+      if (parentIsScreen && !parent.layoutMode) {
+        parent.layoutMode = 'VERTICAL';
+        parent.padding = parent.padding ?? 0;
+        parent.spacing = parent.spacing ?? 0;
+      }
+    }
+  }
+
+  for (const op of ops) {
+    if (op.key && (/^screen/i.test(op.key) || op.key === 'content')) {
+      stackChildrenUnderParent(ops, op.key, 16);
+    }
+  }
+
+  return ops;
 }
 
 export function extractFigmaCritic(raw) {
@@ -196,7 +388,7 @@ export function extractFigmaCritic(raw) {
 
 function sanitizeOperation(op) {
   if (!op || typeof op !== 'object') return null;
-  const kind = String(op.op || '').trim();
+  const kind = normalizeOpKind(op.op || op.operation || op.type);
   if (!ALLOWED_OPS.has(kind)) return null;
 
   const safe = {
@@ -230,6 +422,19 @@ function sanitizeOperation(op) {
   if (fill) safe.fill = fill;
   const stroke = normalizeColor(op.stroke);
   if (stroke) safe.stroke = stroke;
+
+  if (op.textAutoResize != null) safe.textAutoResize = String(op.textAutoResize);
+  if (op.placeholder != null) safe.placeholder = String(op.placeholder);
+  if (op.imagePrompt != null) safe.imagePrompt = String(op.imagePrompt);
+  if (op.imageUrl != null) safe.imageUrl = String(op.imageUrl);
+  if (op.imageBase64 != null) safe.imageBase64 = String(op.imageBase64);
+  if (op.fieldFill) safe.fieldFill = op.fieldFill;
+  if (op.border) safe.border = op.border;
+  if (op.stroke) safe.stroke = op.stroke;
+  if (op.strokeWeight != null) safe.strokeWeight = clampNumber(op.strokeWeight, 0, 24, 1);
+  if (op.labelFill) safe.labelFill = op.labelFill;
+  if (op.placeholderFill) safe.placeholderFill = op.placeholderFill;
+  if (Array.isArray(op.layoutGrids)) safe.layoutGrids = op.layoutGrids;
 
   return safe;
 }
@@ -297,7 +502,9 @@ export const FIGMA_DESIGN_CRITIC_PROMPT = `Ты — строгий AI-крити
 FIGMA_CRITIC_JSON>>>`;
 
 export function buildFigmaContextBlock(selectionBrief) {
-  if (!selectionBrief) return 'Figma контекст недоступен.';
+  if (!selectionBrief) {
+    return '## Figma\nПлагин не подключён или ничего не выделено — опирайся на текст задачи и переписку, не требуй Bridge.';
+  }
   const lines = [
     '## Контекст выделения в Figma',
     `- page: ${selectionBrief.pageName || '—'}`,

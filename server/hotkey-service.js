@@ -197,9 +197,9 @@ export class HotkeyService extends EventEmitter {
       } else if (this.cdpReady) {
         message += ' · CDP API готов';
       } else if (cdpUp) {
-        message += ' · Откройте плагин «FIRURU Bridge» в Figma и нажмите «Подключиться»';
+        message += ' · Откройте плагин «SHKF Bridge» в Figma и нажмите «Подключиться»';
       } else {
-        message += ' · Запустите плагин в Figma (Plugins → Development → FIRURU Bridge)';
+        message += ' · Запустите плагин в Figma (Plugins → Development → SHKF Bridge)';
       }
 
       this.emit('log', message);
@@ -291,7 +291,7 @@ export class HotkeyService extends EventEmitter {
     }
 
     if (!this.pluginConnected && !this.cdpReady) {
-      this._logFooter('Figma не подключена — откройте плагин «FIRURU Bridge» в Figma');
+      this._logFooter('Figma не подключена — откройте плагин «SHKF Bridge» в Figma');
       this.emit('action-failed', { action, reason: 'not-connected' });
       return false;
     }
@@ -471,7 +471,7 @@ export class HotkeyService extends EventEmitter {
     const next = this.getCustomThemes().filter((t) => t.id !== themeId);
     const config = this.updateAppSettings({ appearance: { customThemes: next } });
     if (this.config.theme === themeId) {
-      const fallback = { ...this.config, theme: 'dark' };
+      const fallback = { ...this.config, theme: 'mobbin' };
       this.saveConfig(fallback);
     }
     return this.config;
@@ -550,7 +550,7 @@ export class HotkeyService extends EventEmitter {
     const item = this.userLibrary.getItem(templateId);
     if (!item) throw new Error('Шаблон баннера не найден в библиотеке');
     if (!this.pluginConnected) {
-      throw new Error('Плагин Figma не подключён — откройте FIRURU Bridge в файле SHKF banners');
+      throw new Error('Плагин Figma не подключён — откройте SHKF Bridge в файле SHKF banners');
     }
     await this.pluginBridge.sendApplyBannerMockup({
       template: {
@@ -574,7 +574,7 @@ export class HotkeyService extends EventEmitter {
     const item = this.userLibrary.getItem(templateId);
     if (!item?.figma?.nodeId) throw new Error('Шаблон баннера не найден');
     if (!this.pluginConnected) {
-      throw new Error('Плагин Figma не подключён — откройте FIRURU Bridge в файле SHKF banners');
+      throw new Error('Плагин Figma не подключён — откройте SHKF Bridge в файле SHKF banners');
     }
     const result = await this.pluginBridge.sendReadBannerTexts({
       nodeId: item.figma.nodeId,
@@ -597,22 +597,26 @@ export class HotkeyService extends EventEmitter {
     };
   }
 
-  async readFigmaSelectionBrief() {
+  async readFigmaSelectionBrief({ optional = false } = {}) {
     if (!this.pluginConnected) {
-      throw new Error('Плагин Figma не подключён — откройте FIRURU Bridge в нужном файле Figma');
+      if (optional) {
+        return { ok: true, selection: null, pluginConnected: false };
+      }
+      throw new Error('Плагин Figma не подключён — откройте SHKF Bridge в нужном файле Figma');
     }
     const result = await this.pluginBridge.sendReadSelectionBrief({});
     return {
       ok: true,
       selection: result?.data || null,
+      pluginConnected: true,
     };
   }
 
   async applyFigmaDesignOps(operations = []) {
     if (!this.pluginConnected) {
-      throw new Error('Плагин Figma не подключён — откройте FIRURU Bridge в нужном файле Figma');
+      throw new Error('Плагин Figma не подключён — откройте SHKF Bridge в нужном файле Figma');
     }
-    const safeOps = Array.isArray(operations) ? operations.slice(0, 80) : [];
+    const safeOps = Array.isArray(operations) ? operations.slice(0, 220) : [];
     const result = await this.pluginBridge.sendApplyDesignOps({
       operations: safeOps,
     });

@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { topicTagsFromQuery } from '../shared/mobbin-search-query.js';
 
 function normalizeItem(raw) {
   if (!raw || typeof raw !== 'object') return null;
@@ -64,29 +65,46 @@ export class DesignMemoryService {
     return normalized;
   }
 
-  retrieveLocal(query, { limit = 6 } = {}) {
+  retrieveLocal(query, { limit = 6, platform } = {}) {
     const q = tokenize(query);
+    const topicTags = topicTagsFromQuery(query);
+    const plat = String(platform || '').toLowerCase();
+
     const list = this.data.items.map((item) => {
+      const itemTags = (item.tags || []).map((t) => String(t).toLowerCase());
       const haystack = tokenize([
         item.title,
         item.platform,
         item.surface,
         item.note,
-        ...(item.tags || []),
+        ...itemTags,
       ].join(' '));
       const set = new Set(haystack);
       let score = 0;
       for (const token of q) {
-        if (set.has(token)) score += 1;
+        if (set.has(token)) score += 2;
+        else if (itemTags.some((tag) => tag.includes(token) || token.includes(tag))) score += 1;
       }
+      for (const tag of topicTags) {
+        if (set.has(tag)) score += 2;
+        else if (itemTags.some((t) => t.includes(tag) || tag.includes(t))) score += 1.5;
+      }
+      if (plat && item.platform === plat) score += 0.5;
       score += (Number(item.quality || 3) - 3) * 0.25;
       return { item, score };
     });
 
-    return list
-      .sort((a, b) => b.score - a.score)
-      .slice(0, Math.max(1, Math.min(20, Number(limit || 6))))
+    const ranked = list.sort((a, b) => b.score - a.score);
+    const matched = ranked.filter((x) => x.score >= 1);
+    const pool = matched.length ? matched : ranked;
+    let items = pool
+      .slice(0, Math.max(1, Math.min(40, Number(limit || 6) * 3)))
       .map((x) => x.item);
+    if (plat === 'ios' || plat === 'web') {
+      const filtered = items.filter((item) => !item.platform || item.platform === plat);
+      if (filtered.length) items = filtered;
+    }
+    return items.slice(0, Math.max(1, Math.min(20, Number(limit || 6))));
   }
 
   vectorLiteral(vec) {
@@ -112,11 +130,20 @@ export class DesignMemoryService {
     const qv = vectors?.[0];
     if (!Array.isArray(qv) || !qv.length) return [];
 
-    await this.authService.ensureClientSession?.();
-    const { data, error } = await this.authService.client.rpc('match_design_references', {
-      query_embedding_text: this.vectorLiteral(qv),
-      match_count: Math.max(1, Math.min(20, Number(limit || 6))),
-    });
+    const sessionOk = await this.authService.ensureClientSession?.().catch(() => false);
+    if (sessionOk === false && this.authService.session) {
+      return [];
+    }
+    let data;
+    let error;
+    try {
+      ({ data, error } = await this.authService.client.rpc('match_design_references', {
+        query_embedding_text: this.vectorLiteral(qv),
+        match_count: Math.max(1, Math.min(20, Number(limit || 6))),
+      }));
+    } catch {
+      return [];
+    }
     if (error || !Array.isArray(data)) return [];
     return data.map((row) => ({
       id: row.id,
@@ -142,12 +169,18 @@ export class DesignMemoryService {
     return [...map.values()];
   }
 
-  async retrieve(query, { limit = 6, mode = 'hybrid' } = {}) {
-    const local = this.retrieveLocal(query, { limit });
+  async retrieve(query, { limit = 6, mode = 'hybrid', platform } = {}) {
+    const local = this.retrieveLocal(query, { limit, platform });
     if (mode === 'local') return local;
     const remote = await this.retrieveSupabase(query, { limit }).catch(() => []);
     if (mode === 'supabase') return remote;
-    return this.dedupe([...remote, ...local]).slice(0, Math.max(1, Math.min(20, Number(limit || 6))));
+    const plat = String(platform || '').toLowerCase();
+    let merged = this.dedupe([...remote, ...local]);
+    if (plat === 'ios' || plat === 'web') {
+      const filtered = merged.filter((item) => !item.platform || item.platform === plat);
+      if (filtered.length) merged = filtered;
+    }
+    return merged.slice(0, Math.max(1, Math.min(20, Number(limit || 6))));
   }
 
   buildContextBlockFromRefs(refs, source = 'mixed') {

@@ -5,7 +5,7 @@ import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
-const navItems = ['Platform', 'Company', 'Newsroom'];
+const navItems = ['Platform', 'Company', 'Newsroom', 'Message us'];
 
 const whatWeDo = [
   {
@@ -37,7 +37,7 @@ const releaseNews = [
     version: '1.2.13',
     slug: 'v1.2.13',
     date: 'June 3, 2026',
-    title: 'FIRURU 1.2.13: SSE transport headers for Magnific MCP',
+    title: 'SHKF 1.2.13: SSE transport headers for Magnific MCP',
     summary: 'GitHub release v1.2.13 ships a focused transport fix so Magnific MCP sends authorization headers through both EventSource and request layers.',
     commit: 'Fix SSE transport headers configuration, release 1.2.13.',
     compareUrl: 'https://github.com/ruruchin/SHKF/compare/v1.2.12...v1.2.13',
@@ -49,11 +49,11 @@ const releaseNews = [
     ],
   },
   {
-    tag: 'Release',
+    tag: 'News',
     version: '1.2.12',
     slug: 'v1.2.12',
     date: 'June 3, 2026',
-    title: 'FIRURU 1.2.12: Magnific SSE URL and button polish',
+    title: 'SHKF 1.2.12: Magnific SSE URL and button polish',
     summary: 'GitHub release v1.2.12 fixes the Magnific SSE endpoint and improves the visual behavior of the Magnific submit button.',
     commit: 'Fix Magnific SSE URL and button styling, release 1.2.12.',
     compareUrl: 'https://github.com/ruruchin/SHKF/compare/v1.2.11...v1.2.12',
@@ -69,7 +69,7 @@ const releaseNews = [
     version: '1.2.11',
     slug: 'v1.2.11',
     date: 'June 3, 2026',
-    title: 'FIRURU 1.2.11: Magnific tab appears in role navigation',
+    title: 'SHKF 1.2.11: Magnific tab appears in role navigation',
     summary: 'GitHub release v1.2.11 connects the Magnific page to role-based navigation so designers and full-access users can open it directly.',
     commit: 'Fix Magnific tab visibility in role nav, release 1.2.11.',
     compareUrl: 'https://github.com/ruruchin/SHKF/compare/v1.2.10...v1.2.11',
@@ -85,7 +85,7 @@ const releaseNews = [
     version: '1.2.10',
     slug: 'v1.2.10',
     date: 'June 3, 2026',
-    title: 'FIRURU 1.2.10: EventSource import fix for Magnific MCP',
+    title: 'SHKF 1.2.10: EventSource import fix for Magnific MCP',
     summary: 'GitHub release v1.2.10 fixes the EventSource import used by the Magnific MCP service.',
     commit: 'Fix eventsource import in magnific-mcp-service, release 1.2.10.',
     compareUrl: 'https://github.com/ruruchin/SHKF/compare/v1.2.9...v1.2.10',
@@ -101,7 +101,7 @@ const releaseNews = [
     version: '1.2.9',
     slug: 'v1.2.9',
     date: 'June 3, 2026',
-    title: 'FIRURU 1.2.9: Magnific MCP integration arrives',
+    title: 'SHKF 1.2.9: Magnific MCP integration arrives',
     summary: 'GitHub release v1.2.9 introduced the Magnific MCP integration and dedicated product tab.',
     commit: 'Add Magnific MCP integration with dedicated tab, release 1.2.9.',
     compareUrl: 'https://github.com/ruruchin/SHKF/compare/v1.2.8...v1.2.9',
@@ -126,6 +126,13 @@ function App() {
   const rootRef = useRef(null);
   const [hash, setHash] = useState(() => (typeof window === 'undefined' ? '#top' : window.location.hash || '#top'));
   const activeNews = useMemo(() => releaseNews.find((item) => `#news/${item.slug}` === hash), [hash]);
+  const activeContact = hash === '#message-us';
+  const activeDownload = hash === '#download';
+  const [newsFilter, setNewsFilter] = useState('All');
+
+
+
+
 
   useEffect(() => {
     const handleHashChange = () => setHash(window.location.hash || '#top');
@@ -140,7 +147,7 @@ function App() {
   }, [activeNews]);
 
   useEffect(() => {
-    if (activeNews || !hash || hash === '#top' || hash.startsWith('#news/')) return;
+    if (activeNews || activeContact || !hash || hash === '#top' || hash.startsWith('#news/')) return;
 
     requestAnimationFrame(() => {
       let target = null;
@@ -167,6 +174,7 @@ function App() {
 
           if (reduceMotion) {
             gsap.set('.reveal, .split-word, .section-card, .hero-title .line, .hero-foot, .hero-cta, .article-reveal, .cap-card, .cap-card .cap-icon, .cap-card h3, .cap-card p', { autoAlpha: 1, y: 0, scale: 1, rotationX: 0, rotationY: 0, filter: 'blur(0px)' });
+            gsap.set('.company-copy h2, .company-copy .company-body p, .news-head h2, .news-card h3, .news-card p, .publications-head h2, .publication-row h3, .contact-copy h2, .contact-copy p, .article-title, .article-summary, .article-body-card h2, .article-body-card p', { autoAlpha: 1, y: 0, filter: 'blur(0px)', clipPath: 'inset(0 0 0% 0)' });
             return undefined;
           }
 
@@ -269,7 +277,7 @@ function App() {
             gsap.timeline({
               scrollTrigger: {
                 trigger: '.capability-grid',
-                start: 'top 78%',
+                start: 'top 85%',
                 toggleActions: 'play none none reverse',
               },
               defaults: { ease: 'expo.out' },
@@ -304,21 +312,66 @@ function App() {
             }, '-=0.58');
           }
 
-          revealScene('.company-section', ['.company-media', '.company-copy h2', '.company-copy .company-body p', '.company-copy .dark-cta'], { start: 'top 72%', y: 64, stagger: 0.09 });
-          revealScene('.news-section', ['.news-head h2', '.news-filters a', '.news-card', '.load-more'], { start: 'top 76%', y: 82, stagger: 0.055 });
-          revealScene('.publications-section', ['.publications-head h2', '.outline-cta', '.publication-row'], { start: 'top 76%', y: 64, stagger: 0.06 });
-          revealScene('.contact-section', ['.contact-copy h2', '.contact-copy p', '.contact-mail', '.contact-field', '.contact-submit'], { start: 'top 72%', y: 68, stagger: 0.055 });
-          revealScene('.news-article-page', ['.article-kicker', '.article-title', '.article-summary', '.article-meta-card', '.article-body-card', '.article-related-card'], { start: 'top 86%', y: 72, stagger: 0.07 });
+          revealScene('.company-section', ['.company-media', '.company-copy .dark-cta'], { start: 'top 72%', y: 64, stagger: 0.09 });
+          revealScene('.news-section', ['.news-filters a', '.news-card', '.load-more'], { start: 'top 76%', y: 82, stagger: 0.055 });
+          revealScene('.publications-section', ['.outline-cta'], { start: 'top 76%', y: 64, stagger: 0.06 });
+          revealScene('.contact-section', ['.contact-mail', '.contact-field', '.contact-submit'], { start: 'top 72%', y: 68, stagger: 0.055 });
+          revealScene('.news-article-page', ['.article-kicker', '.article-meta-card', '.article-related-card'], { start: 'top 86%', y: 72, stagger: 0.07 });
 
-          gsap.to('.company-media', {
-            y: desktop ? -84 : -28,
-            scale: desktop ? 1.04 : 1.01,
+          // Text appearance animations for sections after the first 3 blocks
+          const textReveal = (trigger, selectors, options = {}) => {
+            const els = gsap.utils.toArray(selectors).filter(Boolean);
+            if (!els.length) return;
+            gsap.timeline({
+              scrollTrigger: {
+                trigger,
+                start: options.start || 'top 74%',
+                toggleActions: 'play none none reverse',
+              },
+              defaults: { ease: 'power3.out' },
+            }).fromTo(els, {
+              autoAlpha: 0,
+              y: 44,
+              filter: 'blur(14px)',
+              clipPath: 'inset(0 0 100% 0)',
+            }, {
+              autoAlpha: 1,
+              y: 0,
+              filter: 'blur(0px)',
+              clipPath: 'inset(0 0 0% 0)',
+              duration: options.duration || 1.1,
+              stagger: options.stagger || 0.12,
+            });
+          };
+
+          textReveal('.company-section', '.company-copy h2', { start: 'top 68%', duration: 1.2, stagger: 0 });
+          textReveal('.company-section', '.company-copy .company-body p', { start: 'top 64%', stagger: 0.15 });
+          textReveal('.news-section', '.news-head h2', { start: 'top 72%', duration: 1.2, stagger: 0 });
+          textReveal('.news-section', '.news-card h3, .news-card p', { start: 'top 66%', stagger: 0.06 });
+          textReveal('.publications-section', '.publications-head h2', { start: 'top 72%', duration: 1.2, stagger: 0 });
+          textReveal('.publications-section', '.publication-row h3', { start: 'top 68%', stagger: 0.08 });
+          textReveal('.contact-section', '.contact-copy h2', { start: 'top 70%', duration: 1.2, stagger: 0 });
+          textReveal('.contact-section', '.contact-copy p', { start: 'top 66%', stagger: 0.1 });
+          textReveal('.news-article-page', '.article-title', { start: 'top 82%', duration: 1.3, stagger: 0 });
+          textReveal('.news-article-page', '.article-summary, .article-body-card h2, .article-body-card p', { start: 'top 78%', stagger: 0.08 });
+
+          gsap.fromTo('.company-media', {
+            rotationX: 45,
+            rotationY: -15,
+            scale: 0.8,
+            z: -300,
+            transformPerspective: 1000
+          }, {
+            rotationX: 0,
+            rotationY: 0,
+            scale: 1,
+            z: 0,
             ease: 'none',
             scrollTrigger: {
               trigger: '.company-section',
               start: 'top bottom',
-              end: 'bottom top',
-              scrub: 1.2,
+              end: 'center center',
+              scrub: 1,
             },
           });
 
@@ -333,19 +386,6 @@ function App() {
             },
           });
 
-          gsap.fromTo('.footer-frame', {
-            yPercent: 18,
-          }, {
-            yPercent: 0,
-            ease: 'none',
-            scrollTrigger: {
-              trigger: '.footer-frame',
-              start: 'top bottom',
-              end: 'top 38%',
-              scrub: 0.8,
-              invalidateOnRefresh: true,
-            },
-          });
 
           const panels = gsap.utils.toArray('.what-panel');
           if (pinnedWhat) {
@@ -447,7 +487,7 @@ function App() {
 
       return () => mm.revert();
     },
-    { scope: rootRef, dependencies: [activeNews?.slug || 'home'], revertOnUpdate: true },
+    { scope: rootRef, dependencies: [activeNews?.slug || 'home', activeContact, activeDownload], revertOnUpdate: true },
   );
 
   return (
@@ -455,10 +495,15 @@ function App() {
       <SiteNav />
       <div className="scroll-rail" aria-hidden="true"><span className="scroll-progress" /></div>
 
-      {activeNews ? (
+      {activeDownload ? (
+        <DownloadPage />
+      ) : activeContact ? (
+        <ContactPage />
+      ) : activeNews ? (
         <NewsArticlePage article={activeNews} />
       ) : (
         <>
+      <div className="main-content-wrapper">
       <section className="hero-section" id="top">
         <div className="abstract-bg" aria-hidden="true">
           <span className="ribbon ribbon-a" />
@@ -472,7 +517,10 @@ function App() {
             <span className="line">of creative workflows.</span>
           </h1>
           <p className="hero-foot">We connect Figma, AI, task memory and generation tools for teams building products faster.</p>
-          <a className="hero-cta" href="#platform">Discover our platform <span>→</span></a>
+          <div className="hero-actions">
+            <a className="hero-cta outline-cta-hero" href="#download">Download App +</a>
+            <a className="hero-cta" href="#platform">Discover our platform <span>→</span></a>
+          </div>
         </div>
       </section>
 
@@ -504,7 +552,6 @@ function App() {
       </section>
 
       <section className="company-section" id="company">
-        <div className="section-kicker dark"><span /> Our company</div>
         <div className="company-media section-card">
           <div className="mock-window">
             <div />
@@ -526,13 +573,13 @@ function App() {
         <div className="news-head reveal">
           <h2>News<sup>{releaseNews.length}</sup></h2>
           <div className="news-filters" aria-label="News filters">
-            <a className="active" href="#newsroom">All</a>
-            <a href="#newsroom">News</a>
+            <a className={newsFilter === 'All' ? 'active' : ''} href="#newsroom" onClick={(e) => { e.preventDefault(); setNewsFilter('All'); }}>All</a>
+            <a className={newsFilter === 'News' ? 'active' : ''} href="#newsroom" onClick={(e) => { e.preventDefault(); setNewsFilter('News'); }}>News</a>
             <a href="https://github.com/ruruchin/SHKF/releases" target="_blank" rel="noreferrer">GitHub</a>
           </div>
         </div>
         <div className="news-grid" id="news-list">
-          {releaseNews.map((item, index) => (
+          {releaseNews.filter(item => newsFilter === 'All' || item.tag === newsFilter).map((item, index) => (
             <article className={`news-card ${index === 1 || index === 3 ? 'dark' : ''}`} key={item.slug}>
               <div className="section-kicker dark"><span /> {item.tag}</div>
               <time>{item.date}</time>
@@ -553,7 +600,7 @@ function App() {
         </div>
         <div className="publication-list">
           {publications.map(([title, date]) => (
-            <a className="publication-row" href="#contact" key={title}>
+            <a className="publication-row" href="#message-us" key={title}>
               <h3>{title}</h3>
               <time>{date}</time>
               <span>→</span>
@@ -561,55 +608,42 @@ function App() {
           ))}
         </div>
       </section>
-
-      <section className="contact-section" id="contact">
-        <div className="contact-copy reveal">
-          <h2>Message us</h2>
-          <p>We would love to hear from you — send us a message and we’ll be in touch soon.</p>
-          <div className="contact-mail">
-            <span>General contact</span>
-            <a href="mailto:hello@shkfolder.app">hello@shkfolder.app</a>
-          </div>
-          <div className="contact-mail">
-            <span>Partnerships</span>
-            <a href="mailto:partnering@shkfolder.app">partnering@shkfolder.app</a>
-          </div>
-        </div>
-        <form className="contact-form reveal" onSubmit={(event) => event.preventDefault()}>
-          <label className="contact-field">First name*<input type="text" name="firstName" /></label>
-          <label className="contact-field">Last name*<input type="text" name="lastName" /></label>
-          <label className="contact-field">Email*<input type="email" name="email" /></label>
-          <label className="contact-field">Phone*<input type="tel" name="phone" /></label>
-          <label className="contact-field wide">Subject*<select name="subject"><option>Select Subject</option><option>Product demo</option><option>Partnership</option><option>Press</option></select></label>
-          <label className="contact-field wide">Message*<textarea name="message" /></label>
-          <button className="contact-submit" type="submit">Submit message <span>→</span></button>
-        </form>
-      </section>
+      </div>
 
       <footer className="footer-frame" id="footer">
         <div className="footer-bg" aria-hidden="true">
           <span className="ribbon ribbon-a" />
           <span className="ribbon ribbon-b" />
+          <span className="orb orb-a" />
+          <span className="orb orb-b" />
         </div>
         <div className="footer-top">
-          <h2>We are advancing creative workflows for Figma teams.</h2>
-          <a className="hero-cta" href="#contact">Work with us <span>→</span></a>
-        </div>
-        <div className="footer-links">
-          <div>
-            <strong>Navigate</strong>
-            <a href="#platform">Platform</a>
-            <a href="#company">Company</a>
-            <a href="#newsroom">Newsroom</a>
-            <a href="#contact">Work with us</a>
+          <div className="footer-links-group">
+            <strong>Download</strong>
+            <a href="#download">Product</a>
+            <a href="#docs">Docs</a>
+            <a href="#changelog">Changelog</a>
+            <a href="#press">Press</a>
+            <a href="#releases">Releases</a>
           </div>
-          <div>
-            <strong>Connect</strong>
-            <a href="https://github.com/ruruchin/SHKF" target="_blank" rel="noreferrer">GitHub</a>
-            <a href="#platform">Figma</a>
+          <div className="footer-links-group">
+            <strong>Blog</strong>
+            <a href="#pricing">Pricing</a>
+            <a href="#use-cases">Use Cases</a>
           </div>
         </div>
+        
         <div className="footer-word">SHKFOLDER</div>
+
+        <div className="footer-bottom">
+          <a className="footer-brand" href="#top">SHKF / 新鸿基</a>
+          <div className="footer-legal">
+            <a href="#about">About SHKF</a>
+            <a href="#products">Products</a>
+            <a href="#privacy">Privacy</a>
+            <a href="#terms">Terms</a>
+          </div>
+        </div>
       </footer>
         </>
       )}
@@ -640,6 +674,16 @@ function NewsArticlePage({ article }) {
           <a href={article.releaseUrl} target="_blank" rel="noreferrer">GitHub release</a>
           <span>Diff</span>
           <a href={article.compareUrl} target="_blank" rel="noreferrer">Compare tags</a>
+          <div className="article-stats">
+            <div className="stat-item">
+              <span className="stat-number">{article.highlights.length}</span>
+              <span className="stat-label">Changes</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number">1</span>
+              <span className="stat-label">Commit</span>
+            </div>
+          </div>
         </aside>
 
         <div className="article-body-card article-reveal">
@@ -650,12 +694,58 @@ function NewsArticlePage({ article }) {
             The release notes on GitHub do not include a long body yet, so the site presents the version,
             commit message and changed areas in a clean product-news format.
           </p>
-          <ul>
-            {article.highlights.map((highlight) => <li key={highlight}>{highlight}</li>)}
-          </ul>
+          <div className="article-tech-overview">
+            <h3>Technical overview</h3>
+            <div className="tech-grid">
+              <div className="tech-item">
+                <span>Component</span>
+                <strong>{article.title.includes('SSE') || article.title.includes('transport') ? 'MCP Transport Layer' : article.title.includes('Magnific') ? 'Magnific Module' : 'Core System'}</strong>
+              </div>
+              <div className="tech-item">
+                <span>Type</span>
+                <strong>{article.title.includes('Fix') || article.title.includes('fix') ? 'Bug Fix' : 'Feature'}</strong>
+              </div>
+              <div className="tech-item">
+                <span>Severity</span>
+                <strong>{article.title.includes('SSE') || article.title.includes('import') ? 'Critical' : 'Normal'}</strong>
+              </div>
+              <div className="tech-item">
+                <span>Version</span>
+                <strong>v{article.version}</strong>
+              </div>
+            </div>
+          </div>
           <div className="article-actions">
             <a className="dark-cta" href={article.releaseUrl} target="_blank" rel="noreferrer">Open release <span>→</span></a>
             <a className="outline-cta" href={article.compareUrl} target="_blank" rel="noreferrer">View code changes +</a>
+          </div>
+        </div>
+      </section>
+
+      <section className="article-changelog">
+        <div className="changelog-inner">
+          <div className="section-kicker dark"><span /> Changelog</div>
+          <div className="changelog-timeline">
+            {article.highlights.map((highlight, index) => (
+              <div className="changelog-entry article-reveal" key={index}>
+                <div className="changelog-dot" />
+                <div className="changelog-content">
+                  <span className="changelog-step">Step {index + 1}</span>
+                  <p>{highlight}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="article-cta-banner">
+        <div className="cta-banner-inner">
+          <h2>Ready to try v{article.version}?</h2>
+          <p>Download the latest release from GitHub or update your existing installation automatically.</p>
+          <div className="cta-banner-actions">
+            <a className="dark-cta" href={article.releaseUrl} target="_blank" rel="noreferrer">Download release <span>→</span></a>
+            <a className="outline-cta" href="https://github.com/ruruchin/SHKF" target="_blank" rel="noreferrer">View repository +</a>
           </div>
         </div>
       </section>
@@ -680,18 +770,149 @@ function NewsArticlePage({ article }) {
 }
 
 function SiteNav({ compact = false, light = false } = {}) {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > window.innerHeight * 0.75);
+    };
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const collapsed = isScrolled && !isHovered;
+
   return (
-    <nav className={`site-nav${compact ? ' compact' : ''}${light ? ' light' : ''}`}>
+    <nav 
+      className={`site-nav${compact ? ' compact' : ''}${light ? ' light' : ''}${collapsed ? ' collapsed' : ''}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       <div className="site-nav-inner">
-        <a className="logo-pill" href="#top"><span /> SHKFOLDER</a>
+        <a 
+          className="logo-pill" 
+          href="#" 
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.hash = '';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+        >
+          <span /> SHKF / 新鸿基
+        </a>
         <div className="nav-pill">
           {navItems.map((item) => (
-            <a href={`#${item.toLowerCase()}`} key={item}>{item}</a>
+            <a href={`#${item.toLowerCase().replace(/\s+/g, '-')}`} key={item}>{item}</a>
           ))}
-          <a className="work-link" href="#contact">Work with us</a>
+          <a className="work-link" href="#download">Download App</a>
         </div>
       </div>
     </nav>
+  );
+}
+
+function ContactPage() {
+  return (
+    <div className="contact-page-wrapper">
+      <section className="contact-section" id="message-us">
+        <div className="contact-copy reveal">
+          <h2>Message us</h2>
+          <p>We would love to hear from you — send us a message and we’ll be in touch soon.</p>
+          <div className="contact-mail">
+            <span>General contact</span>
+            <a href="mailto:hello@shkfolder.app">hello@shkfolder.app</a>
+          </div>
+          <div className="contact-mail">
+            <span>Partnerships</span>
+            <a href="mailto:partnering@shkfolder.app">partnering@shkfolder.app</a>
+          </div>
+        </div>
+        <form className="contact-form reveal" onSubmit={(event) => event.preventDefault()}>
+          <label className="contact-field">First name*<input type="text" name="firstName" /></label>
+          <label className="contact-field">Last name*<input type="text" name="lastName" /></label>
+          <label className="contact-field">Email*<input type="email" name="email" /></label>
+          <label className="contact-field">Phone*<input type="tel" name="phone" /></label>
+          <label className="contact-field wide">Subject*<select name="subject"><option>Select Subject</option><option>Product demo</option><option>Partnership</option><option>Press</option></select></label>
+          <label className="contact-field wide">Message*<textarea name="message" /></label>
+          <button className="contact-submit" type="submit">Submit message <span>→</span></button>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function DownloadPage() {
+  return (
+    <div className="download-page-wrapper">
+      <section className="download-hero" id="download">
+        <video 
+          className="download-video" 
+          autoPlay 
+          loop 
+          muted 
+          playsInline
+          poster="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop"
+        >
+          <source src="https://cdn.coverr.co/videos/coverr-abstract-neon-lines-5321/1080p.mp4" type="video/mp4" />
+        </video>
+        <div className="download-overlay" aria-hidden="true" />
+        
+        <div className="download-content reveal">
+          <div className="download-header">
+            <h2>Download SHKFOLDER</h2>
+            <p>Get the desktop app for your operating system and start engineering your creative workflow.</p>
+          </div>
+          
+          <div className="os-grid">
+            <div className="os-card">
+              <div className="os-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801" />
+                </svg>
+              </div>
+              <h3>Windows</h3>
+              <p>Windows 10 and 11</p>
+              <div className="os-downloads">
+                <a href="#" className="download-btn">Download .exe</a>
+                <span className="download-meta">Version 1.2.13 · 64-bit</span>
+              </div>
+            </div>
+
+            <div className="os-card">
+              <div className="os-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16.142 2.685C17.07 1.572 17.652 0 17.487-1.5 16.19-1.442 14.545-.64 13.593.473c-.854.981-1.554 2.607-1.354 4.07 1.455.106 2.973-.755 3.903-1.858zM17.43 5.485c-1.921-.06-3.693 1.135-4.667 1.135-.975 0-2.457-1.076-4.048-1.045-2.073.031-3.987 1.2-5.045 3.03-2.148 3.705-.547 9.195 1.545 12.195 1.017 1.455 2.228 3.09 3.818 3.03 1.528-.06 2.115-.98 3.96-.98 1.844 0 2.37.98 3.988.95 1.648-.03 2.684-1.485 3.688-2.94 1.164-1.68 1.644-3.3 1.674-3.39-.03-.015-3.18-1.215-3.21-4.86-.03-3.06 2.505-4.53 2.624-4.62-1.44-2.115-3.66-2.4-4.327-2.49z" transform="translate(1 2)" />
+                </svg>
+              </div>
+              <h3>macOS</h3>
+              <p>macOS 12.0 or later</p>
+              <div className="os-downloads">
+                <a href="#" className="download-btn">Download Apple Silicon</a>
+                <a href="#" className="download-btn secondary">Download Intel</a>
+                <span className="download-meta">Version 1.2.13 · .dmg</span>
+              </div>
+            </div>
+
+            <div className="os-card">
+              <div className="os-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.062 1.352c-2.316 0-4.041 2.226-4.041 4.973 0 .445.051.879.146 1.3-1.67.921-2.793 2.658-2.793 4.636 0 2.141 1.303 4.01 3.213 4.876-.118.847-.367 1.841-1.037 2.441-.75.674-2.227.674-2.227 2.317 0 .524.425.952.951.952h11.45c.527 0 .952-.428.952-.952 0-1.643-1.477-1.643-2.226-2.317-.67-.6-1.02-1.594-1.139-2.441 1.91-.866 3.213-2.735 3.213-4.876 0-1.978-1.123-3.715-2.793-4.636.096-.421.146-.855.146-1.3 0-2.747-1.725-4.973-4.041-4.973h.226zm-1.884 3.013c.477 0 .864.444.864.992s-.387.993-.864.993c-.478 0-.865-.445-.865-.993s.387-.992.865-.992zm4 0c.477 0 .863.444.863.992s-.386.993-.863.993c-.478 0-.865-.445-.865-.993s.387-.992.865-.992zm-2.116 11.233c1.745 0 3.16 1.341 3.16 2.996s-1.415 2.996-3.16 2.996c-1.744 0-3.16-1.341-3.16-2.996s1.416-2.996 3.16-2.996z" />
+                </svg>
+              </div>
+              <h3>Linux</h3>
+              <p>Ubuntu, Debian, Fedora</p>
+              <div className="os-downloads">
+                <a href="#" className="download-btn">Download .AppImage</a>
+                <a href="#" className="download-btn secondary">Download .deb</a>
+                <span className="download-meta">Version 1.2.13 · x86_64</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   );
 }
 

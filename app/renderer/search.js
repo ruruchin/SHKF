@@ -8,10 +8,9 @@
   let activeTypeFilter = 'all';
 
   const PAGE_RESULT_LIMIT = 50;
-  const GROUP_ORDER = ['hotkey', 'make', 'template', 'notes', 'action', 'figma', 'settings'];
+  const GROUP_ORDER = ['make', 'template', 'notes', 'action', 'figma', 'settings'];
 
   const SECTION_LABELS = {
-    hotkey: 'Хоткеи',
     make: 'Make it',
     template: 'Templates',
     figma: 'Figma',
@@ -22,7 +21,6 @@
 
   const FILTER_CHIPS = [
     { id: 'all', label: 'Все' },
-    { id: 'hotkey', label: 'Хоткеи' },
     { id: 'make', label: 'Make it' },
     { id: 'template', label: 'Templates' },
     { id: 'notes', label: 'Записи' },
@@ -31,12 +29,13 @@
   ];
 
   const STATIC_ENTRIES = [
-    { id: 'page-hotkeys', type: 'hotkey', title: 'Хоткеи', subtitle: 'Мои команды и сочетания клавиш', keywords: 'hotkeys хоткеи команды', page: 'hotkeys' },
+    { id: 'page-pikfolder', type: 'template', title: 'PIK-FOLDER', subtitle: 'Галерея референсов · Mobbin · Pinterest', keywords: 'pik folder savee референсы mobbin pinterest галерея дизайн', page: 'pikfolder' },
     { id: 'page-makeit', type: 'make', title: 'Make it', subtitle: 'Создать прототип через Figma Make', keywords: 'make ai промпт генерация', page: 'makeit' },
     { id: 'page-templates', type: 'template', title: 'Templates', subtitle: 'Готовые UI-компоненты в Figma', keywords: 'templates шаблоны компоненты ui button card', page: 'templates' },
     { id: 'page-metask', type: 'settings', title: 'Канбан', subtitle: 'Redmine · задачи и доска Kanban', keywords: 'kanban канбан metask задачи redmine rm api ключ', page: 'metask' },
-    { id: 'page-agent', type: 'settings', title: 'ИИ Агент', subtitle: 'GigaChat · оценка задач и промпты', keywords: 'ai agent ии агент gigachat gpt задача баннер промпт', page: 'agent' },
+    { id: 'page-agent', type: 'settings', title: 'Konstancia', subtitle: 'Mobbin · Figma · GigaChat', keywords: 'Konstancia ai agent ии агент gigachat gpt задача баннер промпт mobbin', page: 'agent' },
     { id: 'page-nanobanana', type: 'settings', title: 'NanoBanana', subtitle: 'Генерация изображений · nananobanana.com', keywords: 'nanobanana nano banana изображение картинка генерация ai art промпт', page: 'nanobanana' },
+    { id: 'page-magnific', type: 'settings', title: 'Magnific MCP', subtitle: 'Генерация изображений и видео · апскейл', keywords: 'magnific mcp upscale svg видео изображение генерация', page: 'magnific' },
     { id: 'page-bannermockup', type: 'settings', title: 'Мокап баннеров', subtitle: 'Превью баннеров с NanoBanana', keywords: 'banner mockup баннер мокап превью', page: 'bannermockup' },
     { id: 'page-mail', type: 'settings', title: 'Почта', subtitle: 'Zimbra · веб-почта', keywords: 'mail почта zimbra email письма', page: 'mail' },
     { id: 'page-github', type: 'settings', title: 'GitHub', subtitle: 'Репозитории, PR, code review', keywords: 'github гитхаб git репозиторий pull request pr код review ревью', page: 'github' },
@@ -47,7 +46,7 @@
     { id: 'setting-theme', type: 'settings', title: 'Тема оформления', subtitle: 'Dark, Nord, Dracula, Anime…', keywords: 'theme тема dark light anime nord dracula appearance', page: 'settings' },
     { id: 'setting-cdp', type: 'settings', title: 'Порт CDP', subtitle: 'Порт отладки Figma', keywords: 'cdp port 9222 connection', page: 'settings', settingPage: 'setup' },
     { id: 'setting-plugin-port', type: 'settings', title: 'Порт плагина', subtitle: 'WebSocket мост с Figma', keywords: 'plugin port 3847 websocket', page: 'settings', settingPage: 'setup' },
-    { id: 'setting-hotkeys', type: 'settings', title: 'Глобальные хоткеи', subtitle: 'Вкл / выкл сервер', keywords: 'toggle сервер hotkeys server', page: 'settings', settingPage: 'hotkeys' },
+    { id: 'setting-hotkeys', type: 'settings', title: 'Сервер хоткеев', subtitle: 'Вкл / выкл в настройках', keywords: 'toggle сервер hotkeys server', page: 'settings' },
     { id: 'setting-make', type: 'settings', title: 'Figma Make', subtitle: 'Авто-submit, desktop app', keywords: 'make figma auto submit desktop', page: 'settings', settingPage: 'makeit' },
     { id: 'setting-templates', type: 'settings', title: 'Templates', subtitle: 'Уведомления при копировании', keywords: 'templates toast copy буфер', page: 'settings', settingPage: 'templates' },
     { id: 'setting-window', type: 'settings', title: 'Окно и запуск', subtitle: 'Размер, splash, tray', keywords: 'window splash tray minimized', page: 'settings' },
@@ -151,11 +150,11 @@
     return { hotkey: '⌨', make: '✦', template: '▦', figma: '🎨', settings: '⚙', notes: '📝', action: '⚡' }[type] || '•';
   }
 
+  function appIconImg(src, size = 20) {
+    return `<img class="search-app-icon" src="${src}" alt="" width="${size}" height="${size}" decoding="async" />`;
+  }
+
   const PAGE_VISUALS = {
-    'page-hotkeys': {
-      tone: 'ink',
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a2 2 0 012 2v1.07a8.001 8.001 0 015.93 5.93H21a2 2 0 010 4h-1.07A8.001 8.001 0 0114 20.93V22a2 2 0 01-4 0v-1.07A8.001 8.001 0 014.07 15H3a2 2 0 010-4h1.07A8.001 8.001 0 0110 5.07V4a2 2 0 012-2z"/></svg>',
-    },
     'page-makeit': {
       tone: 'orange',
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z"/><circle cx="18" cy="18" r="2" fill="currentColor" stroke="none"/></svg>',
@@ -166,7 +165,7 @@
     },
     'page-metask': {
       tone: 'mint',
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 15h.01M12 15h4"/></svg>',
+      icon: appIconImg('assets/icons/redmine.png'),
     },
     'page-agent': {
       tone: 'orange',
@@ -174,15 +173,23 @@
     },
     'page-mail': {
       tone: 'violet',
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>',
+      icon: appIconImg('assets/icons/gmail.png'),
     },
     'page-notes': {
       tone: 'amber',
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg>',
+      icon: appIconImg('assets/icons/notes.png'),
     },
     'page-figma': {
       tone: 'coral',
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',
+      icon: appIconImg('assets/icons/figma.png'),
+    },
+    'page-nanobanana': {
+      tone: 'yellow',
+      icon: appIconImg('assets/icons/nanobanana.png'),
+    },
+    'page-magnific': {
+      tone: 'violet',
+      icon: appIconImg('assets/icons/magnific.png'),
     },
     'page-settings': {
       tone: 'slate',
@@ -240,37 +247,6 @@
       }
     }
 
-    if (window.RoleNav?.isPageAllowed?.('hotkeys')) {
-      for (const hk of config.hotkeys || []) {
-        const act = actions.find((a) => a.id === hk.action);
-        const meta = actionMeta[hk.action] || {};
-        items.push({
-          id: 'hk-' + hk.id,
-          type: 'hotkey',
-          title: hk.name,
-          subtitle: act?.name || hk.action,
-          keywords: [hk.hint, meta.description, meta.whyUseful].filter(Boolean).join(' '),
-          combo: hk.keys?.join(' '),
-          category: act?.category,
-          page: 'hotkeys',
-          hotkeyId: hk.id,
-        });
-      }
-
-      for (const a of actions) {
-        const meta = actionMeta[a.id] || {};
-        items.push({
-          id: 'act-' + a.id,
-          type: 'action',
-          title: a.name,
-          subtitle: a.category,
-          keywords: [meta.description, meta.whyUseful].filter(Boolean).join(' '),
-          page: 'hotkeys',
-          actionId: a.id,
-        });
-      }
-    }
-
     searchIndex = items;
     renderCurrentView();
   };
@@ -299,12 +275,12 @@
     document.querySelectorAll('.nav-item').forEach((b) => b.classList.toggle('active', b.dataset.page === pageId));
     document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
     document.getElementById('page-' + pageId)?.classList.add('active');
-    if (pageId === 'hotkeys' && window.backToHotkeys) window.backToHotkeys();
     if (pageId === 'metask') window.activateMetaskPage?.();
     if (pageId === 'agent') window.activateAgentPage?.();
     if (pageId === 'mail') window.activateMailPage?.();
     if (pageId === 'github' || pageId === 'outline') window.activateWebtab?.(pageId);
     if (pageId === 'notes') window.activateNotesPage?.();
+    if (pageId === 'pikfolder') window.activatePikFolderPage?.();
   }
 
   function applyResult(entry) {

@@ -4,6 +4,7 @@
  */
 
 import { inferBlueprintFromMessage } from '../shared/site-builder-blueprint.js';
+import { normalizeFigmaPlanOperations } from './figma-design-agent.js';
 
 const FRAME_W = 390;
 const FRAME_H = 844;
@@ -11,6 +12,20 @@ const GAP_X = 64;
 const ORIGIN_X = 120;
 const ORIGIN_Y = 120;
 const PAD = 24;
+const CONTENT_W = FRAME_W - PAD * 2 - 24;
+
+/** Сетка 4 колонки для мобильного фрейма (только COLUMNS — ROWS/GRID ломают Plugin API) */
+const MOBILE_LAYOUT_GRIDS = [
+  {
+    pattern: 'COLUMNS',
+    alignment: 'STRETCH',
+    count: 4,
+    gutterSize: 12,
+    offset: 16,
+    visible: true,
+    color: { r: 15, g: 118, b: 110, a: 0.08 },
+  },
+];
 
 function inferStyleFromRefs(refs, message = '') {
   const tags = new Set();
@@ -42,9 +57,17 @@ function inferStyleFromRefs(refs, message = '') {
   };
 }
 
-function t(text, max = 80) {
+function maxCharsForWidth(fontSize, width = CONTENT_W) {
+  const factor = fontSize >= 24 ? 0.58 : fontSize >= 18 ? 0.52 : 0.48;
+  return Math.max(6, Math.floor(width / (fontSize * factor)));
+}
+
+function t(text, maxOrFontSize = 80, maybeWidth) {
   const s = String(text || '').replace(/\s+/g, ' ').trim();
-  return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+  const max = typeof maybeWidth === 'number'
+    ? maxCharsForWidth(maxOrFontSize, maybeWidth)
+    : Number(maxOrFontSize) || 80;
+  return s.length > max ? `${s.slice(0, Math.max(1, max - 1))}…` : s;
 }
 
 function sectionOps(section, ctx) {
@@ -53,7 +76,7 @@ function sectionOps(section, ctx) {
   const ops = [];
   const bump = (h) => { y += h; };
 
-  const frame = (key, name, h, fill = style.surface) => {
+  const frame = (key, name, h, fill = style.surface, layout = {}) => {
     ops.push({
       op: 'create_frame',
       key: `${prefix}${key}`,
@@ -64,6 +87,11 @@ function sectionOps(section, ctx) {
       width: FRAME_W - PAD * 2,
       height: h,
       fill,
+      radius: layout.radius ?? 14,
+      layoutMode: layout.layoutMode || 'VERTICAL',
+      padding: layout.padding ?? 16,
+      spacing: layout.spacing ?? 10,
+      stroke: layout.stroke || style.border,
     });
     return `${prefix}${key}`;
   };
@@ -74,12 +102,32 @@ function sectionOps(section, ctx) {
       key: `${prefix}${key}`,
       parentKey: parent,
       name,
-      text: t(content),
+      text: t(content, fontSize, CONTENT_W),
       x: PAD + 12,
       y: ty,
+      width: CONTENT_W,
+      textAutoResize: 'HEIGHT',
       fontSize,
       fontWeight,
       fill,
+    });
+  };
+
+  const input = (key, parent, label, placeholder, ty) => {
+    ops.push({
+      op: 'create_input',
+      key: `${prefix}${key}`,
+      parentKey: parent,
+      name: label,
+      label: t(label, 20),
+      placeholder: t(placeholder || label, 28),
+      x: PAD + 12,
+      y: ty,
+      width: CONTENT_W,
+      fieldFill: style.surface,
+      border: style.border,
+      labelFill: style.muted,
+      placeholderFill: style.muted,
     });
   };
 
@@ -126,6 +174,92 @@ function sectionOps(section, ctx) {
       bump(h + 16);
       break;
     }
+    case 'image-hero': {
+      const h = 200;
+      const fk = frame('imgHero', 'Hero visual', h, style.surface);
+      ops.push({
+        op: 'create_frame',
+        key: `${prefix}img`,
+        parentKey: fk,
+        name: 'Illustration',
+        x: PAD + 12,
+        y: 12,
+        width: CONTENT_W,
+        height: 140,
+        fill: style.bg,
+        radius: 14,
+        imagePrompt: section.imagePrompt || 'mobile app hero illustration minimal',
+      });
+      bump(h + 16);
+      break;
+    }
+    case 'onboarding-wizard': {
+      const total = section.total || 3;
+      const step = section.step || 1;
+      const h = FRAME_H - 120;
+      const fk = frame('obWiz', `Onboarding ${step}/${total}`, h, style.surface);
+      const stepW = Math.floor((CONTENT_W - (total - 1) * 8) / total);
+      for (let i = 0; i < total; i++) {
+        ops.push({
+          op: 'create_rect',
+          key: `${prefix}dot${i}`,
+          parentKey: fk,
+          name: `Progress ${i + 1}`,
+          x: PAD + 12 + i * (stepW + 8),
+          y: 16,
+          width: stepW,
+          height: 4,
+          fill: i < step ? style.accent : style.border,
+          radius: 2,
+        });
+      }
+      text('obT', fk, 'Title', section.title || `Шаг ${step}`, 24, 700, style.title, 36);
+      text('obS', fk, 'Subtitle', section.subtitle || '', 14, 400, style.body, 72);
+      ops.push({
+        op: 'create_frame',
+        key: `${prefix}obImg`,
+        parentKey: fk,
+        name: 'Illustration',
+        x: PAD + 12,
+        y: 100,
+        width: CONTENT_W,
+        height: 200,
+        fill: style.bg,
+        radius: 16,
+        imagePrompt: section.imagePrompt || `onboarding step ${step} mobile illustration`,
+      });
+      (section.options || []).slice(0, 4).forEach((opt, i) => {
+        const oy = 320 + i * 56;
+        ops.push({
+          op: 'create_frame',
+          key: `${prefix}opt${i}`,
+          parentKey: fk,
+          name: `Option ${opt}`,
+          x: PAD + 12,
+          y: oy,
+          width: CONTENT_W,
+          height: 48,
+          fill: style.bg,
+        });
+        ops.push({
+          op: 'create_text',
+          key: `${prefix}optT${i}`,
+          parentKey: `${prefix}opt${i}`,
+          name: 'Label',
+          text: t(opt, 14, CONTENT_W - 24),
+          x: 12,
+          y: 14,
+          width: CONTENT_W - 24,
+          textAutoResize: 'HEIGHT',
+          fontSize: 15,
+          fontWeight: 600,
+          fill: style.title,
+        });
+      });
+      button('obCta', fk, section.primaryCta || (step >= total ? 'Готово' : 'Далее'), h - 64);
+      bump(h + 16);
+      break;
+    }
     case 'split-hero': {
       const h = 200;
       const fk = frame('split', 'Split Hero', h, style.surface);
@@ -136,40 +270,47 @@ function sectionOps(section, ctx) {
       break;
     }
     case 'auth-panel': {
-      const h = 340;
-      const fk = frame('auth', section.mode === 'register' ? 'Register' : 'Login', h, style.surface);
+      const isReg = section.mode === 'register';
+      const h = isReg ? 400 : 320;
+      const fk = frame('auth', isReg ? 'Register' : 'Login', h, style.surface);
       text('auT', fk, 'Title', section.title || 'Вход', 22, 700, style.title, 20);
-      text('auS', fk, 'Subtitle', section.subtitle || '', 13, 400, style.body, 52);
-      rect('auE', fk, 'Email field', 44, style.bg, 88);
-      text('auEl', fk, 'Email label', 'Email', 12, 500, style.muted, 92);
-      rect('auP', fk, 'Password field', 44, style.bg, 148);
-      text('auPl', fk, 'Password label', 'Пароль', 12, 500, style.muted, 152);
-      if (section.mode === 'register') {
-        rect('auN', fk, 'Name field', 44, style.bg, 208);
-        text('auNl', fk, 'Name label', 'Имя', 12, 500, style.muted, 212);
-        button('auBtn', fk, 'Создать аккаунт', 268);
+      text('auS', fk, 'Subtitle', section.subtitle || '', 13, 400, style.body, 56);
+      input('auE', fk, 'Email', 'you@email.com', 92);
+      input('auP', fk, 'Пароль', '••••••••', 168);
+      if (isReg) {
+        input('auN', fk, 'Имя', 'Алексей', 244);
+        button('auBtn', fk, 'Создать аккаунт', 320);
       } else {
-        button('auBtn', fk, 'Войти', 208);
+        button('auBtn', fk, 'Войти', 244);
       }
       bump(h + 16);
       break;
     }
     case 'stat-row': {
-      const h = 100;
-      const fk = frame('stats', 'Stats', h, style.surface);
+      const h = 108;
+      const fk = frame('stats', 'Stats', h, style.surface, {
+        layoutMode: 'HORIZONTAL',
+        padding: 12,
+        spacing: 8,
+        radius: 14,
+      });
       const stats = section.stats || [];
+      const colW = Math.floor((FRAME_W - PAD * 2 - 24 - 16) / 3);
       stats.slice(0, 3).forEach((stat, i) => {
-        const colW = Math.floor((FRAME_W - PAD * 2 - 24) / 3);
         ops.push({
           op: 'create_frame',
           key: `${prefix}st${i}`,
           parentKey: fk,
           name: `Stat ${i + 1}`,
-          x: PAD + 12 + i * (colW + 6),
-          y: 16,
+          x: 0,
+          y: 0,
           width: colW,
-          height: 68,
+          height: 72,
           fill: style.bg,
+          radius: 10,
+          layoutMode: 'VERTICAL',
+          padding: 8,
+          spacing: 4,
         });
         ops.push({
           op: 'create_text',
@@ -188,10 +329,12 @@ function sectionOps(section, ctx) {
           key: `${prefix}stl${i}`,
           parentKey: `${prefix}st${i}`,
           name: 'Label',
-          text: t(stat.label, 16),
+          text: t(stat.label, 10, colW - 16),
           x: 8,
           y: 38,
-          fontSize: 11,
+          width: colW - 16,
+          textAutoResize: 'HEIGHT',
+          fontSize: 10,
           fontWeight: 400,
           fill: style.body,
         });
@@ -218,6 +361,11 @@ function sectionOps(section, ctx) {
           width: FRAME_W - PAD * 2 - 24,
           height: 76,
           fill: style.bg,
+          radius: 12,
+          layoutMode: 'VERTICAL',
+          padding: 12,
+          spacing: 6,
+          stroke: style.border,
         });
         ops.push({
           op: 'create_text',
@@ -307,12 +455,11 @@ function sectionOps(section, ctx) {
     }
     case 'settings-form': {
       const fields = section.fields || [];
-      const h = 48 + fields.length * 52;
+      const h = 56 + fields.length * 72;
       const fk = frame('settings', section.title || 'Settings', h, style.surface);
       text('sfT', fk, 'Title', section.title || 'Настройки', 17, 700, style.title, 12);
       fields.slice(0, 5).forEach((field, i) => {
-        rect(`sf${i}`, fk, `Field ${i}`, 40, style.bg, 44 + i * 52);
-        text(`sfl${i}`, fk, `Label ${i}`, field, 12, 500, style.muted, 48 + i * 52);
+        input(`sf${i}`, fk, field, field, 48 + i * 72);
       });
       bump(h + 16);
       break;
@@ -407,6 +554,7 @@ function buildPageOps(page, pageIndex, style) {
     x,
     y: ORIGIN_Y,
     fill: style.bg,
+    layoutGrids: MOBILE_LAYOUT_GRIDS,
   });
 
   ops.push({
@@ -483,12 +631,12 @@ export function buildDeterministicAppPlan({ message, refs = [], blueprint: rawBl
   return {
     summary: `Макет Figma: ${blueprint.productName} — ${pages.length} экранов, ${sectionCount} UI-блоков (Mobbin → Figma)`,
     assumptions: [
-      `Формат: мобильные фреймы ${FRAME_W}×${FRAME_H}px, экраны в ряд.`,
-      'Каждый экран: status bar + секции (hero, формы, таблицы, графики, карточки).',
-      'Стиль палитры по тегам Mobbin / fintech.',
+      `Формат: мобильные фреймы ${FRAME_W}×${FRAME_H}px с сеткой 4 колонки.`,
+      'Тексты с переносом по ширине контента; поля ввода — label + bordered field.',
+      'Стиль палитры по тегам Mobbin / теме запроса.',
       'Нажмите «Применить в Figma» — фреймы появятся на текущей странице файла.',
     ],
-    operations: ops,
+    operations: normalizeFigmaPlanOperations(ops),
     pages: pages.map((p) => ({
       route: p.route,
       name: p.name,

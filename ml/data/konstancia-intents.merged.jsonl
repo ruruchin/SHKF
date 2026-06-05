@@ -1,0 +1,79 @@
+{"text":"привет как дела","label":"general_chat"}
+{"text":"какой бы ты плагин сделал чтобы оптимизировать задачи в редмайне","label":"general_chat"}
+{"text":"что думаешь про kanban доски","label":"general_chat"}
+{"text":"посоветуй инструменты для дизайнеров","label":"general_chat"}
+{"text":"объясни что такое figma make","label":"general_chat"}
+{"text":"спасибо за помощь","label":"general_chat"}
+{"text":"крип а крип динь дон","label":"music_easter_egg"}
+{"text":"включи динь дон","label":"music_easter_egg"}
+{"text":"поставь крип-а-крип","label":"music_easter_egg"}
+{"text":"найди файл листовка фк черноморец 5 штук","label":"file_search"}
+{"text":"где лежит макет баннера в redmine","label":"file_search"}
+{"text":"найди в редмайне файл flyer","label":"file_search"}
+{"text":"проиндексируй задачи сам","label":"reindex"}
+{"text":"обнови каталог redmine","label":"reindex"}
+{"text":"покажи трудозатраты по этой задаче","label":"task_work"}
+{"text":"разбей работу по задаче на подзадачи","label":"task_work"}
+{"text":"прочитай описание задачи целиком","label":"task_work"}
+{"text":"оцени эту задачу в часах","label":"task_work"}
+{"text":"сформируй промпт для figma make по этой задаче","label":"task_work"}
+{"text":"какие похожие задачи мы закрывали","label":"learned_experience"}
+{"text":"что konstancia выучил по этому проекту","label":"learned_experience"}
+{"text":"опыт по прошлым баннерам для текущей задачи","label":"learned_experience"}
+{"text":"сопоставь с прошлыми задачами redmine","label":"learned_experience"}
+{"text":"составь план на день по kanban","label":"kanban_wide"}
+{"text":"сводка статуса по всем задачам команды","label":"kanban_wide"}
+{"text":"найди риски по задачам из kanban","label":"kanban_wide"}
+{"text":"разбор продуктивности по моим задачам","label":"kanban_wide"}
+{"text":"мне грустно сегодня","label":"general_chat"}
+{"text":"что лучше mobbin или dribbble для референсов","label":"general_chat"}
+{"text":"найти 3 ссылки на файл листовка","label":"file_search"}
+{"text":"ищи вложение psd черноморец","label":"file_search"}
+{"text":"по этой задаче какие риски в тз","label":"task_work"}
+{"text":"вопросы заказчику по описанию задачи","label":"task_work"}
+{"text":"уроки из памяти по баннерам","label":"learned_experience"}
+{"text":"play динь дон крип","label":"music_easter_egg"}
+{"text":"дай 5 вариантов где может лежать файл","label":"file_search"}
+{"text":"как улучшить процесс согласования макетов","label":"general_chat"}
+{"text":"текущая задача сколько часов списано","label":"task_work"}
+{"text":"открой redmine задачу 12345","label":"task_work"}
+{"text":"переиндексируй каталог задач","label":"reindex"}
+{"text":"какой плагин для redmine посоветуешь","label":"general_chat"}
+{"text":"расскажи про hotkeys в figma","label":"general_chat"}
+{"text":"что такое shkf","label":"general_chat"}
+{"text":"как настроить metask","label":"general_chat"}
+{"text":"привет konstancia","label":"general_chat"}
+{"text":"как работает mobbin в приложении","label":"general_chat"}
+{"text":"дай совет по организации дизайн-процесса","label":"general_chat"}
+{"text":"что думаешь о redmine плагинах","label":"general_chat"}
+{"text":"объясни разницу между figma и figma make","label":"general_chat"}
+{"text":"как ускорить согласование макетов","label":"general_chat"}
+{"text":"включи музыку динь дон","label":"music_easter_egg"}
+{"text":"крип а крип динь дон включи","label":"music_easter_egg"}
+{"text":"запусти трек динь дон","label":"music_easter_egg"}
+{"text":"найди 5 файлов листовка черноморец","label":"file_search"}
+{"text":"поиск вложения banner psd","label":"file_search"}
+{"text":"где файл макет в задачах redmine","label":"file_search"}
+{"text":"ищи pdf брошюра в redmine","label":"file_search"}
+{"text":"найди в редмайне psd макет","label":"file_search"}
+{"text":"покажи 3 кандидата где лежит файл","label":"file_search"}
+{"text":"переиндексируй redmine задачи","label":"reindex"}
+{"text":"обнови индекс задач kanban","label":"reindex"}
+{"text":"запусти индексацию redmine","label":"reindex"}
+{"text":"синхронизируй каталог задач","label":"reindex"}
+{"text":"сколько часов на задачу","label":"task_work"}
+{"text":"разбери описание текущей задачи","label":"task_work"}
+{"text":"сделай промпт figma make","label":"task_work"}
+{"text":"какие риски в описании задачи","label":"task_work"}
+{"text":"подготовь вопросы заказчику","label":"task_work"}
+{"text":"оцени трудозатраты по задаче","label":"task_work"}
+{"text":"что выучили на прошлых баннерах","label":"learned_experience"}
+{"text":"похожие закрытые задачи redmine","label":"learned_experience"}
+{"text":"опыт konstancia по проекту","label":"learned_experience"}
+{"text":"уроки из памяти задач","label":"learned_experience"}
+{"text":"что мы делали в похожих задачах","label":"learned_experience"}
+{"text":"сводка по kanban на сегодня","label":"kanban_wide"}
+{"text":"статус всех задач в kanban","label":"kanban_wide"}
+{"text":"риски по задачам команды","label":"kanban_wide"}
+{"text":"продуктивность по моим задачам","label":"kanban_wide"}
+{"text":"обзор kanban досок","label":"kanban_wide"}

@@ -344,7 +344,7 @@
 
     if (activeLibrary === 'mine') {
       title.textContent = 'Библиотека пуста';
-      desc.textContent = 'Выделите компонент в Figma и сохраните через FIRURU Bridge → «Сохранить выделение в SHKF»';
+      desc.textContent = 'Выделите компонент в Figma и сохраните через SHKF Bridge → «Сохранить выделение в SHKF»';
     } else if (activeCategory !== 'all') {
       title.textContent = 'Нет компонентов в категории';
       desc.textContent = 'Выберите другую категорию или импортируйте свои компоненты из Figma';
@@ -422,7 +422,7 @@
     dot.classList.toggle('on', !!on);
     text.textContent = on
       ? 'Плагин подключён — можно импортировать'
-      : 'Плагин не подключён — откройте FIRURU Bridge в Figma';
+      : 'Плагин не подключён — откройте SHKF Bridge в Figma';
   }
 
   function bindLibraryTabs() {

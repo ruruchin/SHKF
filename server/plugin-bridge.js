@@ -79,6 +79,19 @@ export class PluginBridge {
               this.onUserTemplateExport?.(msg);
               return;
             }
+            if (msg.type === 'remote-apply-design-ops' && msg.requestId) {
+              this._handleRemoteApplyDesignOps(ws, msg).catch((err) => {
+                if (ws.readyState === 1) {
+                  ws.send(JSON.stringify({
+                    type: 'remote-apply-design-ops-result',
+                    requestId: msg.requestId,
+                    ok: false,
+                    error: err?.message || String(err),
+                  }));
+                }
+              });
+              return;
+            }
           } catch {
             /* ignore */
           }
@@ -127,7 +140,7 @@ export class PluginBridge {
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this._templateWaiters.delete(requestId);
-        reject(new Error('Таймаут — перезапустите плагин Figma (Plugins → Development → FIRURU Bridge)'));
+        reject(new Error('Таймаут — перезапустите плагин Figma (Plugins → Development → SHKF Bridge)'));
       }, 15000);
       this._templateWaiters.set(requestId, { resolve, reject, timer });
       this.client.send(JSON.stringify({ type: 'insert-template', templateId, requestId }));
@@ -215,6 +228,19 @@ export class PluginBridge {
     });
   }
 
+  async _handleRemoteApplyDesignOps(ws, msg) {
+    const result = await this.sendApplyDesignOps(msg.payload || {});
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({
+        type: 'remote-apply-design-ops-result',
+        requestId: msg.requestId,
+        ok: !!result?.ok,
+        data: result?.data || null,
+        error: result?.ok ? undefined : (result?.error || 'apply failed'),
+      }));
+    }
+  }
+
   sendApplyDesignOps(payload = {}) {
     if (!this.client || this.client.readyState !== 1) {
       throw new Error('Плагин Figma не подключён');
@@ -224,7 +250,7 @@ export class PluginBridge {
       const timer = setTimeout(() => {
         this._templateWaiters.delete(requestId);
         reject(new Error('Таймаут применения правок Figma'));
-      }, 30000);
+      }, 120000);
       this._templateWaiters.set(requestId, { resolve, reject, timer });
       this.client.send(JSON.stringify({
         type: 'apply-design-ops',

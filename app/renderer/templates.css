@@ -1231,7 +1231,7 @@
   font-weight: 500;
   background: var(--modal-bg);
   border: 1px solid var(--border);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s, transform 0.25s;

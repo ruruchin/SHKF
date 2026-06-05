@@ -62,7 +62,7 @@ export async function fetchNanobananaImageBytes(url, opts = {}) {
     label: 'direct',
     headers: {
       Accept: 'image/*,*/*;q=0.8',
-      'User-Agent': 'FIRURU/1.0',
+      'User-Agent': 'SHKF/1.0',
     },
   });
 
@@ -73,7 +73,7 @@ export async function fetchNanobananaImageBytes(url, opts = {}) {
         Accept: 'image/*,*/*;q=0.8',
         Authorization: `Bearer ${apiKey}`,
         Referer: 'https://www.nananobanana.com/',
-        'User-Agent': 'FIRURU/1.0',
+        'User-Agent': 'SHKF/1.0',
       },
     });
   }
@@ -85,7 +85,7 @@ export async function fetchNanobananaImageBytes(url, opts = {}) {
         Accept: 'image/*,*/*;q=0.8',
         Referer: 'https://www.nananobanana.com/',
         Origin: 'https://www.nananobanana.com',
-        'User-Agent': 'FIRURU/1.0',
+        'User-Agent': 'SHKF/1.0',
       },
     });
   }

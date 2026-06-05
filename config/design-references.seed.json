@@ -18,7 +18,8 @@
       "url": "https://mobbin.com/apps/cash-app-ios-6fc9a5b8-91ee-47dd-976d-9784a1975e1a/fed5f550-de22-4c8f-98d3-72b7dcf28e2e/screens",
       "platform": "ios",
       "surface": "app",
-      "tags": ["ios", "fintech", "wallet", "dark", "cta", "dashboard"],
+      "tags": ["ios", "fintech", "wallet", "dark", "cta", "dashboard", "инвестиции", "банк"],
+      "note": "fintech wallet payments mobile",
       "quality": 5
     },
     {
@@ -28,7 +29,8 @@
       "url": "https://mobbin.com/apps/public-ios-224625da-821d-490b-b4b6-1d167492a0fb/c96471b6-af80-49dd-a932-cf43a18b67dc/screens",
       "platform": "ios",
       "surface": "app",
-      "tags": ["ios", "fintech", "charts", "portfolio", "data", "dashboard"],
+      "tags": ["ios", "fintech", "charts", "portfolio", "data", "dashboard", "инвестиции", "аналитика"],
+      "note": "investment portfolio trading analytics",
       "quality": 5
     },
     {

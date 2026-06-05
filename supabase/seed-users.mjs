@@ -6,27 +6,27 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const USERS = [
   {
-    email: process.env.SEED_DESIGNER_EMAIL || 'designer@firuru.local',
+    email: process.env.SEED_DESIGNER_EMAIL || 'designer@shkf.local',
     password: process.env.SEED_DESIGNER_PASSWORD,
-    full_name: process.env.SEED_DESIGNER_NAME || 'FIRURU Designer',
+    full_name: process.env.SEED_DESIGNER_NAME || 'SHKF Designer',
     role: 'designer',
   },
   {
-    email: process.env.SEED_FRONTEND_EMAIL || 'frontend@firuru.local',
+    email: process.env.SEED_FRONTEND_EMAIL || 'frontend@shkf.local',
     password: process.env.SEED_FRONTEND_PASSWORD,
-    full_name: process.env.SEED_FRONTEND_NAME || 'FIRURU Front-end',
+    full_name: process.env.SEED_FRONTEND_NAME || 'SHKF Front-end',
     role: 'frontend',
   },
   {
-    email: process.env.SEED_BACKEND_EMAIL || 'backend@firuru.local',
+    email: process.env.SEED_BACKEND_EMAIL || 'backend@shkf.local',
     password: process.env.SEED_BACKEND_PASSWORD,
-    full_name: process.env.SEED_BACKEND_NAME || 'FIRURU Back-end',
+    full_name: process.env.SEED_BACKEND_NAME || 'SHKF Back-end',
     role: 'backend',
   },
   {
-    email: process.env.SEED_PM_EMAIL || 'pm@firuru.local',
+    email: process.env.SEED_PM_EMAIL || 'pm@shkf.local',
     password: process.env.SEED_PM_PASSWORD,
-    full_name: process.env.SEED_PM_NAME || 'FIRURU Project Manager',
+    full_name: process.env.SEED_PM_NAME || 'SHKF Project Manager',
     role: 'pm',
   },
 ];

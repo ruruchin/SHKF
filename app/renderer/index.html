@@ -1,15 +1,20 @@
 <!DOCTYPE html>
-<html lang="ru" data-theme="light">
+<html lang="ru" data-theme="mobbin">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SHKF</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/style.css" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="search-page.css" />
   <link rel="stylesheet" href="demos.css" />
   <link rel="stylesheet" href="hotkeys-ui.css" />
   <link rel="stylesheet" href="make-it.css" />
   <link rel="stylesheet" href="agent.css" />
+  <link rel="stylesheet" href="agent-vtuber.css" />
   <link rel="stylesheet" href="onboarding.css" />
   <link rel="stylesheet" href="templates.css" />
   <link rel="stylesheet" href="settings.css" />
@@ -33,33 +38,27 @@
   <link rel="stylesheet" href="reference-ui.css" />
   <link rel="stylesheet" href="magnific.css" />
   <link rel="stylesheet" href="mobbin-theme.css" />
+  <link rel="stylesheet" href="pik-folder.css" />
 </head>
 <body>
   <div class="auth-gate hidden" id="auth-gate">
-    <div class="auth-aurora" aria-hidden="true"></div>
+    <div class="auth-bg-scene" aria-hidden="true"></div>
     <div class="auth-card" id="auth-card">
       <form class="auth-step" id="auth-step-login">
         <div class="auth-brand">
-          <span class="auth-logo">
-            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
-              <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
-              <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
-              <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
-            </svg>
+          <span class="auth-logo" aria-hidden="true">
+            <img class="brand-logo" src="assets/brand/logo.png" alt="" width="40" height="40" decoding="async" />
           </span>
-          <span class="auth-brand-text">
-            <span class="auth-title">SHKF</span>
-            <span class="auth-subtitle">Войдите в рабочий аккаунт</span>
-          </span>
+          <h1 class="auth-title">Добро пожаловать</h1>
+          <p class="auth-subtitle">Войдите в рабочий аккаунт SHKF</p>
         </div>
         <div class="auth-form">
           <label class="auth-field">
-            Логин
+            <span class="auth-field-label">Логин</span>
             <input type="text" id="auth-login" autocomplete="username" spellcheck="false" autocapitalize="none" placeholder="k.zorenko" />
           </label>
           <label class="auth-field">
-            Пароль
+            <span class="auth-field-label">Пароль</span>
             <span class="auth-input">
               <input type="password" id="auth-password" autocomplete="current-password" placeholder="Введите пароль" />
               <button type="button" class="auth-eye" id="auth-eye" aria-label="Показать пароль" tabindex="-1">
@@ -69,30 +68,30 @@
           </label>
           <button type="button" class="auth-forgot" id="auth-forgot">Не помню пароль</button>
           <div class="auth-error" id="auth-error"></div>
-          <button type="submit" class="auth-submit" id="auth-submit">Войти</button>
-          <div class="auth-hint">Аккаунты создаёт администратор. Самостоятельная регистрация недоступна.</div>
+          <button type="submit" class="auth-submit" id="auth-submit">
+            <span class="auth-submit-text">Войти</span>
+          </button>
+          <p class="auth-hint">Аккаунты создаёт администратор. Самостоятельная регистрация недоступна.</p>
         </div>
       </form>
 
       <form class="auth-step hidden" id="auth-step-changepw">
         <div class="auth-brand">
-          <span class="auth-logo auth-logo--key">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <span class="auth-logo auth-logo--key" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="8" cy="15" r="4"/><path d="M10.85 12.15L19 4M18 5l2 2M15 8l2 2"/>
             </svg>
           </span>
-          <span class="auth-brand-text">
-            <span class="auth-title">Новый пароль</span>
-            <span class="auth-subtitle">Задайте свой пароль для входа</span>
-          </span>
+          <h1 class="auth-title">Новый пароль</h1>
+          <p class="auth-subtitle">Задайте свой пароль для входа</p>
         </div>
         <div class="auth-form">
           <label class="auth-field">
-            Новый пароль
+            <span class="auth-field-label">Новый пароль</span>
             <input type="password" id="auth-newpw" autocomplete="new-password" placeholder="Минимум 6 символов" />
           </label>
           <label class="auth-field">
-            Повторите пароль
+            <span class="auth-field-label">Повторите пароль</span>
             <input type="password" id="auth-newpw2" autocomplete="new-password" placeholder="Ещё раз" />
           </label>
           <div class="auth-error" id="auth-cp-error"></div>
@@ -184,12 +183,7 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-mark" aria-hidden="true">
-          <svg class="brand-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
-            <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
-            <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
-            <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
-          </svg>
+          <img class="brand-logo" src="assets/brand/logo.png" alt="" width="28" height="28" decoding="async" />
         </div>
         <span class="brand-name">SHKF</span>
       </div>
@@ -216,9 +210,9 @@
 
         <div class="nav-group nav-group-figma" id="nav-group-figma">
           <span class="nav-group-label" id="nav-figma-label">Figma</span>
-          <button class="nav-item active" data-page="hotkeys">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 012 2v1.07a8.001 8.001 0 015.93 5.93H21a2 2 0 010 4h-1.07A8.001 8.001 0 0114 20.93V22a2 2 0 01-4 0v-1.07A8.001 8.001 0 014.07 15H3a2 2 0 010-4h1.07A8.001 8.001 0 0110 5.07V4a2 2 0 012-2z"/></svg>
-            Хоткеи
+          <button class="nav-item" data-page="pikfolder">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            PIK-FOLDER
           </button>
           <button class="nav-item" data-page="makeit">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z"/><circle cx="18" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
@@ -229,11 +223,11 @@
             Templates
           </button>
           <button class="nav-item" data-page="nanobanana">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16l4-8 4 5 4-9 4 12"/><circle cx="18" cy="6" r="2" fill="currentColor" stroke="none"/></svg>
+            <img class="nav-icon" src="assets/icons/nanobanana.png" alt="" width="18" height="18" decoding="async" />
             NanoBanana
           </button>
           <button class="nav-item" data-page="magnific">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            <img class="nav-icon" src="assets/icons/magnific.png" alt="" width="18" height="18" decoding="async" />
             Magnific MCP
           </button>
           <button class="nav-item" data-page="bannermockup">
@@ -247,15 +241,17 @@
         <div class="nav-group nav-group-work" id="nav-group-work">
           <span class="nav-group-label" id="nav-work-label">Работа</span>
           <button class="nav-item" data-page="metask">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 15h.01M12 15h4"/></svg>
+            <img class="nav-icon" src="assets/icons/redmine.png" alt="" width="18" height="18" decoding="async" />
             Канбан
           </button>
           <button class="nav-item" data-page="agent">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
-            ИИ Агент
+            <span class="nav-item-avatar agent-brand-avatar" aria-hidden="true">
+              <img class="agent-brand-avatar-img" data-agent-brand-avatar alt="" width="18" height="18" />
+            </span>
+            Konstancia
           </button>
           <button class="nav-item" data-page="mail">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 6l-10 7L2 6"/></svg>
+            <img class="nav-icon" src="assets/icons/gmail.png" alt="" width="18" height="18" decoding="async" />
             Почта
           </button>
           <button class="nav-item" data-page="github">
@@ -267,7 +263,7 @@
             Outline
           </button>
           <button class="nav-item" data-page="notes">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg>
+            <img class="nav-icon" src="assets/icons/notes.png" alt="" width="18" height="18" decoding="async" />
             Записи
           </button>
         </div>
@@ -277,7 +273,7 @@
         <div class="nav-group nav-group-system">
           <span class="nav-group-label">Подключение</span>
           <button class="nav-item" data-page="setup">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+            <img class="nav-icon" src="assets/icons/figma.png" alt="" width="18" height="18" decoding="async" />
             Figma
           </button>
         </div>
@@ -313,6 +309,101 @@
     <!-- Main panel -->
     <div class="main-wrap">
       <main class="panel">
+        <!-- PIK-FOLDER (Savee-style refs) -->
+        <section class="page" id="page-pikfolder">
+          <div class="pik-app" id="pik-app">
+            <header class="pik-topbar">
+              <div class="pik-brand">
+                <span class="pik-logo" aria-hidden="true">P</span>
+                <span class="pik-brand-name">PIK-FOLDER</span>
+              </div>
+              <div class="pik-search-wrap">
+                <label class="pik-search">
+                  <svg class="pik-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                  <input type="search" id="pik-search-input" placeholder="Поиск по референсам…" autocomplete="off" spellcheck="false" />
+                </label>
+              </div>
+              <div class="pik-actions">
+                <span class="pik-sync-status" id="pik-sync-status" aria-live="polite"></span>
+                <button type="button" class="pik-icon-btn" id="pik-refresh" aria-label="Обновить каталог" title="Обновить каталог">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 4v5h-5"/></svg>
+                </button>
+              </div>
+            </header>
+            <div class="pik-filters" id="pik-filters">
+              <div class="pik-filter-row">
+                <span class="pik-filter-label">Платформа</span>
+                <div class="pik-platforms" id="pik-platforms" aria-label="Платформа"></div>
+              </div>
+              <div class="pik-filter-row">
+                <span class="pik-filter-label">Категория</span>
+                <div class="pik-topics" id="pik-topics" aria-label="Категории"></div>
+              </div>
+              <div class="pik-filter-row pik-filter-row--scroll">
+                <span class="pik-filter-label">Тип экрана</span>
+                <div class="pik-screen-types" id="pik-screen-types" aria-label="Тип экрана"></div>
+              </div>
+            </div>
+            <div class="pik-app-bar hidden" id="pik-app-bar">
+              <button type="button" class="pik-app-back" id="pik-app-back" aria-label="Назад к приложениям">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                Приложения
+              </button>
+            </div>
+            <header class="pik-company-hero hidden" id="pik-company-hero"></header>
+            <div class="pik-scroll" id="pik-scroll">
+              <div class="pik-status hidden" id="pik-status">
+                <span class="pik-spinner" aria-hidden="true"></span>
+                <span>Загрузка референсов…</span>
+              </div>
+              <div class="pik-apps-grid hidden" id="pik-apps-grid"></div>
+              <div class="pik-masonry hidden" id="pik-masonry" data-cols="5"></div>
+              <section class="pik-company-similar hidden" id="pik-company-similar" aria-label="Похожие приложения">
+                <h2 class="pik-company-similar-title" id="pik-company-similar-title"></h2>
+                <div class="pik-company-similar-grid" id="pik-company-similar-grid"></div>
+              </section>
+              <div class="pik-empty hidden" id="pik-empty">
+                <strong>Нет референсов</strong>
+                Попробуйте другую тематику или запрос
+              </div>
+            </div>
+            <div class="pik-viewer hidden" id="pik-viewer" role="dialog" aria-modal="true" aria-label="Просмотр экрана">
+              <div class="pik-viewer-backdrop" id="pik-viewer-backdrop"></div>
+              <div class="pik-viewer-shell">
+                <header class="pik-viewer-header">
+                  <div class="pik-viewer-header-app" id="pik-viewer-header-app"></div>
+                  <button type="button" class="pik-viewer-icon-btn" id="pik-viewer-close" title="Закрыть" aria-label="Закрыть">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </header>
+                <div class="pik-viewer-body">
+                  <button type="button" class="pik-viewer-nav pik-viewer-nav--prev" id="pik-viewer-prev" aria-label="Предыдущий">‹</button>
+                  <div class="pik-viewer-frame" id="pik-viewer-frame">
+                    <div class="pik-viewer-stage" id="pik-viewer-stage"></div>
+                  </div>
+                  <button type="button" class="pik-viewer-nav pik-viewer-nav--next" id="pik-viewer-next" aria-label="Следующий">›</button>
+                </div>
+                <footer class="pik-viewer-toolbar">
+                  <div class="pik-viewer-toolbar-side pik-viewer-toolbar-side--left">
+                    <p class="pik-viewer-context" id="pik-viewer-context"></p>
+                  </div>
+                  <div class="pik-viewer-toolbar-actions">
+                    <button type="button" class="pik-viewer-pill pik-viewer-pill--save" id="pik-viewer-save">Сохранить</button>
+                    <button type="button" class="pik-viewer-pill pik-viewer-pill--copy" id="pik-viewer-copy">Копировать</button>
+                    <button type="button" class="pik-viewer-pill pik-viewer-pill--kostin" id="pik-viewer-kostin">Отправить Konstancia</button>
+                  </div>
+                  <div class="pik-viewer-toolbar-side pik-viewer-toolbar-side--right">
+                    <p class="pik-viewer-meta" id="pik-viewer-meta"></p>
+                  </div>
+                </footer>
+                <section class="pik-viewer-similar" id="pik-viewer-similar">
+                  <div class="pik-viewer-similar-row" id="pik-viewer-similar-row"></div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <!-- SEARCH -->
         <section class="page" id="page-search">
           <div class="search-page">
@@ -344,7 +435,7 @@
         </section>
 
         <!-- HOTKEYS -->
-        <section class="page active" id="page-hotkeys">
+        <section class="page" id="page-hotkeys">
           <header class="hero">
             <div class="hero-info">
               <div class="hero-character" aria-hidden="true">
@@ -424,7 +515,7 @@
           <div class="setup-page">
             <header class="setup-header">
               <h1>Figma</h1>
-              <p class="setup-lead">Плагин FIRURU Bridge для глобальных хоткеев</p>
+              <p class="setup-lead">Плагин SHKF Bridge для глобальных хоткеев</p>
             </header>
 
             <div class="connect-body">
@@ -437,7 +528,7 @@
 
             <div class="steps-card">
               <div class="step"><span class="step-num">1</span> Импортируйте плагин: Figma → Plugins → Development → Import plugin from manifest → папка <code>figma-plugin</code></div>
-              <div class="step"><span class="step-num">2</span> Запустите плагин «FIRURU Bridge» в открытом файле и нажмите «Подключиться»</div>
+              <div class="step"><span class="step-num">2</span> Запустите плагин «SHKF Bridge» в открытом файле и нажмите «Подключиться»</div>
               <div class="step"><span class="step-num">3</span> Сверните окно плагина (не закрывайте) — статус станет зелёным</div>
               <div class="step"><span class="step-num">4</span> Опционально: «Запустить Figma» перезапустит Figma с CDP для автофокуса</div>
             </div>
@@ -531,7 +622,7 @@
                   <div class="tpl-import-title">Импорт компонентов из Figma</div>
                   <ol class="tpl-import-steps">
                     <li>Выделите Component, Frame или Instance в Figma</li>
-                    <li>Откройте плагин <strong>FIRURU Bridge</strong></li>
+                    <li>Откройте плагин <strong>SHKF Bridge</strong></li>
                     <li>Нажмите <strong>«Сохранить выделение в SHKF»</strong></li>
                   </ol>
                   <div class="tpl-import-status" id="tpl-plugin-status">
@@ -554,7 +645,7 @@
               <div class="templates-empty hidden" id="templates-empty">
                 <div class="tpl-empty-art" aria-hidden="true">▦</div>
                 <p class="tpl-empty-title" id="templates-empty-title">Нет компонентов</p>
-                <p class="tpl-empty-desc" id="templates-empty-desc">Импортируйте первый компонент из Figma через плагин FIRURU Bridge</p>
+                <p class="tpl-empty-desc" id="templates-empty-desc">Импортируйте первый компонент из Figma через плагин SHKF Bridge</p>
               </div>
             </div>
           </div>
@@ -924,7 +1015,7 @@
                     <li>Откройте файл «SHKF banners»</li>
                     <li>Слой картинки → <strong>img</strong></li>
                     <li>Тексты → <strong>text-title</strong>, <strong>text-subtitle</strong>, <strong>text-cta</strong></li>
-                    <li>Frame → FIRURU Bridge → «Сохранить в SHKF»</li>
+                    <li>Frame → SHKF Bridge → «Сохранить в SHKF»</li>
                   </ol>
                 </details>
               </aside>
@@ -952,18 +1043,13 @@
               <div class="upd-art" aria-hidden="true">
                 <div class="upd-art-glow"></div>
                 <div class="upd-icon">
-                  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
-                    <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
-                    <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
-                    <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
-                  </svg>
+                  <img class="brand-logo" src="assets/brand/logo.png" alt="" width="46" height="46" decoding="async" />
                 </div>
                 <span class="upd-badge" id="upd-version-badge">1.0.0</span>
               </div>
 
               <h1 class="upd-title">Доступно обновление</h1>
-              <p class="upd-subtitle" id="upd-subtitle">Новая версия FIRURU загружена и готова к установке.</p>
+              <p class="upd-subtitle" id="upd-subtitle">Новая версия SHKF загружена и готова к установке.</p>
 
               <div class="upd-versions">
                 <div class="upd-version">
@@ -1026,7 +1112,7 @@
                   <span id="pf-preview-login">@—</span>
                   <span id="pf-preview-role">—</span>
                 </div>
-                <p class="pf-preview-note">То, как вас видит команда в FIRURU.</p>
+                <p class="pf-preview-note">То, как вас видит команда в SHKF.</p>
               </aside>
 
               <div class="pf-stack">
@@ -1097,9 +1183,18 @@
 
         <!-- AI AGENT -->
         <section class="page" id="page-agent">
-          <div class="agent-chat">
+          <div class="agent-chat agent-chat--gemini">
             <div class="agent-status-banner hidden" id="agent-status-banner"></div>
             <div class="agent-layout">
+              <div class="agent-vtuber-float hidden" id="agent-vtuber-float" data-mode="hero" aria-hidden="true">
+                <div class="agent-vtuber-stage">
+                  <video class="agent-vtuber-video hidden" id="agent-vtuber-video" autoplay playsinline muted></video>
+                  <div class="agent-vtuber-fallback" id="agent-vtuber-fallback">
+                    <img src="assets/agent/agent-avatar.png" alt="" width="160" height="160" />
+                  </div>
+                  <div class="agent-vtuber-emotion" id="agent-vtuber-emotion" data-emotion="neutral">Нейтральная</div>
+                </div>
+              </div>
               <aside class="agent-sidebar" aria-label="Список чатов">
                 <div class="agent-sidebar-head">
                   <div class="agent-sidebar-brand">
@@ -1108,7 +1203,12 @@
                     </span>
                     <h3 class="agent-sidebar-title">Чаты</h3>
                   </div>
-                  <button type="button" class="agent-sidebar-new" id="agent-session-new" title="Новый чат">+ Новый</button>
+                  <div class="agent-sidebar-head-actions">
+                    <button type="button" class="agent-sidebar-new" id="agent-session-new" title="Новый чат">+ Новый</button>
+                    <button type="button" class="agent-sidebar-hide" id="agent-sidebar-hide" title="Скрыть чаты" aria-label="Скрыть чаты" aria-expanded="true">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                  </div>
                 </div>
                 <div class="agent-session-list" id="agent-session-list"></div>
               </aside>
@@ -1117,26 +1217,49 @@
               <div class="agent-header-card">
                 <header class="agent-topbar">
                   <div class="agent-chat-brand">
-                    <div class="agent-chat-avatar">
-                      <img class="agent-avatar-img" src="assets/agent/agent-avatar.png" alt="" width="44" height="44" />
+                    <button type="button" class="agent-sidebar-toggle hidden" id="agent-sidebar-toggle" title="Показать чаты" aria-label="Показать чаты">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    </button>
+                    <div class="agent-chat-avatar agent-brand-avatar" id="agent-chat-avatar">
+                      <img class="agent-avatar-img agent-brand-avatar-img" id="agent-header-avatar-img" data-agent-brand-avatar alt="" width="44" height="44" />
                     </div>
                     <div>
-                      <h2 class="agent-chat-title">ИИ Агент</h2>
-                      <span class="agent-chat-sub" id="agent-chat-sub">GigaChat · Kanban · промпты для дизайна</span>
+                      <h2 class="agent-chat-title">Konstancia</h2>
+                      <span class="agent-chat-sub" id="agent-chat-sub">Локальная нейросеть · Kanban · Figma</span>
                     </div>
                   </div>
                   <div class="agent-chat-actions">
-                    <select class="agent-model-select" id="agent-model-select" title="Модель GigaChat">
+                    <select class="agent-model-select hidden" id="agent-model-select" title="Модель (только GigaChat)">
                       <option value="GigaChat">GigaChat (Lite)</option>
+                      <option value="GigaChat-2-Lite">GigaChat-2-Lite</option>
                       <option value="GigaChat-2">GigaChat-2</option>
                       <option value="GigaChat-2-Pro">GigaChat-2-Pro</option>
+                      <option value="GigaChat-2-Max">GigaChat-2-Max</option>
                     </select>
-                    <select class="agent-task-select" id="agent-task-select" title="Задача из Kanban">
-                      <option value="">— Без задачи —</option>
-                    </select>
+                    <span class="agent-model-badge" id="agent-konstancia-badge" title="Локальная нейросеть Konstancia">Konstancia</span>
+                    <div class="agent-task-picker" id="agent-task-picker">
+                      <button type="button" class="agent-task-picker-trigger" id="agent-task-picker-trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="agent-task-picker-menu" title="Задача из Kanban">
+                        <span class="agent-task-picker-assignees hidden" id="agent-task-picker-assignees" aria-hidden="true"></span>
+                        <span class="agent-task-picker-value" id="agent-task-picker-value">— Без задачи —</span>
+                        <svg class="agent-task-picker-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+                      </button>
+                      <ul class="agent-task-picker-menu hidden" id="agent-task-picker-menu" role="listbox" aria-label="Задачи Kanban"></ul>
+                      <select class="agent-task-select-native" id="agent-task-select" tabindex="-1" aria-hidden="true">
+                        <option value="">— Без задачи —</option>
+                      </select>
+                    </div>
                     <button type="button" class="agent-tool-btn" id="agent-morning-brief-btn" title="Утренний бриф по задачам Kanban">Бриф</button>
+                    <button type="button" class="agent-settings-btn" id="agent-settings-btn" title="Настройки чата" aria-label="Настройки чата">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+                    </button>
                   </div>
                 </header>
+                <div class="agent-settings-menu hidden" id="agent-settings-menu" role="dialog" aria-label="Настройки чата">
+                  <label class="agent-settings-row"><input type="checkbox" id="agent-opt-sources" checked /><span>Карточки источников (Search)</span></label>
+                  <label class="agent-settings-row"><input type="checkbox" id="agent-opt-compact" /><span>Компактные сообщения</span></label>
+                  <label class="agent-settings-row"><input type="checkbox" id="agent-opt-code-panel" checked /><span>Панель проверки кода</span></label>
+                  <label class="agent-settings-row"><input type="checkbox" id="agent-opt-enter-send" checked /><span>Enter — отправить</span></label>
+                </div>
               </div>
 
               <div class="agent-panels">
@@ -1181,10 +1304,38 @@
 
               <div class="agent-stage" id="agent-stage">
                 <div class="agent-messages agent-messages--idle" id="agent-messages"></div>
+                <div id="agent-live2d-host" class="agent-live2d-host" aria-hidden="true"></div>
+                <aside class="agent-code-drawer hidden" id="agent-code-drawer" aria-label="Проверка кода">
+                  <div class="agent-code-drawer-head">
+                    <strong>Проверка кода</strong>
+                    <button type="button" class="agent-code-drawer-close" id="agent-code-drawer-close" aria-label="Закрыть">×</button>
+                  </div>
+                  <pre class="agent-code-drawer-body" id="agent-code-inspector"></pre>
+                  <div class="agent-code-drawer-foot">
+                    <button type="button" class="agent-code-btn agent-code-btn--primary" id="agent-code-ask-fix">Спросить про ошибку</button>
+                    <button type="button" class="agent-code-btn" id="agent-code-copy-all">Copy</button>
+                  </div>
+                </aside>
               </div>
 
               <footer class="agent-dock">
                 <div class="agent-composer-attachments hidden" id="agent-composer-attachments" aria-live="polite"></div>
+                <div class="agent-dock-bottom">
+                  <div class="agent-dock-presence hidden" id="agent-vtuber-composer-slot" aria-hidden="true">
+                    <div class="agent-vtuber-thought hidden" id="agent-vtuber-thought" aria-live="polite">
+                      <span class="agent-vtuber-thought-pulse" aria-hidden="true"></span>
+                      <span class="agent-vtuber-thought-label">Думаю</span>
+                      <span class="agent-vtuber-thought-text" id="agent-vtuber-thought-text"></span>
+                    </div>
+                  </div>
+                  <div class="agent-dock-main">
+                <div class="agent-composer-status hidden" id="agent-composer-status" aria-live="polite" aria-atomic="true">
+                  <span class="agent-composer-status-pulse" aria-hidden="true"></span>
+                  <span class="agent-composer-status-copy">
+                    <strong class="agent-composer-status-label">Konstancia думает</strong>
+                    <span class="agent-composer-status-step" id="agent-composer-status-step"></span>
+                  </span>
+                </div>
                 <div class="agent-suggestions" id="agent-suggestions">
                   <button type="button" class="agent-sug agent-sug--analyze" data-agent-action="analyze" title="Оценить задачу">
                     <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
@@ -1216,13 +1367,15 @@
                   </button>
                 </div>
                 <div class="agent-composer" id="agent-composer">
-                  <button type="button" class="agent-composer-attach" id="agent-attach" title="Прикрепить изображение (GigaChat-2 / 2-Pro)" aria-label="Прикрепить изображение">
+                  <button type="button" class="agent-composer-attach" id="agent-attach" title="Прикрепить изображение (GigaChat-2 / Pro / Max)" aria-label="Прикрепить изображение">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
                   </button>
-                  <textarea id="agent-prompt" class="agent-composer-input" rows="1" placeholder="Спросите про задачу, баннер или промпт для Make…" spellcheck="true"></textarea>
+                  <textarea id="agent-prompt" class="agent-composer-input" rows="1" placeholder="Спросите Konstancia или вставьте код для проверки…" spellcheck="true"></textarea>
                   <button type="button" class="agent-composer-send" id="agent-send" disabled aria-label="Отправить">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>
                   </button>
+                </div>
+                  </div>
                 </div>
               </footer>
             </div>
@@ -1444,7 +1597,7 @@
             <div class="webtab-toolbar">
               <div class="webtab-title-wrap">
                 <span class="webtab-icon" aria-hidden="true">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/><path d="M8 7h8M8 11h6"/></svg>
+                  <img class="webtab-app-icon" src="assets/icons/notes.png" alt="" width="22" height="22" decoding="async" />
                 </span>
                 <div>
                   <h1>Записи</h1>
@@ -1531,8 +1684,11 @@
         <section class="page" id="page-settings">
           <div class="settings-page">
             <header class="settings-page-header">
-              <h1>Настройки</h1>
-              <p>Внешний вид, хоткеи, Figma, окно и дополнительные параметры</p>
+              <div class="settings-page-header-main">
+                <h1>Настройки</h1>
+                <p>Внешний вид, хоткеи, Figma, окно и дополнительные параметры</p>
+              </div>
+              <nav class="settings-quick-nav" id="settings-quick-nav" aria-label="Разделы настроек"></nav>
             </header>
             <div class="settings-scroll">
 
@@ -1634,7 +1790,7 @@
                   <div class="settings-item">
                     <div class="settings-item-info">
                       <div class="settings-label">Порт плагина</div>
-                      <div class="settings-hint">WebSocket для FIRURU Bridge (3847)</div>
+                      <div class="settings-hint">WebSocket для SHKF Bridge (3847)</div>
                     </div>
                     <div class="settings-control settings-inline">
                       <input type="number" id="set-plugin-port" class="w-wide" min="1024" max="65535" />
@@ -1744,12 +1900,41 @@
               </div>
 
               <div class="settings-section" id="settings-agent">
-                <div class="settings-section-title">ИИ Агент (GigaChat)</div>
+                <div class="settings-section-title">Konstancia · нейросеть</div>
                 <div class="settings-list">
-                  <div class="settings-item settings-item-stack">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Движок агента</div>
+                      <div class="settings-hint">По умолчанию — <strong>своя</strong> локальная модель Konstancia (Hugging Face). GigaChat — опционально.</div>
+                    </div>
+                    <select id="set-agent-provider" class="settings-control w-wide">
+                      <option value="konstancia">Konstancia (локальная нейросеть)</option>
+                      <option value="gigachat">GigaChat (облако Sber)</option>
+                    </select>
+                  </div>
+                  <div class="settings-item settings-item--stack" id="set-agent-konstancia-panel">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Локальная модель</div>
+                      <div class="settings-hint" id="set-konstancia-llm-hint">Обучение: <code>npm run ml:train:chat</code> · диалоги в <code>config/konstancia-chat-feedback.jsonl</code></div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <span class="settings-badge" id="set-konstancia-llm-status">…</span>
+                    </div>
+                  </div>
+                  <div class="settings-item settings-item--stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Облачный API Konstancia</div>
+                      <div class="settings-hint">Если указан URL — чат идёт на GPU-сервер (RunPod, HF, Yandex Cloud), локальный Python не нужен</div>
+                    </div>
+                    <div class="settings-control settings-stack">
+                      <input type="url" id="set-konstancia-cloud-url" class="w-full" placeholder="https://your-gpu.example.com:8080" autocomplete="off" />
+                      <input type="password" id="set-konstancia-cloud-key" class="w-full" placeholder="API key (KONSTANCIA_API_KEY на сервере)" autocomplete="off" />
+                    </div>
+                  </div>
+                  <div class="settings-item settings-item--stack hidden" id="set-agent-gigachat-panel">
                     <div class="settings-item-info">
                       <div class="settings-label">Ключ Authorization (Base64)</div>
-                      <div class="settings-hint">Бесплатный tier ~1 млн токенов/год — получите на <a href="#" id="set-agent-docs-link">developers.sber.ru/studio</a> → GigaChat API → скопируйте ключ авторизации</div>
+                      <div class="settings-hint">Получите на <a href="#" id="set-agent-docs-link">developers.sber.ru/studio</a> → GigaChat API</div>
                     </div>
                     <div class="settings-control settings-stack">
                       <input type="password" id="set-agent-credentials" class="w-full" placeholder="Base64 Authorization key" autocomplete="off" />
@@ -1758,11 +1943,14 @@
                           <option value="GigaChat">GigaChat (Lite)</option>
                           <option value="GigaChat-2">GigaChat-2</option>
                           <option value="GigaChat-2-Pro">GigaChat-2-Pro</option>
+                          <option value="GigaChat-2-Max">GigaChat-2-Max</option>
                         </select>
                         <button type="button" class="btn-secondary btn-sm" id="set-agent-test">Проверить</button>
-                        <button type="button" class="btn-play btn-sm" id="set-agent-save">Сохранить</button>
                       </div>
                     </div>
+                  </div>
+                  <div class="settings-control settings-inline">
+                    <button type="button" class="btn-play btn-sm" id="set-agent-save">Сохранить</button>
                   </div>
                   <div class="settings-item">
                     <div class="settings-item-info">
@@ -1784,10 +1972,10 @@
                     </div>
                     <label class="toggle settings-control"><input type="checkbox" id="set-agent-clear" checked /><span class="toggle-slider"></span></label>
                   </div>
-                  <div class="settings-item settings-item-stack">
+                  <div class="settings-item settings-item--stack">
                     <div class="settings-item-info">
                       <div class="settings-label">Mobbin API key (live-референсы)</div>
-                      <div class="settings-hint">Team/Enterprise: ключ из <a href="#" id="set-mobbin-docs-link">docs.mobbin.com</a>. Без ключа работает локальная design memory из seed.</div>
+                      <div class="settings-hint">API key опционален. Без ключа: локальная библиотека референсов + превью со страниц Mobbin + сборка макета в Figma. С ключом — live-поиск по теме. <a href="#" id="set-mobbin-docs-link">docs.mobbin.com</a></div>
                     </div>
                     <div class="settings-control settings-stack">
                       <input type="password" id="set-mobbin-api-key" class="w-full" placeholder="Bearer token" autocomplete="off" />
@@ -1807,13 +1995,83 @@
                     </div>
                     <label class="toggle settings-control"><input type="checkbox" id="set-site-builder-enabled" checked /><span class="toggle-slider"></span></label>
                   </div>
+                  <div class="settings-item settings-item--stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Cursor → Figma (качество макета)</div>
+                      <div class="settings-hint"><strong>Mobbin → Cursor → Figma</strong> (как в чате с агентом Cursor): Konstancia передаёт референс, Cursor верстает в открытый файл — IDE не нужна. Нужны: API key + Figma MCP (Dev Mode :3845 или Connect в Cursor). Если Cursor не сработал — запасной GigaChat + «Применить». <code>/vision</code> — только GigaChat. Ключ: <a href="#" id="set-cursor-docs-link">cursor.com/dashboard</a></div>
+                    </div>
+                    <div class="settings-control settings-stack">
+                      <input type="password" id="set-cursor-api-key" class="w-full" placeholder="CURSOR_API_KEY" autocomplete="off" />
+                      <div class="settings-inline">
+                        <select id="set-cursor-model" class="settings-select">
+                          <option value="composer-2.5">composer-2.5</option>
+                          <option value="auto">auto</option>
+                        </select>
+                        <label class="toggle settings-control settings-control--inline"><input type="checkbox" id="set-cursor-figma-build" /><span class="toggle-slider"></span><span class="toggle-label">Включить</span></label>
+                        <button type="button" class="btn-secondary btn-sm" id="set-cursor-mcp-check">Figma MCP</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section" id="settings-vtube-studio">
+                <div class="settings-section-title">Konstancia · Live2D</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Показывать модель в Konstancia</div>
+                      <div class="settings-hint">Анимированная Live2D-модель прямо в приложении. VTube Studio не нужен.</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-vts-enabled" /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item settings-item--stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Файл модели</div>
+                      <div class="settings-hint">Выберите <strong>*.model3.json</strong> (лучший вариант), <strong>*.vtube.json</strong> или папку модели. Не physics3.json и не cdi3.json.</div>
+                    </div>
+                    <div class="settings-control settings-stack">
+                      <input type="text" id="set-vts-live2d-path" class="w-full" readonly placeholder="Выберите model3.json…" />
+                      <div class="settings-inline">
+                        <button type="button" class="btn-secondary btn-sm" id="set-vts-pick-live2d">Выбрать JSON…</button>
+                        <button type="button" class="btn-secondary btn-sm" id="set-vts-pick-live2d-dir">Папка модели…</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="settings-item settings-item--stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Наряд модели</div>
+                      <div class="settings-hint">Переключение костюма через expression-файлы модели (animation/costume_*.exp3.json).</div>
+                    </div>
+                    <div class="settings-control settings-stack">
+                      <select id="set-vts-costume" class="w-full">
+                        <option value="costume_v0000.exp3.json">Наряд 1 — розовый</option>
+                        <option value="costume_v0052.exp3.json">Наряд 2 — футболка</option>
+                        <option value="costume_v0101.exp3.json">Наряд 3</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="settings-item settings-item--stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Motions эмоций</div>
+                      <div class="settings-hint">Имя motion-файла (.motion3.json) или группа из model3.json. Пусто — без анимации.</div>
+                    </div>
+                    <div class="settings-control settings-stack">
+                      <div class="settings-inline"><span class="settings-mini-label">Нейтральная</span><input type="text" id="set-vts-em-neutral" class="w-full" placeholder="idle.motion3.json" /></div>
+                      <div class="settings-inline"><span class="settings-mini-label">Радость</span><input type="text" id="set-vts-em-joy" class="w-full" placeholder="happy.motion3.json" /></div>
+                      <div class="settings-inline"><span class="settings-mini-label">Гнев</span><input type="text" id="set-vts-em-anger" class="w-full" placeholder="angry.motion3.json" /></div>
+                      <div class="settings-inline"><span class="settings-mini-label">Задумчивость</span><input type="text" id="set-vts-em-thoughtful" class="w-full" placeholder="think.motion3.json" /></div>
+                      <div class="settings-inline"><span class="settings-mini-label">Озарение</span><input type="text" id="set-vts-em-epiphany" class="w-full" placeholder="eureka.motion3.json" /></div>
+                      <button type="button" class="btn-play btn-sm" id="set-vts-save">Сохранить эмоции</button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <div class="settings-section" id="settings-nanobanana">
                 <div class="settings-section-title">NanoBanana</div>
                 <div class="settings-list">
-                  <div class="settings-item settings-item-stack">
+                  <div class="settings-item settings-item--stack">
                     <div class="settings-item-info">
                       <div class="settings-label">API-ключ</div>
                       <div class="settings-hint">Создайте на <a href="#" id="set-nb-docs-link">nananobanana.com</a> → Настройки → API Keys. <a href="#" id="set-nb-api-docs">Документация API</a></div>
@@ -1889,6 +2147,75 @@
                       <input type="number" id="set-kanban-poll" class="w-wide" min="2" max="120" />
                       <button type="button" class="btn-secondary btn-sm" id="set-kanban-poll-save">Сохранить</button>
                     </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="settings-section">
+                <div class="settings-section-title">Konstancia · обучение из Redmine</div>
+                <div class="settings-list">
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Самообучение на задачах</div>
+                      <div class="settings-hint">Только чтение Redmine — Konstancia не пишет в трекер автоматически</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-task-learning-enabled" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Индексировать комментарии</div>
+                      <div class="settings-hint">Если выкл. — только тема и описание задачи</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-task-learning-comments" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Область индексации</div>
+                      <div class="settings-hint">«Все видимые» — весь канбан, включая закрытые и внедрённые</div>
+                    </div>
+                    <select id="set-task-learning-scope" class="settings-control w-wide">
+                      <option value="all_visible">Все видимые задачи</option>
+                      <option value="assigned">Только мои</option>
+                    </select>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Индексировать вложения</div>
+                      <div class="settings-hint">Имена файлов из Redmine — для поиска «где лежит файл»</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-task-learning-attachments" checked /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Задач за синхронизацию</div>
+                      <div class="settings-hint">Лимит фоновой индексации при каждом sync (1–300)</div>
+                    </div>
+                    <input type="number" id="set-task-learning-max" class="settings-control w-wide" min="1" max="300" value="100" />
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Лимит памяти</div>
+                      <div class="settings-hint">Макс. фрагментов в локальном каталоге (5 000–250 000)</div>
+                    </div>
+                    <input type="number" id="set-task-learning-chunks" class="settings-control w-wide" min="5000" max="250000" step="5000" value="80000" />
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Облако Supabase</div>
+                      <div class="settings-hint">Синхронизация уроков в команду (опционально)</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-task-learning-cloud" /><span class="toggle-slider"></span></label>
+                  </div>
+                  <div class="settings-item settings-item--stack">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Локальная память</div>
+                      <div class="settings-hint" id="set-task-learning-stats">—</div>
+                    </div>
+                    <div class="settings-control settings-inline">
+                      <button type="button" class="btn-secondary btn-sm" id="set-task-learning-reindex">Проиндексировать все</button>
+                      <button type="button" class="btn-secondary btn-sm" id="set-task-learning-clear">Очистить</button>
+                    </div>
+                    <div class="settings-hint" id="set-task-learning-reindex-progress"></div>
                   </div>
                 </div>
               </div>
@@ -2053,12 +2380,7 @@
       <header class="ob-header">
         <div class="ob-brand">
           <span class="ob-brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
-              <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
-              <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
-              <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
-            </svg>
+            <img class="brand-logo" src="assets/brand/logo.png" alt="" width="28" height="28" decoding="async" />
           </span>
           SHKF
         </div>
@@ -2075,12 +2397,7 @@
               <div class="ob-orbit ob-orbit-2"></div>
               <div class="ob-logo-ring">
                 <div class="ob-logo" aria-hidden="true">
-                  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="5" y="11" width="3.5" height="11" rx="1.75" fill="currentColor" opacity="0.45"/>
-                    <rect x="10.5" y="7" width="3.5" height="19" rx="1.75" fill="currentColor" opacity="0.65"/>
-                    <rect x="16" y="10" width="3.5" height="13" rx="1.75" fill="currentColor" opacity="0.8"/>
-                    <rect x="21.5" y="6" width="3.5" height="21" rx="1.75" fill="currentColor"/>
-                  </svg>
+                  <img class="brand-logo" src="assets/brand/logo.png" alt="" width="48" height="48" decoding="async" />
                 </div>
               </div>
               <span class="ob-float-keys">Alt+B</span>
@@ -2186,7 +2503,7 @@
                 <div class="ob-figma-body">
                   <div class="ob-plugin-card">
                     <span class="ob-plugin-dot on"></span>
-                    <span>FIRURU Bridge — подключён</span>
+                    <span>SHKF Bridge — подключён</span>
                   </div>
                 </div>
               </div>
@@ -2293,6 +2610,11 @@
   <script src="nanobanana.js"></script>
   <script src="magnific.js"></script>
   <script src="banner-mockup.js"></script>
+  <script src="vendor/live2d/live2dcubismcore.min.js"></script>
+  <script src="vendor/live2d/pixi.min.js"></script>
+  <script src="vendor/live2d/cubism4.min.js"></script>
+  <script src="agent-live2d.js"></script>
+  <script src="agent-vtuber.js"></script>
   <script src="agent.js"></script>
   <script src="templates.js"></script>
   <script src="kanban-notify.js"></script>
@@ -2304,6 +2626,7 @@
   <script src="themes.js"></script>
   <script src="custom-theme-engine.js"></script>
   <script src="custom-themes-ui.js"></script>
+  <script src="pik-folder.js"></script>
   <script src="role-nav.js"></script>
   <script src="profile.js"></script>
   <script src="auth.js"></script>

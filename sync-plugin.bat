@@ -1,8 +1,8 @@
 @echo off
-title Sync FIRURU plugin to install folder
+title Sync SHKF plugin to install folder
 cd /d "%~dp0"
 set "SRC=%~dp0figma-plugin"
-set "DEST=%USERPROFILE%\Downloads\FIRURU\resources\figma-plugin"
+set "DEST=%USERPROFILE%\Downloads\SHKF\resources\figma-plugin"
 
 if not exist "%SRC%\manifest.json" (
   echo figma-plugin folder not found.

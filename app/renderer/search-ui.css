@@ -247,7 +247,8 @@
   animation-name: searchIdleTilt;
 }
 
-.search-quick-card[data-quick-id="page-notes"]:not(:hover) .search-quick-icon svg {
+.search-quick-card[data-quick-id="page-notes"]:not(:hover) .search-quick-icon svg,
+.search-quick-card[data-quick-id="page-notes"]:not(:hover) .search-quick-icon .search-app-icon {
   animation-name: searchIdleNudge;
 }
 
@@ -331,6 +332,7 @@
 .search-quick-card[data-quick-id="page-metask"]:hover .search-quick-icon svg,
 .search-quick-card[data-quick-id="page-mail"]:hover .search-quick-icon svg,
 .search-quick-card[data-quick-id="page-notes"]:hover .search-quick-icon svg,
+.search-quick-card[data-quick-id="page-notes"]:hover .search-quick-icon .search-app-icon,
 .search-quick-card[data-quick-id="page-figma"]:hover .search-quick-icon svg,
 .search-quick-card[data-quick-id="page-settings"]:hover .search-quick-icon svg {
   animation: none;
@@ -352,7 +354,8 @@
   transform: rotate(-8deg) scale(1.1);
 }
 
-.search-quick-card[data-quick-id="page-notes"]:hover .search-quick-icon svg {
+.search-quick-card[data-quick-id="page-notes"]:hover .search-quick-icon svg,
+.search-quick-card[data-quick-id="page-notes"]:hover .search-quick-icon .search-app-icon {
   transform: rotate(5deg) scale(1.08);
 }
 

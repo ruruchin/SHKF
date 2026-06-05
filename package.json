@@ -1,13 +1,13 @@
 {
-  "name": "firuru",
+  "name": "shkf",
   "version": "1.2.17",
-  "description": "FIRURU — hotkeys, Make and templates for Figma",
+  "description": "SHKF — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",
-  "author": "FIRURU",
+  "author": "SHKF",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ruruchin/SHKF.git"
+    "url": "https://github.com/ruruchin/figma-hotkeys.git"
   },
   "scripts": {
     "start": "electron .",
@@ -19,11 +19,20 @@
     "site:build": "npm --prefix site run build",
     "site:preview": "npm --prefix site run preview",
     "seed:supabase": "node supabase/seed-users.mjs",
-    "seed:employees": "node supabase/seed-employees.mjs"
+    "seed:employees": "node supabase/seed-employees.mjs",
+    "pik-folder:build-mobbin": "node scripts/build-pik-folder-mobbin-catalog.mjs",
+    "ml:export-dataset": "node scripts/export-agent-training-dataset.mjs",
+    "ml:export-chat": "node scripts/export-konstancia-chat-dataset.mjs",
+    "ml:train": "npm run ml:export-chat && npm run ml:export-dataset && python ml/train_all.py",
+    "ml:train:chat": "npm run ml:export-chat && python ml/train_chat_model.py",
+    "ml:train:intent": "npm run ml:export-dataset && python ml/train_intent_classifier.py",
+    "ml:train:retrieval": "python ml/train_retrieval_embeddings.py",
+    "ml:serve": "cd ml && uvicorn serve_api:app --host 0.0.0.0 --port 8080",
+    "ml:upload-hf": "node scripts/upload-konstancia-to-hf.mjs"
   },
   "build": {
-    "appId": "app.firuru",
-    "productName": "FIRURU",
+    "appId": "app.shkf",
+    "productName": "SHKF",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -43,10 +52,13 @@
       "config/**/*",
       "supabase/migrations/**/*",
       "scripts/**/*",
+      "ml/**/*",
       "package.json"
     ],
     "asarUnpack": [
       "node_modules/node-global-key-listener/bin/**/*",
+      "node_modules/sharp/**/*",
+      "node_modules/@img/**/*",
       "scripts/**/*"
     ],
     "extraResources": [
@@ -81,11 +93,12 @@
           ]
         }
       ],
-      "artifactName": "FIRURU-Setup-${version}.exe",
+      "icon": "build/icon.png",
+      "artifactName": "SHKF-Setup-${version}.exe",
       "signAndEditExecutable": false
     },
     "portable": {
-      "artifactName": "FIRURU-${version}-portable.exe"
+      "artifactName": "SHKF-${version}-portable.exe"
     },
     "nsis": {
       "oneClick": false,
@@ -93,12 +106,13 @@
       "allowElevation": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "FIRURU",
-      "artifactName": "FIRURU-Setup-${version}.exe",
+      "shortcutName": "SHKF",
+      "artifactName": "SHKF-Setup-${version}.exe",
       "deleteAppDataOnUninstall": false
     }
   },
   "dependencies": {
+    "@cursor/sdk": "^1.0.17",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@supabase/supabase-js": "^2.106.2",
     "dotenv": "^17.4.2",
@@ -106,6 +120,9 @@
     "eventsource": "^4.1.0",
     "lz-string": "^1.5.0",
     "node-global-key-listener": "^0.3.0",
+    "pixi-live2d-display": "^0.4.0",
+    "pixi.js": "^7.4.2",
+    "sharp": "^0.34.5",
     "ws": "^8.18.0"
   },
   "devDependencies": {

@@ -1,8 +1,9 @@
-import { app, BrowserWindow, BrowserView, ipcMain, Tray, Menu, nativeImage, shell, dialog, session, Notification, clipboard } from 'electron';
+import { app, BrowserWindow, BrowserView, ipcMain, Tray, Menu, nativeImage, shell, dialog, session, Notification, clipboard, protocol, net } from 'electron';
 import electronUpdater from 'electron-updater';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, cpSync } from 'fs';
+import https from 'node:https';
 import { HotkeyService } from '../server/hotkey-service.js';
 import { AuthService } from '../server/auth-service.js';
 import { CloudSettingsService } from '../server/cloud-settings-service.js';
@@ -17,7 +18,27 @@ import {
   isLaborCostQuery,
 } from '../shared/labor-costs.js';
 import { buildMorningBrief } from '../shared/morning-brief.js';
-import { buildSystemPromptForRole } from '../shared/agent-prompts.js';
+import { buildSystemPromptForRole, buildLearnedExperienceBlock, buildRedmineKnowledgeBlock } from '../shared/agent-prompts.js';
+import { resolveReferencedIssuesForLearning, searchKanbanTasksForKnowledge, formatRedmineSearchReply } from '../shared/task-knowledge-prompts.js';
+import { assertMetaskUserGesture } from '../shared/metask-write-guard.js';
+import { runRedmineFileSearch } from '../server/redmine-file-search.js';
+import {
+  fromLive2dProtocolUrl,
+  readLive2dMeta,
+  resolveModelEntryPath,
+  toLive2dProtocolUrl,
+} from '../server/live2d-model-service.js';
+import { getLive2dModelHttpUrl, stopAllLive2dStaticServers } from '../server/live2d-static-server.js';
+import { isRedmineFileSearch, wantsLearnedExperience, wantsProcessInsights, wantsRedmineKnowledge, wantsFileSearch, wantsReindexTasks, requiresCurrentTask, isLearnedExperienceQuery, TASK_REQUIRED_REPLY } from '../shared/task-learning-intent.js';
+import { isGeneralKnowledgeQuery, wantsWebSearch } from '../shared/general-knowledge-intent.js';
+import { searchWeb, formatWebSearchBlock } from '../server/web-search-service.js';
+import { getTopMlIntent, mlOverridesTaskRequirement, mlWantsFileSearch, mlWantsReindex, mlWantsLearnedExperience } from '../shared/konstancia-intent-ml.js';
+import { classifyIntent as classifyMlIntent, getMlStatus } from '../server/hf-ml-service.js';
+import { getKonstanciaLlmStatus, configureKonstanciaCloud } from '../server/konstancia-llm-service.js';
+import { isDinDonMusicIntent, getDinDonMusicPayload } from '../shared/agent-music-triggers.js';
+import { createMetaskReadOnly } from '../server/metask-readonly.js';
+import { TaskKnowledgeService } from '../server/task-knowledge-service.js';
+import { ProcessAnalyticsService } from '../server/process-analytics-service.js';
 import { sendMakePrompt } from '../server/figma-make.js';
 import {
   recognizeSpeechOnce,
@@ -42,6 +63,7 @@ import {
   extractNanobananaPrompt,
 } from '../shared/banner-nanobanana.js';
 import { DesignMemoryService } from '../server/design-memory-service.js';
+import { PikFolderService } from '../server/pik-folder-service.js';
 import { MobbinService } from '../server/mobbin-service.js';
 import { SiteBuilderService } from '../server/site-builder-service.js';
 import { isSiteBuildIntent } from '../shared/site-builder-prompts.js';
@@ -59,7 +81,21 @@ import {
   shouldBuildFigmaAppPlan,
 } from '../server/figma-app-plan.js';
 import { buildFigmaPlanFromMobbinScreen } from '../server/figma-from-mobbin.js';
+import { MobbinStyleService } from '../server/mobbin-style-service.js';
+import { formatMobbinStyleBlock } from '../shared/mobbin-style-proposals.js';
 import { inferMobbinPlatform } from '../server/mobbin-service.js';
+import { mobbinPlatformLabel, mobbinSearchQuerySuffix } from '../shared/mobbin-search-query.js';
+import { extractMobbinSearchQuery } from '../shared/mobbin-search-query.js';
+import { enrichScreensWithPreviews, resolveMobbinPreviewUrl } from '../server/mobbin-preview.js';
+import { enrichFigmaPlanWithNanobananaImages } from '../server/figma-plan-images.js';
+import { shouldExpandAppScreens } from '../shared/figma-user-requirements.js';
+import { isGigaChatVisionModel, GIGACHAT_VISION_HINT } from '../shared/gigachat-vision.js';
+import { buildFigmaDesignBrief } from '../shared/figma-design-brief.js';
+import {
+  checkFigmaMcpReady,
+  isCursorFigmaBuildConfigured,
+  runCursorFigmaBuild,
+} from '../server/cursor-figma-build-service.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const configPath = getConfigPath(__dirname);
@@ -69,10 +105,19 @@ const customThemeAssetsDir = getCustomThemeAssetsDir(__dirname);
 const notesLibraryPath = getNotesLibraryPath(__dirname);
 const nanobananaGalleryPath = getNanobananaGalleryPath(__dirname);
 const designReferencesSeedPath = path.join(__dirname, '../config/design-references.seed.json');
+const pikFolderSeedPath = path.join(__dirname, '../config/pik-folder.seed.json');
+const pikFolderMobbinCatalogPath = path.join(__dirname, '../config/pik-folder.mobbin-catalog.json');
 
-app.setPath('userData', path.join(app.getPath('appData'), 'FIRURU'));
+const shkfUserData = path.join(app.getPath('appData'), 'SHKF');
+const legacyFiruruUserData = path.join(app.getPath('appData'), 'FIRURU');
+if (!existsSync(shkfUserData) && existsSync(legacyFiruruUserData)) {
+  try {
+    cpSync(legacyFiruruUserData, shkfUserData, { recursive: true });
+  } catch { /* first launch on new path */ }
+}
+app.setPath('userData', shkfUserData);
 if (process.platform === 'win32') {
-  app.setAppUserModelId('com.firuru.app');
+  app.setAppUserModelId('com.shkf.app');
 }
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 app.commandLine.appendSwitch('disable-gpu-program-cache');
@@ -82,6 +127,19 @@ const gotSingleInstanceLock = app.requestSingleInstanceLock();
 if (!gotSingleInstanceLock) {
   app.quit();
 }
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'kostin-live2d',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
+]);
 
 let mainWindow = null;
 let splashWindow = null;
@@ -107,19 +165,366 @@ const designMemoryService = new DesignMemoryService(designReferencesSeedPath, {
   agentService,
 });
 const mobbinService = new MobbinService();
+const pikFolderService = new PikFolderService(pikFolderSeedPath, {
+  authService,
+  mobbinService,
+  mobbinCatalogPath: pikFolderMobbinCatalogPath,
+  designRefsPath: designReferencesSeedPath,
+  getMobbinSettings: () => service.config.settings?.agent || {},
+});
+
+const PIK_FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+function pikImageFetchHeaders(url) {
+  const raw = String(url || '').trim();
+  if (/mobbin\.com|bytescale/i.test(raw)) {
+    return {
+      Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+      Referer: 'https://mobbin.com/',
+      Origin: 'https://mobbin.com',
+      'User-Agent': PIK_FETCH_UA,
+    };
+  }
+  const headers = {
+    Accept: 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+    'User-Agent': PIK_FETCH_UA,
+  };
+  if (/logo\.clearbit\.com/i.test(raw)) headers.Referer = 'https://clearbit.com/';
+  if (/google\.com\/s2\/favicons/i.test(raw)) headers.Referer = 'https://www.google.com/';
+  if (!/^https?:\/\//i.test(raw) || !/mobbin\.com|bytescale/i.test(raw)) {
+    try {
+      const host = new URL(raw).hostname;
+      if (host && host !== 'www.google.com' && !host.endsWith('duckduckgo.com')) {
+        headers.Referer = `https://${host}/`;
+      }
+    } catch { /* ignore */ }
+  }
+  return headers;
+}
+
+async function fetchPikCdnImageViaHttps(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return null;
+  const headers = pikImageFetchHeaders(raw);
+  return new Promise((resolve) => {
+    try {
+      const parsed = new URL(raw);
+      const req = https.request({
+        protocol: parsed.protocol,
+        hostname: parsed.hostname,
+        port: parsed.port || 443,
+        path: `${parsed.pathname}${parsed.search}`,
+        method: 'GET',
+        headers,
+      }, (res) => {
+        const status = res.statusCode || 0;
+        if (status >= 300 && status < 400 && res.headers.location) {
+          res.resume();
+          fetchPikCdnImage(res.headers.location).then(resolve);
+          return;
+        }
+        if (status !== 200) {
+          res.resume();
+          resolve(null);
+          return;
+        }
+        const chunks = [];
+        res.on('data', (chunk) => chunks.push(chunk));
+        res.on('end', () => {
+          const buf = Buffer.concat(chunks);
+          if (!buf.length) {
+            resolve(null);
+            return;
+          }
+          const mime = String(res.headers['content-type'] || 'image/webp').split(';')[0];
+          resolve({ buf, mime, dataUrl: `data:${mime};base64,${buf.toString('base64')}` });
+        });
+      });
+      req.on('error', () => resolve(null));
+      req.end();
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function fetchPikCdnImage(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return null;
+  try {
+    const res = await fetch(raw, {
+      headers: pikImageFetchHeaders(raw),
+      redirect: 'follow',
+    });
+    if (res.ok) {
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length) {
+        const mime = String(res.headers.get('content-type') || 'image/webp').split(';')[0];
+        return { buf, mime, dataUrl: `data:${mime};base64,${buf.toString('base64')}` };
+      }
+    }
+  } catch { /* fallback below */ }
+  return fetchPikCdnImageViaHttps(raw);
+}
+
+function registerPikFolderIpcHandlers() {
+  ipcMain.handle('pik-folder-list', async (_e, payload) => pikFolderService.list(payload || {}));
+  ipcMain.handle('pik-folder-app-screens', (_e, payload) => pikFolderService.getAppScreens(payload || {}));
+  ipcMain.handle('pik-folder-ready', () => ({ ready: pikFolderService.isReady(), total: pikFolderService.getCatalogItems().length }));
+  ipcMain.handle('pik-folder-reload-seed', () => {
+    pikFolderService.reload();
+    return { ok: true, count: pikFolderService.getCatalogItems().length };
+  });
+  ipcMain.handle('pik-folder-sync-seed', async () => pikFolderService.syncSeedToDatabase((progress) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('pik-folder-sync-progress', progress);
+    }
+  }));
+  ipcMain.handle('pik-folder-remote-status', () => pikFolderService.remoteStatus());
+  ipcMain.handle('pik-folder-fetch-image', async (_e, { url } = {}) => {
+    const payload = await fetchPikCdnImage(url);
+    return payload?.dataUrl || null;
+  });
+  ipcMain.handle('pik-folder-copy-text', (_e, text) => {
+    clipboard.writeText(String(text || ''));
+    return { ok: true };
+  });
+  ipcMain.handle('clipboard-write-text', (_e, text) => {
+    clipboard.writeText(String(text || ''));
+    return { ok: true };
+  });
+  ipcMain.handle('pik-folder-copy-image', async (_e, { url } = {}) => {
+    const raw = String(url || '').trim();
+    if (!raw) throw new Error('Нет URL изображения');
+    const payload = await fetchPikCdnImage(raw);
+    if (!payload?.buf) throw new Error('Не удалось загрузить изображение');
+    const img = nativeImage.createFromBuffer(payload.buf);
+    if (img.isEmpty()) throw new Error('Формат не поддерживается для копирования');
+    clipboard.writeImage(img);
+    return { ok: true };
+  });
+  ipcMain.handle('pik-folder-save-image', async (_e, { url, filename } = {}) => {
+    const raw = String(url || '').trim();
+    if (!raw) throw new Error('Нет URL изображения');
+    const payload = await fetchPikCdnImage(raw);
+    if (!payload?.buf) throw new Error('Не удалось загрузить изображение');
+    const ext = /\.jpe?g/i.test(raw) ? 'jpg' : /\.webp/i.test(raw) ? 'webp' : /\.gif/i.test(raw) ? 'gif' : 'png';
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Сохранить референс',
+      defaultPath: String(filename || `pik-reference.${ext}`).replace(/[^\w.\-]+/g, '-'),
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif'] }],
+    });
+    if (canceled || !filePath) return { ok: false, canceled: true };
+    writeFileSync(filePath, payload.buf);
+    return { ok: true, path: filePath };
+  });
+  ipcMain.handle('pik-folder-sync-mobbin', async () => {
+    configureAgentIntegrations();
+    return pikFolderService.syncMobbinCatalog((msg) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('pik-folder-sync-progress', { message: msg });
+      }
+    });
+  });
+  ipcMain.handle('pik-folder-mobbin-status', () => {
+    pikFolderService.reloadMobbinCatalog();
+    const total = pikFolderService.getCatalogItems().length;
+    return {
+      total,
+      builtAt: pikFolderService.mobbinCatalog.builtAt,
+      mobbinConfigured: mobbinService.isConfigured(),
+    };
+  });
+}
+registerPikFolderIpcHandlers();
+const mobbinStyleService = new MobbinStyleService(agentService);
 const siteBuilderService = new SiteBuilderService({
   mobbinService,
   designMemoryService,
   agentService,
 });
 const magnificMcpService = new MagnificMcpService(service);
+const metaskReadOnly = createMetaskReadOnly(metaskService);
+const taskKnowledgeService = new TaskKnowledgeService(app.getPath('userData'), {
+  metaskReadOnly,
+  metaskService,
+  agentService,
+  authService,
+});
+const processAnalyticsService = new ProcessAnalyticsService({
+  taskKnowledge: taskKnowledgeService,
+  taskLinker: taskLinkerService,
+});
+
+function configureTaskLearning() {
+  taskKnowledgeService.configure(service.config.settings?.taskLearning || {});
+}
 
 function configureAgentIntegrations() {
   const agentSettings = service.config.settings?.agent || {};
+  configureKonstanciaCloud({
+    url: agentSettings.konstanciaCloudUrl || process.env.KONSTANCIA_CLOUD_URL || '',
+    apiKey: agentSettings.konstanciaCloudApiKey || process.env.KONSTANCIA_CLOUD_API_KEY || '',
+  });
   agentService.configure(agentSettings);
   mobbinService.configure(agentSettings);
   siteBuilderService.configure(agentSettings);
+  configureTaskLearning();
 }
+
+async function handleRedmineFileSearchIpc(_e, payload) {
+  configureAgentIntegrations();
+  metaskService.configure(service.config.settings?.metask || {});
+  metaskReadOnly.configure(service.config.settings?.metask || {});
+  await metaskService.resolveCurrentUser?.().catch(() => {});
+  return runRedmineFileSearch({
+    query: payload?.query || payload?.message || '',
+    kanbanTasks: payload?.kanbanTasks || [],
+    metaskService,
+    taskKnowledgeService,
+    userId: metaskService.userId,
+  });
+}
+
+function registerRedmineFileSearchIpc() {
+  ipcMain.handle('agent-redmine-file-search', handleRedmineFileSearchIpc);
+}
+registerRedmineFileSearchIpc();
+
+function vtubeDialogParent() {
+  if (mainWindow && !mainWindow.isDestroyed()) return mainWindow;
+  return BrowserWindow.getFocusedWindow() || null;
+}
+
+const LIVE2D_MIME = {
+  '.json': 'application/json;charset=utf-8',
+  '.moc3': 'application/octet-stream',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp',
+  '.motion3.json': 'application/json;charset=utf-8',
+  '.cdi3.json': 'application/json;charset=utf-8',
+  '.physics3.json': 'application/json;charset=utf-8',
+};
+
+function live2dMimeType(filePath = '') {
+  const lower = String(filePath || '').toLowerCase();
+  if (lower.endsWith('.motion3.json')) return LIVE2D_MIME['.motion3.json'];
+  if (lower.endsWith('.cdi3.json')) return LIVE2D_MIME['.cdi3.json'];
+  if (lower.endsWith('.physics3.json')) return LIVE2D_MIME['.physics3.json'];
+  const ext = path.extname(lower);
+  return LIVE2D_MIME[ext] || 'application/octet-stream';
+}
+
+function registerLive2dProtocol() {
+  protocol.handle('kostin-live2d', (request) => {
+    const filePath = fromLive2dProtocolUrl(request.url);
+    if (!filePath || !existsSync(filePath)) {
+      return new Response('Not found', { status: 404 });
+    }
+    try {
+      const data = readFileSync(filePath);
+      return new Response(data, {
+        headers: {
+          'Content-Type': live2dMimeType(filePath),
+          'Content-Length': String(data.byteLength),
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+    } catch {
+      return new Response('Read error', { status: 500 });
+    }
+  });
+}
+
+function registerLive2dIpcHandlers() {
+  for (const channel of ['live2d-get-model', 'live2d-pick-model', 'live2d-fetch-asset']) {
+    try { ipcMain.removeHandler(channel); } catch { /* first run */ }
+  }
+
+  ipcMain.handle('live2d-get-model', async () => {
+    const cfg = service.config.settings?.vtubeStudio || {};
+    const entryPath = String(cfg.live2dModelPath || '').trim();
+    if (!entryPath) {
+      return { ok: false, message: 'Укажите model3.json или папку модели в настройках Konstancia' };
+    }
+    const meta = readLive2dMeta(entryPath);
+    if (!meta.ok) return meta;
+    const served = await getLive2dModelHttpUrl(meta.settingsPath);
+    if (!served.ok) return served;
+    return {
+      ...meta,
+      modelUrl: served.modelUrl,
+      emotions: cfg.emotions || {},
+      costume: String(cfg.live2dCostume || '').trim(),
+    };
+  });
+
+  ipcMain.handle('live2d-fetch-asset', (_e, url) => {
+    const filePath = fromLive2dProtocolUrl(url);
+    if (!filePath || !existsSync(filePath)) {
+      return { ok: false, message: `Файл не найден: ${filePath || url}` };
+    }
+    try {
+      const data = readFileSync(filePath);
+      const mimeType = live2dMimeType(filePath);
+      const lower = filePath.toLowerCase();
+      if (lower.endsWith('.json') || mimeType.includes('json')) {
+        return { ok: true, mimeType, text: data.toString('utf-8') };
+      }
+      return { ok: true, mimeType, base64: data.toString('base64') };
+    } catch (err) {
+      return { ok: false, message: err?.message || 'Не удалось прочитать файл модели' };
+    }
+  });
+
+  ipcMain.handle('live2d-pick-model', async (_e, payload) => {
+    const pickDir = payload?.mode === 'directory';
+    const { filePaths, canceled } = await dialog.showOpenDialog(vtubeDialogParent(), {
+      title: pickDir ? 'Папка Live2D модели' : 'model3.json или .vtube.json',
+      filters: pickDir
+        ? undefined
+        : [
+          { name: 'Live2D model3 / vtube', extensions: ['model3.json', 'vtube.json', 'model.json'] },
+          { name: 'JSON', extensions: ['json'] },
+        ],
+      properties: pickDir ? ['openDirectory'] : ['openFile'],
+    });
+    if (canceled || !filePaths?.[0]) return { ok: false };
+    const picked = filePaths[0];
+    const entryPath = resolveModelEntryPath(picked);
+    if (!entryPath) {
+      return {
+        ok: false,
+        message: 'В этой папке нет model3.json. Выберите ulvm2_0001.model3.json, .vtube.json или папку модели.',
+      };
+    }
+    const meta = readLive2dMeta(entryPath);
+    if (!meta.ok) {
+      return { ok: false, message: meta.message || 'Не найден model3.json в выбранном месте' };
+    }
+    const served = await getLive2dModelHttpUrl(meta.settingsPath);
+    if (!served.ok) return served;
+    const config = service.updateAppSettings({
+      vtubeStudio: {
+        ...service.config.settings?.vtubeStudio,
+        live2dModelPath: entryPath,
+      },
+    });
+    return {
+      ok: true,
+      entryPath,
+      settingsPath: meta.settingsPath,
+      modelUrl: served.modelUrl,
+      modelName: meta.modelName,
+      config,
+    };
+  });
+}
+
+registerLive2dIpcHandlers();
+
 const { autoUpdater } = electronUpdater;
 const APP_UPDATE_FEED_URL = 'https://github.com/ruruchin/SHKF/releases/latest/download';
 const METASK_DESKTOP_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
@@ -495,6 +900,19 @@ async function runMetaskSync({ notify = true } = {}) {
     /* ignore comment notifications errors */
   }
   broadcast('metask-tasks-updated', result);
+
+  try {
+    configureTaskLearning();
+    metaskReadOnly.configure(service.config.settings?.metask || {});
+    taskKnowledgeService.enqueueFromSync({
+      tasks: result.tasks || [],
+      updates: result.updates || [],
+      userId: metaskService.userId,
+    });
+  } catch {
+    /* learning must not break sync */
+  }
+
   return result;
 }
 
@@ -743,9 +1161,8 @@ function createKeyboardWindow() {
 }
 
 function createTray() {
-  const icon = nativeImage.createFromDataURL(
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAIElEQVQ4T2NkYGD4z0AEYBxVSFUBAPF/BQpWvXkMAAAAAElFTkSuQmCC'
-  );
+  const logoPath = path.join(__dirname, 'renderer', 'assets', 'brand', 'logo.png');
+  const icon = nativeImage.createFromPath(logoPath).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
   tray.setToolTip('SHKF');
   tray.setContextMenu(
@@ -768,6 +1185,7 @@ app.on('second-instance', () => {
 
 app.whenReady().then(() => {
   if (!gotSingleInstanceLock) return;
+  registerLive2dProtocol();
   const ws = service.config.settings?.window || {};
   if (ws.showSplash !== false) createSplash();
   createWindow();
@@ -785,7 +1203,7 @@ app.whenReady().then(() => {
   zimbraSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
 
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
-    if (permission === 'media' || permission === 'audioCapture' || permission === 'microphone') {
+    if (permission === 'media' || permission === 'audioCapture' || permission === 'microphone' || permission === 'videoCapture') {
       callback(true);
       return;
     }
@@ -793,7 +1211,7 @@ app.whenReady().then(() => {
   });
 
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
-    if (permission === 'media' || permission === 'audioCapture' || permission === 'microphone') {
+    if (permission === 'media' || permission === 'audioCapture' || permission === 'microphone' || permission === 'videoCapture') {
       return true;
     }
     return false;
@@ -829,6 +1247,13 @@ app.whenReady().then(() => {
       }
       return { ...result, config: service.config };
     } catch (err) {
+      if (authService.session) {
+        const offline = authService.buildOfflineSessionResponse?.();
+        if (offline) {
+          if (offline.profile) applyAuthProfileToConfig(offline.profile);
+          return { ...offline, config: service.config };
+        }
+      }
       return {
         ok: false,
         configured: authService.isConfigured?.() || false,
@@ -1110,10 +1535,14 @@ app.whenReady().then(() => {
     if (url) shell.openExternal(url);
   });
   ipcMain.handle('metask-add-comment', async (_e, payload) => {
+    const blocked = assertMetaskUserGesture(payload, 'metask-add-comment');
+    if (blocked) return blocked;
     metaskService.configure(service.config.settings?.metask || {});
     return metaskService.addIssueComment(payload?.issueId, payload?.notes);
   });
   ipcMain.handle('metask-add-labor-log', async (_e, payload) => {
+    const blocked = assertMetaskUserGesture(payload, 'metask-add-labor-log');
+    if (blocked) return blocked;
     metaskService.configure(service.config.settings?.metask || {});
     return metaskService.addLaborLog(payload?.issueId, {
       hours: payload?.hours,
@@ -1131,12 +1560,20 @@ app.whenReady().then(() => {
           brief: null,
         };
       }
+      const tasks = result.tasks || [];
+      let linkerSuggestions = [];
+      try {
+        const linkRes = await taskLinkerService.suggest(tasks, new Set());
+        linkerSuggestions = linkRes?.suggestions || [];
+      } catch { /* optional */ }
+      const analytics = processAnalyticsService.analyze({ tasks, linkerSuggestions });
       const brief = buildMorningBrief({
-        tasks: result.tasks || [],
+        tasks,
         updates: result.updates || [],
         userName: result.user || metaskService.userName || '',
+        processInsights: analytics.insights,
       });
-      return { ok: true, brief, tasks: result.tasks || [] };
+      return { ok: true, brief, tasks, processAnalytics: analytics };
     } catch (err) {
       return { ok: false, message: err.message || String(err), brief: null };
     }
@@ -1203,19 +1640,115 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('agent-get-status', () => agentService.getStatus());
+  ipcMain.handle('agent-get-ml-status', () => getMlStatus());
+  ipcMain.handle('agent-get-konstancia-llm-status', () => getKonstanciaLlmStatus());
+
   ipcMain.handle('agent-send-message', async (_e, payload) => {
     configureAgentIntegrations();
+    metaskService.configure(service.config.settings?.metask || {});
+
+    const learningSettings = service.config.settings?.taskLearning || {};
+    const hfMlSettings = learningSettings.hfMl || {};
+    const messageText = String(payload?.message || '').trim();
+
+    let mlIntentTop = null;
+    if (hfMlSettings.enabled !== false) {
+      const mlResult = await classifyMlIntent(messageText);
+      mlIntentTop = getTopMlIntent(mlResult, { threshold: hfMlSettings.intentThreshold ?? 0.55 });
+    }
+
     let task = payload?.task || null;
     if (task?.id) {
-      metaskService.configure(service.config.settings?.metask || {});
+      metaskReadOnly.configure(service.config.settings?.metask || {});
       try {
         const full = await metaskService.fetchIssueForAgent(task.id);
         if (full) task = { ...task, ...full };
       } catch { /* list fields only */ }
     }
+
+    if (requiresCurrentTask(messageText) && !task?.id && !mlOverridesTaskRequirement(mlIntentTop)) {
+      return {
+        ok: true,
+        content: TASK_REQUIRED_REPLY,
+        laborEntries: null,
+        learnedChunkIds: [],
+      };
+    }
+
+    if (isDinDonMusicIntent(messageText)) {
+      const music = getDinDonMusicPayload();
+      try {
+        await shell.openExternal(music.url);
+      } catch { /* browser may still open manually */ }
+      return {
+        ok: true,
+        content: music.reply,
+        laborEntries: null,
+        learnedChunkIds: [],
+        direct: true,
+      };
+    }
+
+    const fileSearchIntent = payload?.forceRedmineFileSearch === true
+      || mlWantsFileSearch(mlIntentTop)
+      || isRedmineFileSearch(messageText, {
+        force: payload?.includeRedmineKnowledge === true,
+      });
+
+    if (fileSearchIntent) {
+      metaskReadOnly.configure(service.config.settings?.metask || {});
+      await metaskService.resolveCurrentUser?.().catch(() => {});
+      try {
+        const searchResult = await runRedmineFileSearch({
+          query: payload?.message || '',
+          kanbanTasks: payload?.kanbanTasks || [],
+          metaskService,
+          taskKnowledgeService,
+          userId: metaskService.userId,
+        });
+        return {
+          ok: true,
+          content: searchResult.content || searchResult.message || 'Поиск не вернул результат.',
+          laborEntries: null,
+          learnedChunkIds: [],
+          indexingStatus: searchResult.indexingStatus || null,
+          direct: true,
+        };
+      } catch (err) {
+        return {
+          ok: true,
+          content: `Ошибка поиска Redmine: ${err?.message || err}`,
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+        };
+      }
+    }
+
     const role = payload?.role || service.config.settings?.user?.role || null;
     let message = payload?.message;
     const agentSettings = service.config.settings?.agent || {};
+    const attachTask = payload?.includeTaskContext === true && task?.id;
+    const generalKnowledgeMode = isGeneralKnowledgeQuery(messageText)
+      || mlIntentTop?.label === 'general_chat';
+    const injectLearning = !generalKnowledgeMode
+      && learningSettings.enabled !== false
+      && (payload?.includeLearnedExperience === true
+        || mlWantsLearnedExperience(mlIntentTop)
+        || wantsLearnedExperience(message)
+        || wantsProcessInsights(message));
+    const injectRedmineKb = !generalKnowledgeMode
+      && learningSettings.enabled !== false
+      && !isLearnedExperienceQuery(message)
+      && (payload?.includeRedmineKnowledge === true
+        || wantsRedmineKnowledge(message)
+        || wantsFileSearch(message));
+
+    if (generalKnowledgeMode && agentSettings.webSearchEnabled !== false) {
+      const web = await searchWeb(messageText, { limit: wantsWebSearch(messageText) ? 6 : 4 });
+      const block = formatWebSearchBlock(web);
+      if (block) message = `${block}\n\n---\n\n${message}`;
+    }
     if (
       agentSettings.siteBuilderEnabled === true
       && isSiteBuildIntent(message)
@@ -1226,13 +1759,201 @@ app.whenReady().then(() => {
         message = `${refsBundle.context}\n\n---\n\n${message}`;
       }
     }
+    let learnedExperienceBlock = '';
+    let learnedChunkIds = [];
+    let indexingStatus = null;
+    const kanbanList = Array.isArray(payload?.kanbanTasks) ? payload.kanbanTasks : [];
+    const knowledgeQuery = [message, task?.subject, task?.project, task?.description].filter(Boolean).join(' ');
+
+    if (injectLearning || injectRedmineKb) {
+      metaskService.configure(service.config.settings?.metask || {});
+
+      if (injectRedmineKb && (mlWantsReindex(mlIntentTop) || wantsReindexTasks(message))) {
+        indexingStatus = { started: true, indexed: 0, pending: kanbanList.length, total: kanbanList.length };
+        taskKnowledgeService.startBackgroundReindex(kanbanList, metaskService.userId, {
+          onProgress: (p) => broadcast('task-knowledge-reindex-progress', p),
+        });
+        return {
+          ok: true,
+          content: [
+            `Запустил индексацию **${kanbanList.length}** задач из Kanban в фоне.`,
+            '',
+            'Через 1–2 минуты повторите поиск по файлу — подтянутся вложения и описания.',
+            'Закрытые задачи ищутся сразу через Redmine search (не нужно ждать).',
+          ].join('\n'),
+          laborEntries: null,
+          learnedChunkIds: [],
+          indexingStatus,
+        };
+      }
+
+      if (injectRedmineKb) {
+        const statsBefore = taskKnowledgeService.listLearnedSummary();
+        const needIndex = statsBefore.issuesIndexed < Math.min(kanbanList.length, 10);
+        if (needIndex && kanbanList.length) {
+          indexingStatus = await taskKnowledgeService.ensureCatalogCoverage(
+            kanbanList,
+            metaskService.userId,
+            { maxBatch: 60 },
+          );
+        }
+      }
+
+      let apiHits = [];
+      if (injectRedmineKb) {
+        try {
+          apiHits = await metaskService.searchIssuesForKnowledge(knowledgeQuery, { limit: 12 });
+        } catch {
+          apiHits = [];
+        }
+        for (const hit of apiHits.slice(0, 8)) {
+          try {
+            await taskKnowledgeService.indexIssue(hit.issueId, {
+              listTask: {
+                id: hit.issueId,
+                subject: hit.subject,
+                description: hit.description || hit.snippet || '',
+                project: hit.project,
+                status: hit.status,
+                url: hit.url,
+              },
+              liteOnly: true,
+            });
+          } catch { /* continue */ }
+        }
+      }
+
+      const kanbanHits = injectRedmineKb
+        ? searchKanbanTasksForKnowledge(knowledgeQuery, kanbanList, { limit: 10 })
+        : [];
+      const metaHits = injectRedmineKb
+        ? taskKnowledgeService.searchIssueMeta(knowledgeQuery, { limit: 8 })
+        : [];
+
+      const chunks = await taskKnowledgeService.retrieveForAgent(knowledgeQuery, {
+        task,
+        limit: injectRedmineKb ? 12 : 8,
+        preferAttachments: injectRedmineKb,
+      });
+
+      for (const hit of metaHits) {
+        const id = Number(hit.issueId);
+        if (!id || chunks.some((c) => Number(c.issueId) === id)) continue;
+        chunks.push({
+          id: `meta-${id}`,
+          issueId: id,
+          project: hit.project,
+          type: 'summary',
+          text: `${hit.subject}. ${hit.project || ''} ${hit.status || ''}`.trim(),
+          tags: [],
+        });
+      }
+
+      let attachmentHits = injectRedmineKb
+        ? taskKnowledgeService.searchAttachments(knowledgeQuery, { limit: 10 })
+        : [];
+      const issueDetails = await resolveReferencedIssuesForLearning(chunks, {
+        kanbanTasks: kanbanList,
+        fetchIssue: (id) => metaskService.fetchIssueForAgent(id),
+        limit: injectRedmineKb ? 12 : 6,
+      });
+      const enrichIds = [...attachmentHits, ...kanbanHits, ...metaHits, ...apiHits];
+      for (const hit of enrichIds) {
+        const id = Number(hit.issueId);
+        if (!id || issueDetails.has(id)) continue;
+        const fromKanban = kanbanList.find((t) => Number(t.id) === id);
+        if (fromKanban) {
+          issueDetails.set(id, fromKanban);
+          continue;
+        }
+        try {
+          const full = await metaskService.fetchIssueForAgent(id);
+          if (full) issueDetails.set(id, full);
+        } catch { /* partial */ }
+      }
+
+      if (injectRedmineKb) {
+        attachmentHits = taskKnowledgeService.searchAttachments(knowledgeQuery, { limit: 12 });
+        const stats = taskKnowledgeService.listLearnedSummary();
+        learnedChunkIds = chunks.map((c) => c.id).filter(Boolean);
+        const directContent = formatRedmineSearchReply({
+          query: payload?.message || message,
+          kanbanHits,
+          metaHits,
+          attachmentHits,
+          apiHits,
+          chunks,
+          issueDetails,
+          stats,
+          indexingStatus,
+          kanbanCount: kanbanList.length,
+        });
+        return {
+          ok: true,
+          content: directContent,
+          laborEntries: null,
+          learnedChunkIds,
+          indexingStatus,
+          direct: true,
+        };
+      }
+
+      const synthesis = injectLearning && chunks.length
+        ? await taskKnowledgeService.synthesizeRetrieval(knowledgeQuery, chunks, task, issueDetails)
+        : '';
+      learnedChunkIds = chunks.map((c) => c.id).filter(Boolean);
+      const stats = taskKnowledgeService.listLearnedSummary();
+      if (injectRedmineKb) {
+        if (wantsReindexTasks(message)) {
+          learnedExperienceBlock = [
+            '## Каталог Redmine — индексация',
+            '',
+            `Запущена фоновая индексация ${kanbanList.length} задач из Kanban.`,
+            'Сообщи пользователю что индексация идёт; через 1–2 минуты можно повторить поиск по файлам.',
+            'Не проси искать вручную в Redmine.',
+          ].join('\n');
+        } else {
+          learnedExperienceBlock = buildRedmineKnowledgeBlock({
+            chunks,
+            attachmentHits,
+            kanbanHits,
+            issueDetails,
+            stats,
+            indexingStatus,
+          });
+        }
+        if (injectLearning && (synthesis || chunks.length) && !wantsReindexTasks(message)) {
+          learnedExperienceBlock += `\n\n${buildLearnedExperienceBlock(chunks, synthesis, { issueDetails })}`;
+        }
+      } else {
+        learnedExperienceBlock = buildLearnedExperienceBlock(chunks, synthesis, { issueDetails });
+      }
+      const playbook = taskKnowledgeService.getPlaybook(task?.project);
+      if (playbook?.tips?.length && injectLearning) {
+        learnedExperienceBlock += `\n\n## Playbook проекта «${task?.project || 'общий'}»\n`
+          + playbook.tips.map((t, i) => `${i + 1}. ${t}`).join('\n');
+      }
+      if (wantsProcessInsights(message)) {
+        const tasks = payload?.kanbanTasks || [];
+        const analytics = processAnalyticsService.analyze({ tasks });
+        const processInsightsBlock = processAnalyticsService.formatInsightsMarkdown(analytics);
+        message = `${processInsightsBlock}\n\n---\n\n${message}`;
+      }
+    }
     const chatResult = await agentService.chat({
       message,
       history: payload?.history,
-      task,
-      systemPrompt: buildSystemPromptForRole(role),
+      task: generalKnowledgeMode ? null : (attachTask ? task : null),
+      systemPrompt: buildSystemPromptForRole(role, {
+        taskLearningEnabled: learningSettings.enabled !== false && !generalKnowledgeMode,
+        redmineKnowledgeMode: injectRedmineKb,
+        generalKnowledgeMode,
+      }),
       allowFollowups: payload?.allowFollowups === true,
       images: payload?.images,
+      learnedExperienceBlock: generalKnowledgeMode ? '' : learnedExperienceBlock,
+      temperature: generalKnowledgeMode ? 0.82 : (injectLearning || injectRedmineKb ? 0.52 : undefined),
+      maxTokens: generalKnowledgeMode ? 8192 : (injectLearning || injectRedmineKb ? 6144 : undefined),
     });
 
     let laborEntries = null;
@@ -1241,13 +1962,13 @@ app.whenReady().then(() => {
       laborEntries = filterLaborEntriesByQuery(all, payload?.message || '');
     }
 
-    return { ...chatResult, laborEntries };
+    return { ...chatResult, laborEntries, learnedChunkIds, indexingStatus };
   });
 
   ipcMain.handle('agent-site-build', async (_e, payload) => {
     configureAgentIntegrations();
     if (!agentService.isConfigured()) {
-      return { ok: false, message: 'Подключите GigaChat: Настройки → ИИ Агент' };
+      return { ok: false, message: 'Подключите GigaChat: Настройки → Konstancia' };
     }
 
     let task = payload?.task || null;
@@ -1331,67 +2052,138 @@ app.whenReady().then(() => {
     designMemoryCount: designMemoryService.list().length,
   }));
 
+  ipcMain.handle('agent-mobbin-propose-styles', async (_e, payload) => {
+    configureAgentIntegrations();
+    const message = String(payload?.message || '').trim();
+    const screens = Array.isArray(payload?.screens) ? payload.screens : [];
+    if (!message) return { ok: false, message: 'Пустой запрос' };
+    if (!screens.length) return { ok: false, message: 'Нет экранов Mobbin' };
+    try {
+      return await mobbinStyleService.proposeStyles({ message, screens });
+    } catch (err) {
+      return { ok: false, message: err.message || String(err) };
+    }
+  });
+
   ipcMain.handle('agent-mobbin-search', async (_e, payload) => {
     configureAgentIntegrations();
     const message = String(payload?.message || '').trim();
     if (!message) return { ok: false, message: 'Введите запрос для поиска' };
 
+    const searchQuery = extractMobbinSearchQuery(message);
     const platform = inferMobbinPlatform(message);
     const retrievalMode = service.config.settings?.agent?.designMemoryMode || 'hybrid';
     const screens = [];
     const seen = new Set();
+    const liveConfigured = mobbinService.isConfigured();
 
-    if (mobbinService.isConfigured()) {
-      const live = await mobbinService.searchScreens(message, { platform, limit: 8, mode: 'deep' });
-      for (const s of live.screens || []) {
+    const MOBBIN_GALLERY_LIMIT = 20;
+    const addScreens = (list, source) => {
+      for (const s of list || []) {
         const key = s.id || s.url;
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          screens.push({
-            id: s.id,
-            app_name: s.title,
-            mobbin_url: s.url,
-            image_url: s.imageUrl,
-            platform: s.platform,
-          });
-        }
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        screens.push({
+          id: s.id,
+          app_name: s.title || s.app_name,
+          mobbin_url: s.url || s.mobbin_url,
+          image_url: s.imageUrl || s.image_url || null,
+          platform: s.platform,
+          source,
+        });
+      }
+    };
+
+    let mobbinNetworkFailed = false;
+    if (liveConfigured) {
+      const queries = [searchQuery];
+      const suffix = mobbinSearchQuerySuffix(platform);
+      if (!/app|screen|ui|web|site|mobile|website/i.test(searchQuery)) {
+        queries.push(`${searchQuery} ${suffix}`);
+      }
+      for (const q of queries) {
+        if (screens.length >= MOBBIN_GALLERY_LIMIT * 2) break;
+        const live = await mobbinService.searchScreens(q, { platform, limit: MOBBIN_GALLERY_LIMIT, mode: 'deep' });
+        if (live.networkError) mobbinNetworkFailed = true;
+        addScreens(
+          (live.screens || []).filter((s) => !s.platform || s.platform === platform),
+          'mobbin',
+        );
       }
     }
 
-    const local = await designMemoryService.retrieve(message, { limit: 8, mode: retrievalMode });
-    for (const ref of local) {
-      const key = ref.id || ref.url;
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      screens.push({
-        id: ref.id,
-        app_name: ref.title,
-        mobbin_url: ref.url,
-        image_url: ref.imageUrl || null,
-        platform: ref.platform || platform,
+    const needLocalFallback = !liveConfigured || screens.length === 0;
+    if (needLocalFallback) {
+      const local = await designMemoryService.retrieve(searchQuery, {
+        limit: MOBBIN_GALLERY_LIMIT,
+        mode: retrievalMode,
+        platform,
       });
+      for (const ref of local) {
+        const key = ref.id || ref.url;
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        screens.push({
+          id: ref.id,
+          app_name: ref.title,
+          mobbin_url: ref.url,
+          image_url: ref.imageUrl || null,
+          platform: ref.platform || platform,
+          source: ref.source || 'memory',
+          tags: ref.tags || [],
+        });
+      }
     }
+
+    const platformOnly = screens.filter((s) => !s.platform || s.platform === platform);
+    const enriched = await enrichScreensWithPreviews(platformOnly, { limit: platformOnly.length || 40 });
 
     return {
       ok: true,
-      screens: screens.slice(0, 8),
-      live: mobbinService.isConfigured(),
+      screens: enriched,
+      total: enriched.length,
+      live: liveConfigured,
+      localOnly: !liveConfigured,
       platform,
+      searchQuery,
+      hint: mobbinNetworkFailed
+        ? `Mobbin API недоступен (DNS/сеть). Показано ${enriched.length} референсов из локальной библиотеки и превью mobbin.com.`
+        : liveConfigured
+          ? `Показано ${enriched.length} референсов Mobbin (${mobbinPlatformLabel(platform)}).`
+          : 'Mobbin API key не нужен: локальная библиотека + превью со страниц Mobbin.',
     };
   });
 
+  ipcMain.handle('agent-cursor-figma-mcp-check', async () => {
+    try {
+      return { ok: true, ...(await checkFigmaMcpReady()) };
+    } catch (err) {
+      return { ok: false, message: String(err?.message || err) };
+    }
+  });
+
   ipcMain.handle('agent-figma-plan', async (_e, payload) => {
+    try {
     configureAgentIntegrations();
     if (!agentService.isConfigured()) {
-      return { ok: false, message: 'Подключите GigaChat: Настройки → ИИ Агент' };
+      return { ok: false, message: 'Подключите GigaChat: Настройки → Konstancia' };
     }
 
     let selection = null;
+    let figmaPluginConnected = !!service.pluginConnected;
+    const messageEarly = String(payload?.message || '').trim();
+    const needsFigmaPlugin = payload?.requireFigmaPlugin === true
+      || /выделен|selection|примени\s+в\s+figma|внеси\s+в\s+figma|текущ(ий|ее)\s+макет/i.test(messageEarly);
     try {
-      const result = await service.readFigmaSelectionBrief();
+      const result = await service.readFigmaSelectionBrief({ optional: !needsFigmaPlugin });
       selection = result?.selection || null;
+      figmaPluginConnected = result?.pluginConnected !== false;
     } catch (err) {
-      return { ok: false, message: err.message || 'Не удалось прочитать контекст Figma' };
+      if (needsFigmaPlugin) {
+        return { ok: false, message: err.message || 'Не удалось прочитать контекст Figma' };
+      }
+      selection = null;
+      figmaPluginConnected = false;
     }
 
     let task = payload?.task || null;
@@ -1406,7 +2198,9 @@ app.whenReady().then(() => {
     }
 
     const message = String(payload?.message || '').trim();
-    const forceFigmaApp = shouldBuildFigmaAppPlan(message) || payload?.figmaApp === true;
+    const selectedScreen = payload?.selectedScreen || null;
+    const selectedStyle = payload?.selectedStyle || null;
+    const forceFigmaApp = shouldBuildFigmaAppPlan(message) || payload?.figmaApp === true || !!selectedStyle;
     const forceDeterministicLayout = !forceFigmaApp
       && /(лендинг|landing|сайт|website|web\s*page|главная|homepage|hero)/i.test(message);
     const contextPrefix = buildFigmaContextBlock(selection);
@@ -1415,44 +2209,177 @@ app.whenReady().then(() => {
       limit: 6,
       mode: retrievalMode,
     });
-    if (service.config.settings?.agent?.mobbinEnabled !== false) {
-      const live = await siteBuilderService.gatherReferences(message);
-      if (live.refs?.length) {
-        refsResult = {
-          refs: live.refs,
-          context: live.context || refsResult.context,
-        };
+    if (!selectedScreen && service.config.settings?.agent?.mobbinEnabled !== false) {
+      try {
+        const live = await siteBuilderService.gatherReferences(message);
+        if (live.refs?.length) {
+          refsResult = {
+            refs: live.refs,
+            context: live.context || refsResult.context,
+          };
+        }
+      } catch {
+        // live Mobbin optional when building without a picked screen
       }
     }
     const refsPrefix = refsResult.context;
+    const mobbinLive = mobbinService.isConfigured();
 
-    const selectedScreen = payload?.selectedScreen || null;
-    if (selectedScreen?.mobbin_url || selectedScreen?.imageUrl || selectedScreen?.image_url) {
+    if (selectedScreen?.mobbin_url || selectedScreen?.imageUrl || selectedScreen?.image_url || selectedScreen?.url) {
+      let imageUrl = selectedScreen.image_url || selectedScreen.imageUrl || null;
+      const mobbinUrl = selectedScreen.mobbin_url || selectedScreen.url || null;
+      if (!imageUrl && mobbinUrl) {
+        try {
+          imageUrl = await resolveMobbinPreviewUrl(mobbinUrl);
+        } catch {
+          imageUrl = null;
+        }
+      }
       const normalized = {
         app_name: selectedScreen.app_name || selectedScreen.title,
-        mobbin_url: selectedScreen.mobbin_url || selectedScreen.url,
-        imageUrl: selectedScreen.image_url || selectedScreen.imageUrl,
+        mobbin_url: mobbinUrl,
+        imageUrl,
         id: selectedScreen.id,
+        tags: selectedScreen.tags || [],
       };
+      const refForStyle = {
+        title: normalized.app_name,
+        url: normalized.mobbin_url,
+        tags: normalized.tags,
+        platform: selectedScreen.platform,
+      };
+      const styleRefs = refsResult.refs?.length
+        ? refsResult.refs
+        : (refForStyle.url ? [refForStyle] : []);
+
+      if (!imageUrl) {
+        return {
+          ok: false,
+          message: 'Не удалось загрузить превью Mobbin для Vision. Проверьте ссылку или выберите другой экран.',
+          referenceScreen: normalized,
+        };
+      }
+
+      const expandApp = !!selectedStyle
+        || (payload?.expandApp !== false
+          && shouldExpandAppScreens(message)
+          && shouldBuildFigmaAppPlan(message));
+      const buildMessage = selectedStyle
+        ? `${message}\n\n${formatMobbinStyleBlock(selectedStyle)}`
+        : message;
+
+      const agentSettings = service.config.settings?.agent || {};
+      const forceVision = /\/vision\b/i.test(message);
+      const useCursorMcp = !forceVision && isCursorFigmaBuildConfigured(agentSettings);
+      let cursorFallbackNote = null;
+
+      if (useCursorMcp) {
+        const brief = buildFigmaDesignBrief({
+          message: buildMessage,
+          screen: { ...normalized, platform: selectedScreen.platform },
+          refs: styleRefs,
+          selection,
+          task,
+          expandApp,
+          selectedStyle,
+        });
+        let cursorResult;
+        try {
+          cursorResult = await runCursorFigmaBuild({
+            brief,
+            apiKey: agentSettings.cursorApiKey || process.env.CURSOR_API_KEY,
+            model: agentSettings.cursorModel || 'composer-2.5',
+            cwd: path.join(__dirname, '..'),
+            userDataDir: app.getPath('userData'),
+            timeoutMs: 25 * 60 * 1000,
+            onProgress: (p) => {
+              if (mainWindow && !mainWindow.isDestroyed()) {
+                try {
+                  mainWindow.webContents.send('cursor-figma-build-progress', p);
+                } catch {
+                  // window closed mid-run
+                }
+              }
+            },
+          });
+        } catch (cursorErr) {
+          cursorResult = {
+            ok: false,
+            message: String(cursorErr?.message || cursorErr || 'Сбой Cursor build'),
+          };
+        }
+        if (cursorResult?.ok) {
+          return {
+            ok: true,
+            mode: 'cursor',
+            message: cursorResult.message,
+            summary: cursorResult.summary,
+            model: cursorResult.model,
+            selection,
+            refs: styleRefs,
+            referenceScreen: normalized,
+          };
+        }
+        cursorFallbackNote = cursorResult?.message
+          || 'Cursor Agent не смог записать в Figma — пробуем GigaChat + плагин.';
+      }
+
       const visionResult = await buildFigmaPlanFromMobbinScreen({
-        message,
+        message: buildMessage,
         screen: normalized,
         agentService,
-        expandApp: payload?.expandApp !== false && shouldBuildFigmaAppPlan(message),
-        refs: refsResult.refs,
+        expandApp,
+        refs: styleRefs,
+        selectedStyle,
       });
-      if (!visionResult.ok) return visionResult;
+      if (!visionResult.ok) {
+        const model = agentService.settings?.model || '';
+        if (!isGigaChatVisionModel(model)) {
+          return {
+            ok: false,
+            message: visionResult.message || GIGACHAT_VISION_HINT,
+            referenceScreen: normalized,
+          };
+        }
+        return {
+          ok: false,
+          message: visionResult.message || 'Vision не смог повторить референс. Выберите GigaChat-2-Max (если Pro без токенов) и попробуйте снова.',
+          referenceScreen: normalized,
+        };
+      }
+
+      let plan = visionResult.plan;
+      const nb = service.config.settings?.nanobanana || {};
+      if (nb.apiKey && service.config.settings?.agent?.figmaNanobananaImages !== false) {
+        const enriched = await enrichFigmaPlanWithNanobananaImages(plan, {
+          message,
+          nanobananaService,
+          settings: nb,
+        });
+        plan = enriched.plan;
+      }
+
+      if (cursorFallbackNote) {
+        plan.assumptions = [
+          `Cursor: ${cursorFallbackNote}`,
+          ...(plan.assumptions || []),
+        ];
+      }
+
       return {
         ok: true,
-        plan: visionResult.plan,
+        plan,
         selection,
-        refs: refsResult.refs,
+        refs: styleRefs,
         model: visionResult.model,
+        visionFallback: !!visionResult.visionFallback,
+        liteMode: !!visionResult.liteMode,
+        cursorFallback: !!cursorFallbackNote,
         referenceScreen: normalized,
       };
     }
 
-    if (forceFigmaApp && !selectedScreen) {
+    if (forceFigmaApp && !selectedScreen && mobbinLive) {
       return {
         ok: false,
         needsMobbinPick: true,
@@ -1491,6 +2418,16 @@ app.whenReady().then(() => {
             plan = critic.improvedPlan;
           }
         }
+      }
+
+      const nb = service.config.settings?.nanobanana || {};
+      if (nb.apiKey && service.config.settings?.agent?.figmaNanobananaImages !== false) {
+        const enriched = await enrichFigmaPlanWithNanobananaImages(plan, {
+          message,
+          nanobananaService,
+          settings: nb,
+        });
+        plan = enriched.plan;
       }
 
       return {
@@ -1577,6 +2514,16 @@ app.whenReady().then(() => {
       refs: refsResult.refs,
       model: chatResult.model || null,
     };
+    } catch (err) {
+      const msg = String(err?.message || err || 'Ошибка agent-figma-plan');
+      if (/ENOTFOUND|EAI_AGAIN|api\.mobbin\.com/i.test(msg)) {
+        return {
+          ok: false,
+          message: 'Mobbin API недоступен (DNS). Макет по выбранному экрану можно собрать без live-поиска — перезапустите SHKF и повторите. При блокировке сети включите VPN.',
+        };
+      }
+      return { ok: false, message: msg };
+    }
   });
 
   ipcMain.handle('design-memory-list', () => {
@@ -1623,7 +2570,7 @@ app.whenReady().then(() => {
     if (!agentService.isConfigured()) {
       return {
         ok: false,
-        message: 'Подключите GigaChat: Настройки → ИИ Агент',
+        message: 'Подключите GigaChat: Настройки → Konstancia',
       };
     }
 
@@ -1771,6 +2718,8 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('agent-link-tasks', async (_e, payload) => {
+    const blocked = assertMetaskUserGesture(payload, 'agent-link-tasks');
+    if (blocked) return blocked;
     metaskService.configure(service.config.settings?.metask || {});
     const fromId = Number(payload?.fromId);
     const toId = Number(payload?.toId);
@@ -1794,6 +2743,8 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('agent-post-mockups-to-task', async (_e, payload) => {
+    const blocked = assertMetaskUserGesture(payload, 'agent-post-mockups-to-task');
+    if (blocked) return blocked;
     metaskService.configure(service.config.settings?.metask || {});
     const issueId = Number(payload?.issueId);
     const images = Array.isArray(payload?.images) ? payload.images : [];
@@ -1802,8 +2753,96 @@ app.whenReady().then(() => {
     return metaskService.addIssueCommentWithImages(issueId, 'Сделал вариант баннера.', images);
   });
 
+  ipcMain.handle('task-knowledge-stats', () => {
+    configureTaskLearning();
+    return { ok: true, stats: taskKnowledgeService.listLearnedSummary() };
+  });
+
+  ipcMain.handle('task-knowledge-search', async (_e, payload) => {
+    configureTaskLearning();
+    const chunks = await taskKnowledgeService.retrieveForAgent(String(payload?.query || ''), {
+      task: payload?.task || null,
+      limit: Number(payload?.limit) || 8,
+    });
+    return { ok: true, chunks };
+  });
+
+  ipcMain.handle('task-knowledge-reindex', async (_e, payload) => {
+    configureTaskLearning();
+    metaskReadOnly.configure(service.config.settings?.metask || {});
+    const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
+    const liteOnly = payload?.liteOnly !== false;
+    return taskKnowledgeService.reindexAll(tasks, metaskService.userId, {
+      liteOnly,
+      force: true,
+      onProgress: (progress) => {
+        broadcast('task-knowledge-reindex-progress', progress);
+      },
+    });
+  });
+
+  ipcMain.handle('metask-open-attachment', async (_e, payload) => {
+    const url = String(payload?.url || '').trim();
+    if (!url) return { ok: false, message: 'empty-url' };
+    try {
+      await shell.openExternal(url);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, message: err?.message || 'open-failed' };
+    }
+  });
+
+  ipcMain.handle('task-knowledge-clear', () => {
+    return taskKnowledgeService.clearLocal();
+  });
+
+  ipcMain.handle('task-knowledge-feedback', (_e, payload) => {
+    return taskKnowledgeService.recordFeedback(payload || {});
+  });
+
+  ipcMain.handle('task-knowledge-pin', (_e, payload) => {
+    return taskKnowledgeService.pinLesson(payload || {});
+  });
+
+  ipcMain.handle('task-knowledge-attachment', (_e, payload) => {
+    configureTaskLearning();
+    const issueId = Number(payload?.issueId);
+    const attachmentId = Number(payload?.attachmentId);
+    if (!issueId || !attachmentId) return { ok: false };
+    const meta = taskKnowledgeService.getIssueCatalog(issueId);
+    const att = (meta?.attachments || []).find((a) => Number(a.id) === attachmentId);
+    if (!att?.contentUrl) return { ok: false, message: 'not-found' };
+    return { ok: true, ...att, issueId, subject: meta?.subject || '' };
+  });
+
+  ipcMain.handle('task-knowledge-save-settings', (_e, patch) => {
+    const config = service.updateAppSettings({
+      taskLearning: {
+        ...(service.config.settings?.taskLearning || {}),
+        ...(patch || {}),
+      },
+    });
+    configureTaskLearning();
+    return config.settings?.taskLearning;
+  });
+
+  ipcMain.handle('agent-process-insights', async (_e, payload) => {
+    const tasks = Array.isArray(payload?.tasks) ? payload.tasks : [];
+    let linkerSuggestions = [];
+    try {
+      const linkRes = await taskLinkerService.suggest(tasks, new Set());
+      linkerSuggestions = linkRes?.suggestions || [];
+    } catch { /* optional */ }
+    const report = processAnalyticsService.analyze({ tasks, linkerSuggestions });
+    return {
+      ok: true,
+      report,
+      markdown: processAnalyticsService.formatInsightsMarkdown(report),
+    };
+  });
+
   ipcMain.handle('agent-notify-background', async (_e, payload) => {
-    const title = String(payload?.title || 'ИИ Агент').trim() || 'ИИ Агент';
+    const title = String(payload?.title || 'Konstancia').trim() || 'Konstancia';
     const body = String(payload?.body || '').trim().slice(0, 280);
     if (!body) return { ok: false, message: 'empty-body' };
     try {
@@ -2132,7 +3171,7 @@ app.whenReady().then(() => {
   ipcMain.handle('export-config', async () => {
     const { filePath, canceled } = await dialog.showSaveDialog(mainWindow, {
       title: 'Экспорт config',
-      defaultPath: 'firuru-config.json',
+      defaultPath: 'SHKF-config.json',
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
     if (canceled || !filePath) return { ok: false };
@@ -2247,5 +3286,6 @@ app.on('window-all-closed', (e) => e.preventDefault());
 
 app.on('before-quit', () => {
   app.isQuitting = true;
+  stopAllLive2dStaticServers();
   service.shutdown();
 });

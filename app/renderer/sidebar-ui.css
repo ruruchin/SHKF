@@ -104,7 +104,8 @@
     transform 0.18s var(--nav-ease-spring);
 }
 
-.nav-item svg {
+.nav-item svg,
+.nav-item .nav-icon {
   transition:
     transform 0.3s var(--nav-ease-spring),
     opacity 0.2s ease,
@@ -113,7 +114,17 @@
   will-change: transform;
 }
 
-.nav-item:hover:not(.active) svg {
+.nav-item .agent-brand-avatar {
+  transition:
+    transform 0.3s var(--nav-ease-spring),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.nav-item:hover:not(.active) svg,
+.nav-item:hover:not(.active) .nav-icon {
   opacity: 1;
 }
 
@@ -138,20 +149,35 @@
   transform: scale(1.1);
 }
 
-.nav-item[data-page="metask"]:hover:not(.active) svg {
+.nav-item[data-page="metask"]:hover:not(.active) svg,
+.nav-item[data-page="metask"]:hover:not(.active) .nav-icon {
   transform: translateY(-2px) scale(1.08);
 }
 
-.nav-item[data-page="mail"]:hover:not(.active) svg {
+.nav-item[data-page="mail"]:hover:not(.active) svg,
+.nav-item[data-page="mail"]:hover:not(.active) .nav-icon {
   transform: rotate(-8deg) scale(1.1);
 }
 
-.nav-item[data-page="notes"]:hover:not(.active) svg {
+.nav-item[data-page="nanobanana"]:hover:not(.active) .nav-icon {
+  transform: rotate(12deg) scale(1.12);
+}
+
+.nav-item[data-page="magnific"]:hover:not(.active) .nav-icon {
+  transform: scale(1.12);
+}
+
+.nav-item[data-page="setup"]:hover:not(.active) svg,
+.nav-item[data-page="setup"]:hover:not(.active) .nav-icon {
+  transform: rotate(16deg) scale(1.1);
+}
+
+.nav-item[data-page="notes"]:hover:not(.active) .nav-icon {
   transform: rotate(5deg) scale(1.08);
 }
 
-.nav-item[data-page="setup"]:hover:not(.active) svg {
-  transform: rotate(16deg) scale(1.1);
+.nav-item[data-page="agent"]:hover:not(.active) .agent-brand-avatar {
+  transform: scale(1.08);
 }
 
 .nav-item[data-page="settings"]:hover:not(.active) svg {
@@ -185,7 +211,8 @@
   animation: navItemActivate 0.3s var(--nav-ease-out);
 }
 
-.nav-item.active svg {
+.nav-item.active svg,
+.nav-item.active .nav-icon {
   animation: navIconActivate 0.38s var(--nav-ease-spring);
 }
 

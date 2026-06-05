@@ -16,6 +16,7 @@ import {
   groupChecklistItemsByIssue,
   mergePersonalIssueLists,
 } from '../shared/metask-personal.js';
+import { extractSearchPhrases } from '../shared/task-learning-intent.js';
 
 function trimSlash(url) {
   return (url || '').replace(/\/+$/, '');
@@ -431,6 +432,127 @@ export class MetaskService {
       if (Array.isArray(batch)) all.push(...batch);
     }
     return all;
+  }
+
+  async resolveAttachmentIssueId(attachmentId) {
+    const id = Number(attachmentId);
+    const { baseUrl, apiKey } = this.settings;
+    if (!id || !baseUrl?.trim()) return null;
+
+    const qs = apiKey?.trim() ? `?key=${encodeURIComponent(apiKey.trim())}` : '';
+    try {
+      const res = await fetch(`${baseUrl}/attachments/${id}${qs}`, {
+        headers: { Accept: 'text/html', 'User-Agent': 'Mozilla/5.0 (compatible; SHKF/1.0)' },
+      });
+      if (!res.ok) return null;
+      const html = await res.text();
+      const match = html.match(/\/issues\/(\d+)/);
+      return match ? Number(match[1]) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async searchIssuesForKnowledge(query, { limit = 40 } = {}) {
+    const { baseUrl, apiKey } = this.settings;
+    if (!baseUrl?.trim()) return [];
+
+    const phrases = extractSearchPhrases(query);
+    if (!phrases.length) return [];
+
+    const seen = new Set();
+    const hits = [];
+    const maxTotal = Math.max(5, Math.min(60, Number(limit) || 40));
+
+    for (const phrase of phrases.slice(0, 8)) {
+      for (let offset = 0; offset < 100 && hits.length < maxTotal; offset += 25) {
+        const qs = new URLSearchParams({
+          q: phrase,
+          issues: '1',
+          attachments: '1',
+          titles_only: '0',
+          limit: '25',
+          offset: String(offset),
+        });
+        if (apiKey?.trim()) qs.set('key', apiKey.trim());
+
+        const res = await this.fetchJson(`${baseUrl}/search.json?${qs}`);
+        if (!res.ok || !Array.isArray(res.json?.results)) break;
+
+        const batch = res.json.results;
+        if (!batch.length) break;
+
+        for (const row of batch) {
+          const type = String(row?.type || '').toLowerCase();
+          if (type.includes('issue')) {
+            const id = Number(row.id ?? row.issue_id ?? row.issue?.id);
+            if (!id || seen.has(id)) continue;
+            seen.add(id);
+            hits.push({
+              score: 25 - hits.length * 0.2,
+              issueId: id,
+              subject: String(row.title || row.issue?.subject || '').trim(),
+              snippet: String(row.description || row.issue?.description || '')
+                .replace(/<[^>]+>/g, ' ').slice(0, 220),
+              project: row.project_name || row.project?.name || '',
+              status: row.status?.name || '',
+              source: 'redmine-search',
+            });
+          } else if (type.includes('attachment') || type.includes('document')) {
+            const attachmentId = Number(row.id);
+            if (!attachmentId || seen.has(`att:${attachmentId}`)) continue;
+            seen.add(`att:${attachmentId}`);
+            const filename = String(row.title || row.filename || '').trim();
+            hits.push({
+              score: 32 - hits.length * 0.2,
+              issueId: Number(row.issue_id ?? row.issue?.id ?? row.parent_id) || null,
+              attachmentId,
+              filename,
+              subject: filename,
+              snippet: String(row.description || '').replace(/<[^>]+>/g, ' ').slice(0, 180),
+              project: row.project_name || '',
+              status: '',
+              source: 'redmine-attachment-search',
+              attachmentHint: filename,
+            });
+          }
+          if (hits.length >= maxTotal) break;
+        }
+        if (batch.length < 25) break;
+      }
+      if (hits.length >= maxTotal) break;
+    }
+
+    if (!hits.length) return [];
+
+    const attachmentHits = hits.filter((h) => h.attachmentId && !h.issueId);
+    if (attachmentHits.length) {
+      await Promise.all(attachmentHits.map(async (hit) => {
+        hit.issueId = await this.resolveAttachmentIssueId(hit.attachmentId);
+      }));
+    }
+    const resolved = hits.filter((h) => h.issueId);
+
+    try {
+      const issues = await this.fetchIssuesByIds(resolved.map((h) => h.issueId));
+      const mapped = this.mapIssues(issues);
+      const byId = new Map(mapped.map((i) => [Number(i.id), i]));
+      for (const hit of resolved) {
+        const m = byId.get(Number(hit.issueId));
+        if (!m) continue;
+        if (!hit.subject || hit.source === 'redmine-attachment-search') {
+          hit.subject = m.subject || hit.subject;
+        }
+        hit.project = m.project || hit.project;
+        hit.status = m.status || hit.status;
+        hit.url = m.url || '';
+        hit.description = m.description || '';
+      }
+    } catch {
+      /* partial */
+    }
+
+    return resolved.slice(0, maxTotal);
   }
 
   async fetchMyOpenChecklistItemsForIssue(issueId) {
@@ -860,7 +982,7 @@ export class MetaskService {
     if (!id || !this.settings.baseUrl?.trim()) return null;
 
     const { baseUrl, apiKey } = this.settings;
-    const qs = new URLSearchParams({ include: 'journals' });
+    const qs = new URLSearchParams({ include: 'journals,attachments' });
     if (apiKey?.trim()) qs.set('key', apiKey.trim());
 
     const [res, laborTimeEntries] = await Promise.all([
@@ -872,6 +994,18 @@ export class MetaskService {
 
     const issue = res.json.issue;
     const mapped = this.mapIssues([issue])[0];
+    const attachments = (Array.isArray(issue.attachments) ? issue.attachments : [])
+      .map((a) => ({
+        id: Number(a?.id || 0) || null,
+        filename: String(a?.filename || '').trim(),
+        contentType: String(a?.content_type || '').trim(),
+        contentUrl: this.withApiKey(this.normalizeAttachmentUrl(a?.content_url || '')),
+        size: Number(a?.filesize || 0) || null,
+        author: a?.author?.name || '',
+        createdOn: a?.created_on || '',
+        description: String(a?.description || '').trim(),
+      }))
+      .filter((a) => a.id && a.filename);
 
     const laborJournal = parseLaborFromJournals(issue.journals || []);
     const laborJournalIds = new Set(laborJournal.map((item) => item.journalId));
@@ -901,6 +1035,7 @@ export class MetaskService {
       estimatedHours: issue.estimated_hours,
       laborJournal: laborJournalEnriched,
       laborTimeEntries: laborTimeEntriesEnriched,
+      attachments,
     };
   }
 

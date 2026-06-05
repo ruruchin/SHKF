@@ -1,5 +1,5 @@
 @echo off
-title Build FIRURU Portable
+title Build SHKF Portable
 cd /d "%~dp0"
 set CSC_IDENTITY_AUTO_DISCOVERY=false
 echo.
@@ -11,7 +11,7 @@ if errorlevel 1 goto fail
 echo.
 echo ========================================
 echo  Done! Check release\ or release-build-*\
-echo  Portable: FIRURU-*-portable.exe
+echo  Portable: SHKF-*-portable.exe
 echo ========================================
 pause
 exit /b 0

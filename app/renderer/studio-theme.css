@@ -1,4 +1,4 @@
-/* ===== FIRURU STUDIO — premium soft UI (Figma + Work) ===== */
+/* ===== SHKF Studio — premium soft UI (Figma + Work) ===== */
 
 [data-theme="studio"] body {
   background: var(--shell);
@@ -967,7 +967,7 @@
   border-radius: var(--studio-radius);
   background: var(--elevated);
   border: 1px solid var(--border);
-  box-shadow: var(--studio-shadow);
+  box-shadow: none;
 }
 
 /* Mail auth banner */
@@ -1308,9 +1308,7 @@
   content: '';
   position: absolute;
   inset: 6px;
-  background: var(--studio-ink);
-  mask: url("assets/brand/logo-mark.svg") center / contain no-repeat;
-  -webkit-mask: url("assets/brand/logo-mark.svg") center / contain no-repeat;
+  background: url("assets/brand/logo.png") center / contain no-repeat;
 }
 
 [data-theme="studio"] .player-title {
@@ -1532,7 +1530,7 @@
 [data-theme="studio"] .fd-toast {
   background: #ffffff;
   border: 1px solid var(--border);
-  box-shadow: var(--studio-shadow-sm);
+  box-shadow: none;
   color: var(--studio-ink);
 }
 

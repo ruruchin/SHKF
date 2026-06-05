@@ -1,5 +1,5 @@
 @echo off
-title Build FIRURU Installer
+title Build SHKF Installer
 cd /d "%~dp0"
 set CSC_IDENTITY_AUTO_DISCOVERY=false
 echo.
@@ -11,7 +11,7 @@ if errorlevel 1 goto fail
 echo.
 echo ========================================
 echo  Done! Send to another person:
-echo  release\FIRURU-Setup-1.1.0.exe
+echo  release\SHKF-Setup-1.1.0.exe
 echo  (or release-build-*\ if release was locked)
 echo ========================================
 pause

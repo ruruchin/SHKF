@@ -77,7 +77,7 @@
       return;
     }
     el.className = 'bm-alert bm-alert--warn';
-    el.innerHTML = `Размер <strong>${escapeHtml(preset.label)}</strong> ещё не в библиотеке. Выделите frame в Figma «SHKF banners» и сохраните через FIRURU Bridge.`;
+    el.innerHTML = `Размер <strong>${escapeHtml(preset.label)}</strong> ещё не в библиотеке. Выделите frame в Figma «SHKF banners» и сохраните через SHKF Bridge.`;
     el.classList.remove('hidden');
   }
 
@@ -606,7 +606,7 @@
       cap.textContent = `Выбран: ${preset.templateName}`;
       return;
     }
-    cap.textContent = 'Экспортируйте frame в SHKF через FIRURU Bridge';
+    cap.textContent = 'Экспортируйте frame в SHKF через SHKF Bridge';
   }
 
   async function renderPreviewCard(preset, { imageUrl, isActive }) {
@@ -646,7 +646,7 @@
       const linked = presets.filter((p) => p.linked).length;
       dimEl.textContent = linked
         ? `${linked} из ${presets.length} размеров в SHKF`
-        : 'Экспортируйте баннеры через FIRURU Bridge';
+        : 'Экспортируйте баннеры через SHKF Bridge';
     }
 
     updatePreviewCaption(selected);
@@ -732,7 +732,7 @@
     const preset = getSelectedPreset();
     const imageUrl = await getResolvedSelectedImageUrl();
     if (!preset?.templateId) {
-      setStatus('Сначала экспортируйте этот размер баннера в SHKF через FIRURU Bridge', 'error');
+      setStatus('Сначала экспортируйте этот размер баннера в SHKF через SHKF Bridge', 'error');
       return;
     }
     if (!imageUrl) {

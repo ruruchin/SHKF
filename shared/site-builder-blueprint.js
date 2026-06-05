@@ -18,6 +18,8 @@ export const SECTION_TYPES = [
   'logo-strip',
   'testimonial',
   'timeline',
+  'image-hero',
+  'onboarding-wizard',
 ];
 
 const PAGE_PRESETS = {
@@ -25,8 +27,9 @@ const PAGE_PRESETS = {
     route: '/',
     name: 'Главная',
     sections: [
-      { type: 'hero', title: 'Инвестиции без лишней сложности', subtitle: 'Портфель, аналитика и сделки в одном приложении', primaryCta: 'Начать', secondaryCta: 'Войти' },
-      { type: 'stat-row', stats: [{ label: 'Активы под управлением', value: '₽12.4 млрд' }, { label: 'Пользователей', value: '840K+' }, { label: 'Средняя доходность', value: '11.2%' }] },
+      { type: 'hero', title: 'Инвестиции проще', subtitle: 'Портфель и сделки в одном приложении', primaryCta: 'Начать', secondaryCta: 'Войти' },
+      { type: 'stat-row', stats: [{ label: 'Активы', value: '₽12.4 млрд' }, { label: 'Клиенты', value: '840K+' }, { label: 'Доходность', value: '11.2%' }] },
+      { type: 'image-hero', imagePrompt: 'fintech mobile dashboard abstract hero, teal accents, minimal' },
       { type: 'card-grid', title: 'Возможности', items: [{ title: 'Портфель', text: 'Акции, облигации и фонды в едином экране' }, { title: 'Аналитика', text: 'Графики, сценарии и риск-профиль' }, { title: 'Безопасность', text: '2FA, биометрия и уведомления' }] },
       { type: 'cta-band', title: 'Откройте счёт за 5 минут', text: 'Без бумажной волокиты — только паспорт и телефон', cta: 'Зарегистрироваться' },
     ],
@@ -43,9 +46,8 @@ const PAGE_PRESETS = {
     route: '/register',
     name: 'Регистрация',
     sections: [
-      { type: 'split-hero', title: 'Создайте аккаунт', subtitle: 'Onboarding за 3 шага — как в лучших fintech-приложениях', primaryCta: 'Продолжить' },
-      { type: 'onboarding-steps', steps: ['Телефон', 'Паспорт', 'Риск-профиль'], active: 0 },
-      { type: 'auth-panel', mode: 'register', title: 'Ваши данные', subtitle: 'Мы не передаём информацию третьим лицам' },
+      { type: 'onboarding-steps', steps: ['Телефон', 'Паспорт', 'Риск'], active: 0 },
+      { type: 'auth-panel', mode: 'register', title: 'Ваши данные', subtitle: 'Email, пароль и имя' },
     ],
   },
   profile: {
@@ -93,13 +95,25 @@ const PAGE_PRESETS = {
       { type: 'settings-form', title: 'Безопасность', fields: ['2FA', 'Биометрия', 'Сессии'] },
     ],
   },
-  onboarding: {
-    route: '/onboarding',
-    name: 'Онбординг',
+  onboarding1: {
+    route: '/onboarding/1',
+    name: 'Онбординг 1/3',
     sections: [
-      { type: 'onboarding-steps', steps: ['Цели', 'Риск', 'Пополнение'], active: 1 },
-      { type: 'card-grid', title: 'Выберите цель', items: [{ title: 'Рост', text: 'Акции и фонды' }, { title: 'Сохранность', text: 'Облигации' }, { title: 'Смешанная', text: 'Баланс' }] },
-      { type: 'cta-band', title: 'Готово к первому пополнению?', text: 'Минимум ₽1 000', cta: 'Пополнить' },
+      { type: 'onboarding-wizard', step: 1, total: 3, title: 'Какая у вас цель?', subtitle: 'Подберём портфель под вас', imagePrompt: 'goal setting fintech illustration minimal', options: ['Рост', 'Сохранность', 'Баланс'] },
+    ],
+  },
+  onboarding2: {
+    route: '/onboarding/2',
+    name: 'Онбординг 2/3',
+    sections: [
+      { type: 'onboarding-wizard', step: 2, total: 3, title: 'Ваш риск-профиль', subtitle: 'Ответьте на 3 вопроса', imagePrompt: 'risk assessment chart mobile illustration', options: ['Консервативный', 'Умеренный', 'Агрессивный'] },
+    ],
+  },
+  onboarding3: {
+    route: '/onboarding/3',
+    name: 'Онбординг 3/3',
+    sections: [
+      { type: 'onboarding-wizard', step: 3, total: 3, title: 'Пополните счёт', subtitle: 'Минимум ₽1 000', imagePrompt: 'wallet top up fintech success illustration', primaryCta: 'Пополнить' },
     ],
   },
 };
@@ -127,9 +141,11 @@ export function inferBlueprintFromMessage(message, refs = []) {
   };
 
   if (/инвест|fintech|portfolio|портфел|брокер|акци|trading|трейдинг/.test(text)) {
-    ['home', 'login', 'register', 'onboarding', 'profile', 'analytics'].forEach(addPreset);
+    ['home', 'login', 'register', 'onboarding1', 'onboarding2', 'onboarding3', 'profile', 'analytics'].forEach(addPreset);
   }
-  if (/onboarding|онбординг/.test(text)) addPreset('onboarding');
+  if (/onboarding|онбординг|3\s*шаг|тр[её]х\s*шаг/i.test(text)) {
+    ['onboarding1', 'onboarding2', 'onboarding3'].forEach(addPreset);
+  }
   if (/login|вход|sign\s*in|авториз/.test(text)) addPreset('login');
   if (/register|регистрац|sign\s*up|создай.*аккаунт/.test(text)) addPreset('register');
   if (/profile|профил|личн|кабинет|account/.test(text)) addPreset('profile');

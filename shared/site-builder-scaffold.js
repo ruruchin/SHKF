@@ -473,7 +473,7 @@ export default function App() {
     path: 'README.md',
     content: `# ${productName}
 
-Многостраничный прототип (React + Vite + react-router-dom), собран Site Builder в FIRURU.
+Многостраничный прототип (React + Vite + react-router-dom), собран Site Builder в SHKF.
 
 ## Страницы
 

@@ -54,7 +54,7 @@ export function fetchUrlBytesWithNet(url, headers = {}) {
 export async function fetchNanobananaImageWithNet(url, { apiKey } = {}) {
   const headers = {
     Accept: 'image/*,*/*;q=0.8',
-    'User-Agent': 'FIRURU/1.0',
+    'User-Agent': 'SHKF/1.0',
     Referer: 'https://www.nananobanana.com/',
   };
   if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
@@ -62,7 +62,7 @@ export async function fetchNanobananaImageWithNet(url, { apiKey } = {}) {
   let lastErr = null;
   const attempts = [
     headers,
-    { Accept: 'image/*,*/*;q=0.8', 'User-Agent': 'FIRURU/1.0' },
+    { Accept: 'image/*,*/*;q=0.8', 'User-Agent': 'SHKF/1.0' },
   ];
 
   for (const h of attempts) {

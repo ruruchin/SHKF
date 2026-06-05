@@ -3,7 +3,7 @@
     designer: {
       id: 'designer',
       label: 'Дизайнер',
-      description: 'Figma, хоткеи, шаблоны, канбан, почта и мокапы',
+      description: 'PIK-FOLDER, Figma, шаблоны, канбан, Konstancia и мокапы',
       icon: '🎨',
     },
     frontend: {
@@ -33,19 +33,19 @@
   };
 
   const ROLE_PAGES = {
-    designer: ['search', 'hotkeys', 'makeit', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'mail', 'agent', 'notes', 'setup', 'settings'],
+    designer: ['search', 'pikfolder', 'makeit', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'mail', 'agent', 'notes', 'setup', 'settings'],
     frontend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'settings'],
     backend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'settings'],
     pm: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'notes', 'settings'],
-    full: ['search', 'hotkeys', 'makeit', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'agent', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
+    full: ['search', 'pikfolder', 'makeit', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'agent', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
   };
 
   const ROLE_DEFAULT_PAGE = {
-    designer: 'hotkeys',
+    designer: 'agent',
     frontend: 'metask',
     backend: 'metask',
     pm: 'metask',
-    full: 'hotkeys',
+    full: 'agent',
   };
 
   const DEV_ROLES = new Set(['frontend', 'backend']);
@@ -70,7 +70,7 @@
 
   function isPageAllowed(pageId, role = currentRole) {
     if (!pageId) return false;
-    if (pageId === 'hotkey-detail') return getAllowedPages(role).includes('hotkeys');
+    if (pageId === 'hotkey-detail') return false;
     return getAllowedPages(role).includes(pageId);
   }
 
@@ -103,6 +103,7 @@
     if (pageId === 'github' || pageId === 'outline') window.activateWebtab?.(pageId);
     if (pageId === 'notes') window.activateNotesPage?.();
     if (pageId === 'search') window.activateSearchPage?.();
+    if (pageId === 'pikfolder') window.activatePikFolderPage?.();
     return true;
   }
 
@@ -151,7 +152,9 @@
     updateNavGroups();
 
     const active = getActivePageId();
-    if (active && !isPageAllowed(active)) {
+    if (!active) {
+      navigateToPage(getDefaultPage(currentRole));
+    } else if (!isPageAllowed(active)) {
       navigateToPage(getDefaultPage(currentRole));
     }
 

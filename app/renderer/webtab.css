@@ -50,6 +50,14 @@
   background: var(--input-bg, #fff);
 }
 
+.webtab-app-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  object-fit: contain;
+  border-radius: 4px;
+}
+
 .webtab-title-wrap h1 {
   font-size: 17px;
   font-weight: 700;

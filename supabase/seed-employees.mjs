@@ -14,7 +14,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const EMAIL_DOMAIN = process.env.EMPLOYEE_EMAIL_DOMAIN || 'firuru.local';
+const EMAIL_DOMAIN = process.env.EMPLOYEE_EMAIL_DOMAIN || 'shkf.local';
 
 function requireEnv(name, value) {
   if (!value) throw new Error(`Missing ${name}. Copy .env.example to .env and fill it.`);

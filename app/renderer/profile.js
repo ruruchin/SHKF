@@ -152,7 +152,10 @@
         setStatus('pf-save-status', res?.message || 'Не удалось загрузить аватар', 'error');
         return;
       }
-      if (res.profile) setProfile(res.profile);
+      if (res.profile) {
+        setProfile(res.profile);
+        window.dispatchEvent(new CustomEvent('user-avatar-updated'));
+      }
       setStatus('pf-save-status', 'Аватар обновлён', 'ok');
     } catch (err) {
       setStatus('pf-save-status', err?.message || 'Ошибка загрузки аватара', 'error');

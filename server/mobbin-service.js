@@ -3,6 +3,18 @@ import https from 'https';
 const SCREENS_URL = 'https://api.mobbin.com/v1/screens/search';
 const FLOWS_URL = 'https://api.mobbin.com/v1/flows/search';
 
+export function mobbinNetworkErrorMessage(err) {
+  const code = String(err?.code || '').trim();
+  const host = err?.hostname || 'api.mobbin.com';
+  if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+    return `Mobbin API недоступен (${host}: DNS). Проверьте интернет/VPN или соберите макет по уже выбранному превью без live-поиска.`;
+  }
+  if (code === 'ETIMEDOUT' || code === 'ECONNREFUSED' || code === 'ECONNRESET') {
+    return `Mobbin API не отвечает (${code}). Повторите позже.`;
+  }
+  return String(err?.message || 'Ошибка сети Mobbin API');
+}
+
 function httpsJson(url, { method = 'POST', headers = {}, body = null } = {}) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
@@ -79,11 +91,7 @@ function normalizeFlow(raw) {
   };
 }
 
-export function inferMobbinPlatform(query) {
-  const text = String(query || '').toLowerCase();
-  if (/\bios\b|iphone|mobile\s*app|приложени[ея]\s+ios|мобильн/i.test(text)) return 'ios';
-  return 'web';
-}
+export { inferMobbinPlatform, mobbinPlatformLabel, mobbinSearchQuerySuffix } from '../shared/mobbin-search-query.js';
 
 export function isMobbinConfigured(settings = {}) {
   return !!String(settings?.mobbinApiKey || settings?.apiKey || '').trim();
@@ -111,21 +119,27 @@ export class MobbinService {
     };
   }
 
-  async searchScreens(query, { platform, limit = 8, mode = 'deep' } = {}) {
+  async searchScreens(query, { platform, limit = 8, mode = 'deep', maxLimit = 20 } = {}) {
     if (!this.isConfigured()) {
-      return { ok: false, message: 'Укажите Mobbin API key в Настройки → ИИ Агент → Mobbin', screens: [] };
+      return { ok: false, message: 'Укажите Mobbin API key в Настройки → Konstancia → Mobbin', screens: [] };
     }
+    const cap = Math.max(1, Math.min(Number(maxLimit) || 20, 30));
     const body = {
       query: String(query || '').trim().slice(0, 500),
       platform: platform === 'ios' ? 'ios' : 'web',
-      limit: Math.max(1, Math.min(20, Number(limit) || 8)),
+      limit: Math.max(1, Math.min(cap, Number(limit) || 8)),
       mode: mode === 'fast' ? 'fast' : 'deep',
     };
-    const res = await httpsJson(SCREENS_URL, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${this.apiKey}` },
-      body,
-    });
+    let res;
+    try {
+      res = await httpsJson(SCREENS_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.apiKey}` },
+        body,
+      });
+    } catch (err) {
+      return { ok: false, message: mobbinNetworkErrorMessage(err), screens: [], networkError: true };
+    }
     if (res.status === 401 || res.status === 403) {
       return { ok: false, message: 'Mobbin: неверный или просроченный API key', screens: [] };
     }
@@ -141,18 +155,23 @@ export class MobbinService {
 
   async searchFlows(query, { platform, limit = 4 } = {}) {
     if (!this.isConfigured()) {
-      return { ok: false, message: 'Укажите Mobbin API key в Настройки → ИИ Агент → Mobbin', flows: [] };
+      return { ok: false, message: 'Укажите Mobbin API key в Настройки → Konstancia → Mobbin', flows: [] };
     }
     const body = {
       query: String(query || '').trim().slice(0, 500),
       platform: platform === 'ios' ? 'ios' : 'web',
       limit: Math.max(1, Math.min(10, Number(limit) || 4)),
     };
-    const res = await httpsJson(FLOWS_URL, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${this.apiKey}` },
-      body,
-    });
+    let res;
+    try {
+      res = await httpsJson(FLOWS_URL, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${this.apiKey}` },
+        body,
+      });
+    } catch (err) {
+      return { ok: false, message: mobbinNetworkErrorMessage(err), flows: [], networkError: true };
+    }
     if (res.status === 401 || res.status === 403) {
       return { ok: false, message: 'Mobbin: неверный или просроченный API key', flows: [] };
     }
