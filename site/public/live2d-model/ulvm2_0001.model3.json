@@ -1,0 +1,27 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "ulvm2_0001.moc3",
+		"Textures": [
+			"ulvm2_0001.4096/texture_00.png",
+			"ulvm2_0001.4096/texture_01.png",
+			"ulvm2_0001.4096/texture_02.png",
+			"ulvm2_0001.4096/texture_03.png",
+			"ulvm2_0001.4096/texture_04.png"
+		],
+		"Physics": "ulvm2_0001.physics3.json",
+		"DisplayInfo": "ulvm2_0001.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		}
+	]
+}
