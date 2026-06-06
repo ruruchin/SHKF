@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export default function Live2DAvatar() {
+export default function Live2DAvatar({ expression = '' }) {
   const containerRef = useRef(null);
+  const modelRef = useRef(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -83,8 +84,10 @@ export default function Live2DAvatar() {
         }
 
         model = await Live2DModel.from('/live2d-model/ulvm2_0001.model3.json');
+        modelRef.current = model;
         
         if (isDestroyed) {
+          modelRef.current = null;
           try {
             app.destroy(true, { children: true });
           } catch {}
@@ -95,6 +98,14 @@ export default function Live2DAvatar() {
         app.stage.addChild(model);
         if (!isDestroyed) {
           setLoading(false);
+        }
+
+        if (expression) {
+          try {
+            model.expression(expression);
+          } catch (err) {
+            console.warn('[live2d] Init expression error:', err);
+          }
         }
 
         // Apply T-shirt costume and manual cursor tracking in the update loop
@@ -218,6 +229,7 @@ export default function Live2DAvatar() {
 
     return () => {
       isDestroyed = true;
+      modelRef.current = null;
       if (handleGlobalMouseMove) {
         window.removeEventListener('mousemove', handleGlobalMouseMove);
       }
@@ -247,6 +259,21 @@ export default function Live2DAvatar() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const model = modelRef.current;
+    if (model) {
+      try {
+        if (expression) {
+          model.expression(expression);
+        } else {
+          model.expression(null);
+        }
+      } catch (err) {
+        console.warn('[live2d] Set expression error:', err);
+      }
+    }
+  }, [expression]);
 
   return (
     <div 

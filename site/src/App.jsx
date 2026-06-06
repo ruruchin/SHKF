@@ -440,6 +440,7 @@ function App() {
   const activeContact = hash === '#message-us';
   const activeDownload = hash === '#download';
   const [newsFilter, setNewsFilter] = useState('All');
+  const [avatarExpression, setAvatarExpression] = useState('');
 
   const [lang, setLang] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -880,10 +881,14 @@ function App() {
         <h2>{TRANSLATIONS[lang].companyHeader}</h2>
         <div className="company-inner">
           <div className="company-center-model">
-            <Live2DAvatar />
+            <Live2DAvatar expression={avatarExpression} />
           </div>
 
-          <div className="company-plate plate-top-left">
+          <div 
+            className="company-plate plate-top-left"
+            onMouseEnter={() => setAvatarExpression('star')}
+            onMouseLeave={() => setAvatarExpression('')}
+          >
             <span className="section-kicker"><span /> {TRANSLATIONS[lang].plate1Kicker}</span>
             <h3>{TRANSLATIONS[lang].plate1Title}</h3>
             <p className="plate-desc">
@@ -891,7 +896,11 @@ function App() {
             </p>
           </div>
 
-          <div className="company-plate plate-bottom-left company-copy reveal">
+          <div 
+            className="company-plate plate-bottom-left company-copy reveal"
+            onMouseEnter={() => setAvatarExpression('note')}
+            onMouseLeave={() => setAvatarExpression('')}
+          >
             <span className="section-kicker"><span /> {TRANSLATIONS[lang].plate2Kicker}</span>
             <p className="plate-desc">
               {TRANSLATIONS[lang].plate2Desc}
@@ -899,7 +908,11 @@ function App() {
             <a className="dark-cta" href="#newsroom">{TRANSLATIONS[lang].plate2Cta} <span>→</span></a>
           </div>
 
-          <div className="company-plate plate-bottom-right">
+          <div 
+            className="company-plate plate-bottom-right"
+            onMouseEnter={() => setAvatarExpression('heart')}
+            onMouseLeave={() => setAvatarExpression('')}
+          >
             <span className="section-kicker"><span /> {TRANSLATIONS[lang].plate3Kicker}</span>
             <h3>{TRANSLATIONS[lang].plate3Title}</h3>
             <p className="plate-desc">
@@ -907,7 +920,11 @@ function App() {
             </p>
           </div>
 
-          <div className="company-plate plate-right-outer">
+          <div 
+            className="company-plate plate-right-outer"
+            onMouseEnter={() => setAvatarExpression('XD')}
+            onMouseLeave={() => setAvatarExpression('')}
+          >
             <span className="section-kicker"><span /> {TRANSLATIONS[lang].plate4Kicker}</span>
             <h3>{TRANSLATIONS[lang].plate4Title}</h3>
             <p className="plate-desc">
