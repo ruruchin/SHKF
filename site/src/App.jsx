@@ -986,7 +986,6 @@ function App() {
             <strong>{TRANSLATIONS[lang].footColDownload}</strong>
             <a href="#download">{TRANSLATIONS[lang].footLinkProduct}</a>
             <a href="#docs">{TRANSLATIONS[lang].footLinkDocs}</a>
-            <a href="#changelog">{TRANSLATIONS[lang].footLinkChangelog}</a>
             <a href="#press">{TRANSLATIONS[lang].footLinkPress}</a>
             <a href="#releases">{TRANSLATIONS[lang].footLinkReleases}</a>
           </div>
@@ -1097,23 +1096,6 @@ function NewsArticlePage({ article, lang = 'en' }) {
           </div>
           <div className="article-actions">
             <a className="dark-cta" href="#download">{lang === 'en' ? 'Download App' : 'Скачать приложение'} <span>→</span></a>
-          </div>
-        </div>
-      </section>
-
-      <section className="article-changelog">
-        <div className="changelog-inner">
-          <div className="section-kicker dark"><span /> {TRANSLATIONS[lang].articleChangelog}</div>
-          <div className="changelog-timeline">
-            {article.highlights[lang].map((highlight, index) => (
-              <div className="changelog-entry article-reveal" key={index}>
-                <div className="changelog-dot" />
-                <div className="changelog-content">
-                  <span className="changelog-step">{lang === 'en' ? 'Step' : 'Шаг'} {index + 1}</span>
-                  <p>{highlight}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
