@@ -95,6 +95,13 @@
   z-index: 1;
 }
 
+.agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main .agent-composer-shell {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+}
+
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main .agent-composer-status,
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main .agent-suggestions {
   position: relative;
@@ -109,6 +116,7 @@
   justify-content: flex-start;
 }
 
+.agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main .agent-composer-attachments,
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main .agent-composer {
   position: relative;
   z-index: 1;
@@ -295,6 +303,12 @@
   cursor: pointer;
 }
 
+/* В режиме composer не перехватывать клики и фокус у поля ввода */
+.agent-chat.agent-vtuber-composer .agent-vtuber-stage.agent-live2d-ready,
+.agent-chat.agent-vtuber-composer .agent-vtuber-stage.agent-live2d-ready .agent-live2d-canvas {
+  pointer-events: none;
+}
+
 .agent-live2d-error {
   position: absolute;
   left: 8px;
@@ -317,6 +331,16 @@
 .agent-chat.agent-vtuber-has-live2d .agent-vtuber-float.is-alive .agent-vtuber-stage,
 .agent-vtuber-stage.agent-live2d-ready {
   animation: none !important;
+}
+
+/* Music dance — loops until the next user message */
+.agent-vtuber-float.is-dancing .agent-vtuber-stage {
+  animation: agent-vtuber-dance 0.92s ease-in-out infinite !important;
+  transform-origin: center bottom;
+}
+
+.agent-vtuber-float.is-dancing[data-vts-emotion="joy"] .agent-vtuber-stage {
+  animation: agent-vtuber-dance 0.92s ease-in-out infinite !important;
 }
 
 /* Live2D emotion reactions — stage motion + sustained mood */
@@ -473,6 +497,17 @@
   45% { transform: rotate(-3deg); }
   70% { transform: rotate(2deg); }
   88% { transform: rotate(-1deg); }
+}
+
+@keyframes agent-vtuber-dance {
+  0%, 100% { transform: translateY(0) rotate(0deg) scale(1); }
+  12% { transform: translateY(-4px) rotate(-1.8deg) scale(1.008); }
+  25% { transform: translateY(-11px) rotate(-3deg) scale(1.03); }
+  38% { transform: translateY(-5px) rotate(2.2deg) scale(1.015); }
+  50% { transform: translateY(-13px) rotate(3deg) scale(1.035); }
+  62% { transform: translateY(-6px) rotate(-2.5deg) scale(1.02); }
+  75% { transform: translateY(-10px) rotate(-1.5deg) scale(1.028); }
+  88% { transform: translateY(-3px) rotate(1.8deg) scale(1.01); }
 }
 
 .agent-vtuber-float.agent-vtuber-clicked .agent-vtuber-stage {

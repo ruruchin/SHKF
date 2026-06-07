@@ -52,11 +52,12 @@ export const DEFAULT_APP_SETTINGS = {
     knowledgeAutoIngest: false,
     konstanciaCloudUrl: '',
     konstanciaCloudApiKey: '',
+    desktopAgentEnabled: true,
   },
   vtubeStudio: {
     enabled: false,
     live2dModelPath: '',
-    live2dCostume: 'costume_v0000.exp3.json',
+    live2dCostume: 'costume_v0052.exp3.json',
     showDock: true,
     emotions: {
       neutral: '',
@@ -134,7 +135,7 @@ function normalizeLive2dSettings(raw = {}) {
   return {
     enabled: src.enabled === true,
     live2dModelPath: String(src.live2dModelPath || '').trim(),
-    live2dCostume: String(src.live2dCostume || 'costume_v0000.exp3.json').trim() || 'costume_v0000.exp3.json',
+    live2dCostume: String(src.live2dCostume || 'costume_v0052.exp3.json').trim() || 'costume_v0052.exp3.json',
     showDock: src.showDock !== false,
     emotions: {
       neutral: String(src.emotions?.neutral || '').trim(),

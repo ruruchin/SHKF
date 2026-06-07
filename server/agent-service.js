@@ -11,9 +11,13 @@ import { normalizeImageForGigaChat } from './gigachat-image.js';
 import {
   konstanciaChat,
   konstanciaEmbed,
+  isKonstanciaBackendReady,
   isKonstanciaLlmReady,
   isKonstanciaLlmTrained,
+  isKonstanciaYandexConfigured,
 } from './konstancia-llm-service.js';
+import { formatKonstanciaLlmError, sanitizeKonstanciaReply } from '../shared/konstancia-llm-errors.js';
+import { buildKonstanciaImageContext } from './konstancia-vision.js';
 
 const OAUTH_URL = 'https://ngw.devices.sberbank.ru:9443/api/v2/oauth';
 const CHAT_URL = 'https://gigachat.devices.sberbank.ru/api/v1/chat/completions';
@@ -160,21 +164,30 @@ export class AgentService {
     return (this.settings.provider || 'konstancia') === 'konstancia';
   }
 
+  isKonstanciaCloudConfigured() {
+    return !!(this.settings.konstanciaCloudUrl || process.env.KONSTANCIA_CLOUD_URL || '').trim();
+  }
+
   isConfigured() {
-    if (this.isKonstanciaProvider()) return isKonstanciaLlmReady();
+    if (this.isKonstanciaProvider()) {
+      return isKonstanciaBackendReady() || this.isKonstanciaCloudConfigured();
+    }
     return this.settings.provider === 'gigachat' && !!this.settings.credentials;
   }
 
   getStatus() {
     const konstancia = this.isKonstanciaProvider();
+    const remote = konstancia && (isKonstanciaYandexConfigured() || this.isKonstanciaCloudConfigured());
     return {
       configured: this.isConfigured(),
-      provider: konstancia ? 'konstancia' : this.settings.provider,
+      provider: konstancia ? 'konstancia' : 'gigachat',
       model: konstancia ? 'Konstancia' : this.settings.model,
       scope: this.settings.scope,
-      visionCapable: konstancia ? false : isGigaChatVisionModel(this.settings.model),
-      konstanciaTrained: konstancia ? isKonstanciaLlmTrained() : false,
-      konstanciaLocal: konstancia,
+      visionCapable: konstancia ? isKonstanciaYandexConfigured() : isGigaChatVisionModel(this.settings.model),
+      konstanciaTrained: konstancia ? (isKonstanciaLlmTrained() || remote) : false,
+      konstanciaLocal: konstancia && !remote,
+      konstanciaCloud: false,
+      konstanciaCloudUrl: '',
     };
   }
 
@@ -293,6 +306,51 @@ export class AgentService {
     return messages;
   }
 
+  buildKonstanciaMessages({
+    message,
+    history = [],
+    task = null,
+    systemPrompt = AGENT_SYSTEM_PROMPT,
+    allowFollowups = false,
+    images = [],
+    learnedExperienceBlock = '',
+  }) {
+    let system = systemPrompt;
+    if (!allowFollowups) {
+      system = `${system}\n\n---\nНе добавляй блок FOLLOWUPS. Отвечай только на последнее сообщение пользователя, без шаблона «анализ задачи» и без оценки часов, если об этом не спросили.`;
+    }
+    if (task?.id) {
+      system = `${system}\n\n---\nКонтекст задачи Redmine (только если пользователь явно просит разбор/оценку/промпт по задаче — иначе игнорируй):\n${buildTaskContextBlock(task)}`;
+    }
+    if (learnedExperienceBlock) {
+      system = `${system}\n\n---\n${learnedExperienceBlock}`;
+    }
+
+    const messages = [{ role: 'system', content: system.slice(0, 28000) }];
+
+    for (const item of history.slice(-10)) {
+      if (!item?.role || item.role === 'system') continue;
+      let content = String(item.content || '').slice(0, 8000);
+      const histImages = Array.isArray(item.images) ? item.images : [];
+      if (!content && !histImages.length) continue;
+      if (item.imageContext) {
+        content = content ? `${content}\n\n---\n${item.imageContext}` : item.imageContext;
+      } else if (histImages.length) {
+        const names = histImages
+          .map((img) => String(img?.filename || 'изображение').trim())
+          .filter(Boolean)
+          .join(', ');
+        content = `${content || 'Сообщение с изображением'}\n[Ранее прикреплено: ${names}]`;
+      }
+      messages.push({ role: item.role, content: content || ' ' });
+    }
+
+    const prompt = String(message || '').trim().slice(0, 12000);
+    messages.push({ role: 'user', content: prompt || ' ' });
+
+    return messages;
+  }
+
   async chat({
     message,
     history = [],
@@ -310,21 +368,44 @@ export class AgentService {
       return { ok: false, message: 'Пустое сообщение' };
     }
     if (this.isKonstanciaProvider()) {
-      if (hasImages) {
-        return { ok: false, message: 'Локальная Konstancia пока без vision — опишите картинку текстом или переключитесь на GigaChat.' };
-      }
-      if (!isKonstanciaLlmReady()) {
+      if (!isKonstanciaBackendReady() && !this.isKonstanciaCloudConfigured()) {
         return {
           ok: false,
-          message: 'Локальная нейросеть Konstancia не установлена. Выполните: pip install -r ml/requirements.txt && npm run ml:train:chat',
+          message: 'Konstancia сейчас недоступна. Попробуйте позже или перезапустите приложение.',
         };
       }
-      const messages = this.buildMessages({
-        message,
+
+      let effectiveMessage = String(message || '').trim();
+      let imageContext = '';
+
+      if (hasImages) {
+        if (!isKonstanciaYandexConfigured()) {
+          return {
+            ok: false,
+            message: 'Konstancia пока не может разобрать картинку без облачного ключа. Опишите изображение словами.',
+          };
+        }
+        imageContext = await buildKonstanciaImageContext(images);
+        if (!imageContext) {
+          return {
+            ok: false,
+            message: 'Не удалось проанализировать изображение. Попробуйте другое фото или опишите его текстом.',
+          };
+        }
+        effectiveMessage = [
+          effectiveMessage || 'Пользователь прикрепил изображение.',
+          '---',
+          imageContext,
+        ].join('\n\n');
+      }
+
+      const messages = this.buildKonstanciaMessages({
+        message: effectiveMessage,
         history,
         task,
         systemPrompt,
         allowFollowups,
+        images: [],
         learnedExperienceBlock,
       });
       const result = await konstanciaChat({
@@ -332,14 +413,24 @@ export class AgentService {
         maxTokens: maxTokens,
         temperature,
       });
-      if (!result.ok) return result;
+      if (!result.ok) {
+        return { ...result, message: formatKonstanciaLlmError(result.message) };
+      }
       const { content, followups } = parseAgentResponse(result.content);
+      const finalContent = sanitizeKonstanciaReply(String(content || result.content || '').trim());
+      if (!finalContent) {
+        return {
+          ok: false,
+          message: 'Konstancia вернула пустой ответ. Переформулируйте вопрос или подождите — первый ответ после запуска может занять 2–5 минут.',
+        };
+      }
       return {
         ok: true,
-        content: content || result.content,
+        content: finalContent,
         followups,
         model: result.model || 'konstancia',
         usage: null,
+        imageContext: imageContext || undefined,
       };
     }
 
@@ -404,18 +495,28 @@ export class AgentService {
       }
 
       const raw = res.json?.choices?.[0]?.message?.content?.trim();
-      if (!raw) {
-        return { ok: false, message: 'Пустой ответ от модели' };
-      }
-
-      const { content, followups } = parseAgentResponse(raw);
-      if (!content) {
-        return { ok: false, message: 'Пустой ответ от модели' };
+      const { content, followups } = parseAgentResponse(raw || '');
+      const finalContent = String(content || raw || '').trim();
+      if (!finalContent) {
+        if (followups.length) {
+          return {
+            ok: true,
+            content: followups.map((q, i) => `${i + 1}. ${q}`).join('\n'),
+            followups,
+            model: res.json?.model || this.settings.model,
+            usage: res.json?.usage || null,
+            attachmentFileIds,
+          };
+        }
+        return {
+          ok: false,
+          message: 'GigaChat вернул пустой ответ. Повторите вопрос или выберите GigaChat (Lite) в шапке чата.',
+        };
       }
 
       return {
         ok: true,
-        content,
+        content: finalContent,
         followups,
         model: res.json?.model || this.settings.model,
         usage: res.json?.usage || null,

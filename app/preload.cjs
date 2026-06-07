@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld('api', {
   openPluginFolder: () => ipcRenderer.invoke('open-plugin-folder'),
   openKeyboardMapper: () => ipcRenderer.invoke('open-keyboard-mapper'),
   sendMakePrompt: (prompt) => ipcRenderer.invoke('figma-make-send', prompt),
+  agentFigmaMakeSend: (payload) => ipcRenderer.invoke('agent-figma-make-send', payload),
   speechSupported: () => ipcRenderer.invoke('speech-supported'),
   speechListLanguages: () => ipcRenderer.invoke('speech-list-languages'),
   speechStart: (lang) => ipcRenderer.invoke('speech-start', { lang }),
@@ -82,7 +83,28 @@ contextBridge.exposeInMainWorld('api', {
   webtabClearSession: (partition) => ipcRenderer.invoke('webtab-clear-session', partition),
   agentGetStatus: () => ipcRenderer.invoke('agent-get-status'),
   agentGetKonstanciaLlmStatus: () => ipcRenderer.invoke('agent-get-konstancia-llm-status'),
+  agentChatShareColleagues: () => ipcRenderer.invoke('agent-chat-share-colleagues'),
+  agentChatShareSend: (payload) => ipcRenderer.invoke('agent-chat-share-send', payload),
+  agentChatShareIncoming: (payload) => ipcRenderer.invoke('agent-chat-share-incoming', payload),
+  agentChatShareGet: (payload) => ipcRenderer.invoke('agent-chat-share-get', payload),
+  agentChatShareAccept: (payload) => ipcRenderer.invoke('agent-chat-share-accept', payload),
+  agentChatShareDismiss: (payload) => ipcRenderer.invoke('agent-chat-share-dismiss', payload),
+  teamChatColleagues: () => ipcRenderer.invoke('team-chat-colleagues'),
+  teamChatDirectory: (payload) => ipcRenderer.invoke('team-chat-directory', payload),
+  teamChatListRooms: () => ipcRenderer.invoke('team-chat-list-rooms'),
+  teamChatListMessages: (payload) => ipcRenderer.invoke('team-chat-list-messages', payload),
+  teamChatOpenDm: (payload) => ipcRenderer.invoke('team-chat-open-dm', payload),
+  teamChatOpenTaskRoom: (payload) => ipcRenderer.invoke('team-chat-open-task-room', payload),
+  teamChatSendMessage: (payload) => ipcRenderer.invoke('team-chat-send-message', payload),
+  teamChatUploadAttachment: (payload) => ipcRenderer.invoke('team-chat-upload-attachment', payload),
+  teamChatMarkRead: (payload) => ipcRenderer.invoke('team-chat-mark-read', payload),
+  teamChatPinRoom: (payload) => ipcRenderer.invoke('team-chat-pin-room', payload),
+  teamChatUnpinRoom: (payload) => ipcRenderer.invoke('team-chat-unpin-room', payload),
+  teamChatPinMessage: (payload) => ipcRenderer.invoke('team-chat-pin-message', payload),
+  teamChatUnpinMessage: (payload) => ipcRenderer.invoke('team-chat-unpin-message', payload),
+  teamChatForwardMessage: (payload) => ipcRenderer.invoke('team-chat-forward-message', payload),
   agentSendMessage: (payload) => ipcRenderer.invoke('agent-send-message', payload),
+  agentPlayYandexMusic: (payload) => ipcRenderer.invoke('agent-play-yandex-music', payload),
   agentPickImage: () => ipcRenderer.invoke('agent-pick-image'),
   agentTestConnection: () => ipcRenderer.invoke('agent-test-connection'),
   agentSaveCredentials: (creds) => ipcRenderer.invoke('agent-save-credentials', creds),
@@ -144,6 +166,17 @@ contextBridge.exposeInMainWorld('api', {
   },
   agentProcessInsights: (payload) => ipcRenderer.invoke('agent-process-insights', payload),
   agentNotifyBackground: (payload) => ipcRenderer.invoke('agent-notify-background', payload),
+  showPillNotify: (payload) => ipcRenderer.invoke('pill-notify-show', payload),
+  onPillNotifyFocusAgent: (cb) => {
+    const fn = () => cb();
+    ipcRenderer.on('pill-notify-focus-agent', fn);
+    return () => ipcRenderer.removeListener('pill-notify-focus-agent', fn);
+  },
+  onPillNotifyInApp: (cb) => {
+    const fn = (_e, payload) => cb(payload);
+    ipcRenderer.on('pill-notify-in-app', fn);
+    return () => ipcRenderer.removeListener('pill-notify-in-app', fn);
+  },
   nanobananaGetModels: () => ipcRenderer.invoke('nanobanana-get-models'),
   nanobananaGetCredits: () => ipcRenderer.invoke('nanobanana-get-credits'),
   nanobananaGenerate: (payload) => ipcRenderer.invoke('nanobanana-generate', payload),
@@ -188,6 +221,9 @@ contextBridge.exposeInMainWorld('api', {
   onMetaskTaskUpdates: (cb) => ipcRenderer.on('metask-task-updates', (_e, d) => cb(d)),
   onMetaskCommentUpdates: (cb) => ipcRenderer.on('metask-comment-updates', (_e, d) => cb(d)),
   onMetaskOpenTask: (cb) => ipcRenderer.on('metask-open-task', (_e, d) => cb(d)),
+  onKonstanciaOpenShare: (cb) => ipcRenderer.on('konstancia-open-share', (_e, d) => cb(d)),
+  onTeamchatKonstanciaShareSent: (cb) => ipcRenderer.on('teamchat-konstancia-share-sent', (_e, d) => cb(d)),
+  onTeamchatSharePingFailed: (cb) => ipcRenderer.on('teamchat-konstancia-share-ping-failed', (_e, d) => cb(d)),
   onMetaskIssueActive: (cb) => ipcRenderer.on('metask-issue-active', (_e, d) => cb(d)),
   onNotesUpdated: (cb) => ipcRenderer.on('notes-updated', (_e, d) => cb(d)),
 });

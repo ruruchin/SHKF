@@ -257,13 +257,16 @@ export class MetaskService {
   }
 
   configure(settings = {}) {
-    this.settings = {
+    const next = {
       baseUrl: normalizeBaseUrl(settings.baseUrl),
       boardPath: settings.boardPath || '/kanban/board',
       username: settings.username || '',
       password: settings.password || '',
       apiKey: settings.apiKey || '',
     };
+    const credsChanged = next.baseUrl !== this.settings?.baseUrl || next.apiKey !== this.settings?.apiKey;
+    this.settings = next;
+    if (credsChanged) this.avatarCache?.clear?.();
   }
 
   getBoardUrl() {
@@ -1091,12 +1094,16 @@ export class MetaskService {
       if (this.isPublicAvatarUrl(absolute)) {
         result = this.withAvatarSize(absolute);
       } else {
-        result = await this.imageToDataUrl(absolute);
+        result = await this.imageToDataUrl(this.withApiKey(absolute));
       }
     }
 
     if (!result) {
-      result = await this.imageToDataUrl(`${baseUrl}/users/${id}/avatar`);
+      result = await this.imageToDataUrl(this.withApiKey(`${baseUrl}/users/${id}/avatar`));
+    }
+
+    if (result && !result.startsWith('data:image/') && !this.isPublicAvatarUrl(result)) {
+      result = null;
     }
 
     this.avatarCache.set(id, result);

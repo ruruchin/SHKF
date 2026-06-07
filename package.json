@@ -1,6 +1,6 @@
 {
   "name": "shkf",
-  "version": "1.2.17",
+  "version": "1.2.18",
   "description": "SHKF — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",
@@ -20,16 +20,23 @@
     "site:preview": "npm --prefix site run preview",
     "seed:supabase": "node supabase/seed-users.mjs",
     "seed:employees": "node supabase/seed-employees.mjs",
+    "seed:test-user": "node supabase/seed-test-user.mjs",
     "pik-folder:build-mobbin": "node scripts/build-pik-folder-mobbin-catalog.mjs",
     "ml:export-dataset": "node scripts/export-agent-training-dataset.mjs",
     "ml:export-chat": "node scripts/export-konstancia-chat-dataset.mjs",
-    "ml:train": "npm run ml:export-chat && npm run ml:export-dataset && python ml/train_all.py",
-    "ml:train:chat": "npm run ml:export-chat && python ml/train_chat_model.py",
-    "ml:train:intent": "npm run ml:export-dataset && python ml/train_intent_classifier.py",
-    "ml:train:retrieval": "python ml/train_retrieval_embeddings.py",
+    "ml:train": "npm run ml:export-chat && npm run ml:export-dataset && node scripts/run-python.mjs ml/train_all.py",
+    "ml:prepare-cloud": "node scripts/ml-prepare-cloud.mjs",
+    "ml:download-chat-base": "node scripts/run-python.mjs ml/download_toucan_base.py",
+    "ml:download-toucan": "node scripts/run-python.mjs ml/download_toucan_base.py",
+    "ml:import-toucan": "node scripts/run-python.mjs ml/import_toucan_sft.py",
+    "ml:download-lora": "node scripts/run-python.mjs ml/download_lora_from_hf.py",
+    "ml:train:chat": "npm run ml:prepare-cloud",
+    "ml:train:chat:local": "npm run ml:import-toucan && npm run ml:export-chat && node scripts/run-python.mjs ml/train_chat_model.py",
+    "ml:train:intent": "npm run ml:export-dataset && node scripts/run-python.mjs ml/train_intent_classifier.py",
+    "ml:train:retrieval": "node scripts/run-python.mjs ml/train_retrieval_embeddings.py",
     "ml:ingest-knowledge": "node scripts/ingest-knowledge-sources.mjs",
-    "ml:train:knowledge": "npm run ml:ingest-knowledge && npm run ml:export-chat && npm run ml:train:chat && npm run ml:train:retrieval",
-    "ml:serve": "cd ml && uvicorn serve_api:app --host 0.0.0.0 --port 8080",
+    "ml:train:knowledge": "npm run ml:ingest-knowledge && npm run ml:prepare-cloud && npm run ml:train:retrieval",
+    "ml:serve": "cd ml && node ../scripts/run-python.mjs -m uvicorn serve_api:app --host 0.0.0.0 --port 8080",
     "ml:upload-hf": "node scripts/upload-konstancia-to-hf.mjs"
   },
   "build": {
@@ -81,6 +88,13 @@
       {
         "from": "scripts",
         "to": "scripts",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "site/public/live2d-model",
+        "to": "live2d-model",
         "filter": [
           "**/*"
         ]

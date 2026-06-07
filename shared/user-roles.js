@@ -29,11 +29,11 @@ export const USER_ROLES = {
 };
 
 export const ROLE_PAGES = {
-  designer: ['search', 'hotkeys', 'makeit', 'templates', 'nanobanana', 'bannermockup', 'metask', 'mail', 'agent', 'notes', 'setup', 'settings'],
+  designer: ['search', 'hotkeys', 'templates', 'nanobanana', 'bannermockup', 'metask', 'mail', 'agent', 'notes', 'setup', 'settings'],
   frontend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'settings'],
   backend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'settings'],
   pm: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'notes', 'settings'],
-  full: ['search', 'hotkeys', 'makeit', 'templates', 'nanobanana', 'bannermockup', 'metask', 'agent', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
+  full: ['search', 'hotkeys', 'templates', 'nanobanana', 'bannermockup', 'metask', 'agent', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
 };
 
 export const ROLE_DEFAULT_PAGE = {

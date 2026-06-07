@@ -2,6 +2,16 @@ import { spawn } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { formatKonstanciaLlmError } from '../shared/konstancia-llm-errors.js';
+import {
+  configureKonstanciaYandex,
+  getKonstanciaYandexStatus,
+  isKonstanciaYandexConfigured,
+  konstanciaMessageContent,
+  konstanciaYandexChat,
+} from './konstancia-yandex-llm.js';
+
+export { configureKonstanciaYandex, isKonstanciaYandexConfigured, konstanciaMessageContent };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -92,10 +102,17 @@ export function isKonstanciaLlmTrained() {
 }
 
 export function isKonstanciaLlmReady() {
-  return fs.existsSync(INFERENCE_CHAT);
+  return fs.existsSync(INFERENCE_CHAT) && isKonstanciaLlmTrained();
+}
+
+export function isKonstanciaBackendReady() {
+  return isKonstanciaYandexConfigured() || useCloud() || isKonstanciaLlmReady();
 }
 
 export async function getKonstanciaLlmStatus() {
+  if (isKonstanciaYandexConfigured()) {
+    return getKonstanciaYandexStatus();
+  }
   if (useCloud()) {
     try {
       const headers = cloudConfig.apiKey ? { Authorization: `Bearer ${cloudConfig.apiKey}` } : {};
@@ -123,6 +140,13 @@ export async function getKonstanciaLlmStatus() {
 }
 
 export async function konstanciaChat({ messages = [], maxTokens = 640, temperature = 0.75 } = {}) {
+  if (isKonstanciaYandexConfigured()) {
+    const result = await konstanciaYandexChat({ messages, maxTokens, temperature });
+    if (!result.ok) {
+      return { ...result, message: formatKonstanciaLlmError(result.message) };
+    }
+    return result;
+  }
   if (useCloud()) {
     try {
       const parsed = await cloudFetch('/v1/chat', {
@@ -149,8 +173,11 @@ export async function konstanciaChat({ messages = [], maxTokens = 640, temperatu
   try {
     const raw = await runPython([INFERENCE_CHAT, 'chat', payload], { timeoutMs: 300000 });
     const parsed = JSON.parse(raw);
-    if (!parsed.ok && !parsed.content) {
-      return { ok: false, message: parsed.message || 'empty Konstancia response' };
+    if (parsed.ok === false || !parsed.content) {
+      return {
+        ok: false,
+        message: formatKonstanciaLlmError(parsed.message || 'empty Konstancia response'),
+      };
     }
     return {
       ok: true,
@@ -160,7 +187,7 @@ export async function konstanciaChat({ messages = [], maxTokens = 640, temperatu
       usage: null,
     };
   } catch (err) {
-    return { ok: false, message: err?.message || String(err) };
+    return { ok: false, message: formatKonstanciaLlmError(err?.message || String(err)) };
   }
 }
 

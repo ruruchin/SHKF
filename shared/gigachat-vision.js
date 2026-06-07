@@ -25,4 +25,4 @@ export const GIGACHAT_LITE_MOBBIN_HINT =
   'Режим Lite: без анализа скриншота Mobbin — структурный макет по вашему запросу и названию референса. Для копии 1:1 нужны токены Pro/Max.';
 
 export const MAX_AGENT_IMAGE_BYTES = 15 * 1024 * 1024;
-export const MAX_AGENT_IMAGES_PER_MESSAGE = 1;
+export const MAX_AGENT_IMAGES_PER_MESSAGE = 4;

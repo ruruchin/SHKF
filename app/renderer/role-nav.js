@@ -33,11 +33,11 @@
   };
 
   const ROLE_PAGES = {
-    designer: ['search', 'pikfolder', 'makeit', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'mail', 'agent', 'notes', 'setup', 'settings'],
-    frontend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'settings'],
-    backend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'settings'],
-    pm: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'notes', 'settings'],
-    full: ['search', 'pikfolder', 'makeit', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'agent', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
+    designer: ['search', 'pikfolder', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'mail', 'agent', 'teamchat', 'notes', 'setup', 'settings'],
+    frontend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'teamchat', 'settings'],
+    backend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'teamchat', 'settings'],
+    pm: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'teamchat', 'notes', 'settings'],
+    full: ['search', 'pikfolder', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'agent', 'teamchat', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
   };
 
   const ROLE_DEFAULT_PAGE = {
@@ -91,11 +91,13 @@
     document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'));
     if (pageId !== 'metask') window.detachMetaskBoard?.();
     if (pageId !== 'mail') window.detachMailView?.();
+    if (pageId !== 'teamchat') window.deactivateTeamChatPage?.();
     const navBtn = document.querySelector(`.nav-item[data-page="${pageId}"]`);
     navBtn?.classList.add('active');
     document.getElementById(`page-${pageId}`)?.classList.add('active');
     if (pageId === 'metask') window.activateMetaskPage?.();
     if (pageId === 'agent') window.activateAgentPage?.();
+    if (pageId === 'teamchat') window.activateTeamChatPage?.();
     if (pageId === 'nanobanana') window.activateNanobananaPage?.();
     if (pageId === 'magnific') window.activateMagnificPage?.();
     if (pageId === 'bannermockup') window.activateBannerMockupPage?.();

@@ -117,7 +117,8 @@
   width: 28px;
   height: 28px;
   display: block;
-  border-radius: 4px;
+  object-fit: cover;
+  border-radius: 6px;
 }
 .ob-brand-icon {
   width: 32px;
@@ -330,7 +331,8 @@
   width: 48px;
   height: 48px;
   display: block;
-  border-radius: 6px;
+  object-fit: cover;
+  border-radius: 10px;
 }
 @keyframes obSpin { to { transform: rotate(360deg); } }
 @keyframes obLogoPop {

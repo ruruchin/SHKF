@@ -12,5 +12,12 @@
     "position": "Frontend-разработчик",
     "role": "frontend",
     "password": "ChangeMe123!"
+  },
+  {
+    "username": "test",
+    "full_name": "test",
+    "position": "Тестовый аккаунт",
+    "role": "designer",
+    "password": "TestChat123!"
   }
 ]

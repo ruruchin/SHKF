@@ -8,7 +8,7 @@
 |-------|--------|--------|
 | Маршрутизация запросов | `konstancia-intent` (ruBERT) | `ml/data/konstancia-intents.jsonl` |
 | Семантический поиск | `konstancia-retrieval` (MiniLM) | Redmine + **статьи из интернета** |
-| Диалог и анализ | `konstancia-chat` (Qwen + LoRA) | диалоги + reasoning + Q&A из статей |
+| Диалог и анализ | `konstancia-chat` (Toucan-Qwen2.5-7B + LoRA) | Konstancia + Toucan multi-turn SFT |
 | Актуальные факты | RAG + DuckDuckGo/Wikipedia | runtime, без переобучения |
 
 ## Фазы внедрения (по материалам Habr)
@@ -77,7 +77,15 @@ npm run ml:export-chat && npm run ml:train:chat
 
 ## Где обучать
 
-GPU pod (RunPod / Yandex Cloud): `npm run ml:train:knowledge` → `npm run ml:upload-hf -- user/konstancia-chat`.
+**Только в облаке** (ПК не нагружается): см. [`ml/CLOUD_TRAIN.md`](./CLOUD_TRAIN.md).
+
+```bash
+# На ПК — секунды, без GPU:
+npm run ml:prepare-cloud
+
+# На GPU-поде (RunPod / Yandex):
+cd ml && bash cloud_train.sh
+```
 
 ## Как модель «думает»
 

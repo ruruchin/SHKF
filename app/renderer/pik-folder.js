@@ -126,8 +126,7 @@
 
   function markImageLoaded(img) {
     img.closest('.pik-app-card')?.classList.add('is-loaded');
-    img.closest('.pik-card')?.classList.add('is-loaded');
-    img.closest('.pik-screen-card')?.classList.add('is-loaded');
+    img.closest('.pik-ref-card')?.classList.add('is-loaded');
     const frame = img.closest('.pik-viewer-frame');
     if (frame) {
       frame.classList.add('is-loaded');
@@ -424,7 +423,6 @@
 
   function toggleCompanyChrome(on) {
     $('pik-filters')?.classList.toggle('hidden', !!on);
-    $('pik-app-bar')?.classList.toggle('hidden', !on);
     $('pik-scroll')?.classList.toggle('pik-scroll--company', !!on);
     $('pik-app')?.classList.toggle('pik-app--company', !!on);
   }
@@ -503,20 +501,9 @@
         </div>
         <nav class="pik-company-tabs" id="pik-company-tabs" aria-label="Тип экрана"></nav>
       </div>
-      <div class="pik-company-toolbar">
-        <p class="pik-company-count" id="pik-company-count"></p>
-      </div>
     `;
     bindEmblems(hero);
     renderCompanyTabs(app);
-    const countEl = $('pik-company-count');
-    if (countEl) {
-      const shown = state.items.length;
-      const total = app.screen_count ?? shown;
-      countEl.textContent = total
-        ? `Показано ${shown} из ${total} экранов`
-        : 'Нет экранов для выбранных фильтров';
-    }
   }
 
   function renderSimilarApps(app) {
@@ -577,34 +564,72 @@
     return 'Web';
   }
 
+  const REF_CARD_ICON_PHONE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/></svg>';
+  const REF_CARD_ICON_GLOBE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>';
+  const REF_CARD_ICON_LAYOUT = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>';
+  const REF_CARD_ICON_ARROW = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+  function appPlatformClass(platform) {
+    if (platform === 'ios') return 'ios';
+    if (platform === 'web') return 'web';
+    return 'both';
+  }
+
   function appPreviewHtml(app) {
     const previews = (app.previews || []).filter(Boolean);
     const cover = previews[0] || app.cover_url;
+    const platKey = appPlatformClass(app.platform);
+    const platLabel = platformLabel(app.platform);
+    const platBadge = `<span class="pik-ref-card-plat pik-ref-card-plat--${platKey === 'ios' ? 'ios' : 'web'}">${escapeHtml(platLabel)}</span>`;
+
     if (!cover) {
-      return `<div class="pik-app-previews pik-app-previews--empty">${emblemHtml(app, 'pik-app-emblem pik-app-emblem--hero')}</div>`;
+      return `
+        <div class="pik-ref-card-media pik-ref-card-media--empty">
+          ${emblemHtml(app, 'pik-app-emblem pik-app-emblem--hero')}
+        </div>`;
     }
+
     if (previews.length <= 1) {
-      return `<div class="pik-app-previews pik-app-previews--1"><img class="pik-app-cover" data-src="${escapeHtml(thumbSrc(cover))}" alt="" loading="eager" decoding="async" /></div>`;
+      return `
+        <div class="pik-ref-card-media">
+          <div class="pik-ref-card-media-inner">
+            <img class="pik-ref-card-img" data-src="${escapeHtml(thumbSrc(cover))}" alt="" loading="eager" decoding="async" />
+          </div>
+          ${platBadge}
+        </div>`;
     }
+
     const count = Math.min(4, previews.length);
-    const cls = `pik-app-previews--${count}`;
     return `
-      <div class="pik-app-previews ${cls}">
-        ${previews.slice(0, 4).map((src) => `<img data-src="${escapeHtml(thumbSrc(src))}" alt="" loading="eager" decoding="async" />`).join('')}
+      <div class="pik-ref-card-media">
+        <div class="pik-app-preview-mosaic pik-app-preview-mosaic--${count}">
+          ${previews.slice(0, 4).map((src) => `<img data-src="${escapeHtml(thumbSrc(src))}" alt="" loading="eager" decoding="async" />`).join('')}
+        </div>
+        ${platBadge}
       </div>`;
   }
 
   function appCardHtml(app, i) {
     const countLabel = `${app.screen_count} ${app.screen_count === 1 ? 'экран' : app.screen_count < 5 ? 'экрана' : 'экранов'}`;
+    const platKey = appPlatformClass(app.platform);
+    const isIos = platKey === 'ios';
+    const platIcon = isIos ? REF_CARD_ICON_PHONE : REF_CARD_ICON_GLOBE;
     return `
-      <article class="pik-app-card" style="--pik-i:${i % 24}" data-app-key="${escapeHtml(app.id)}" tabindex="0" role="button" aria-label="${escapeHtml(app.title)}">
+      <article class="pik-ref-card pik-app-card pik-ref-card--${isIos ? 'ios' : 'web'}" style="--pik-i:${i % 24}" data-app-key="${escapeHtml(app.id)}" tabindex="0" role="button" aria-label="${escapeHtml(app.title)}">
         ${appPreviewHtml(app)}
-        <footer class="pik-app-footer">
-          ${emblemHtml(app)}
-          <div class="pik-app-footer-text">
-            <p class="pik-app-name">${escapeHtml(app.title)}</p>
-            <p class="pik-app-meta">${escapeHtml(countLabel)} · ${escapeHtml(platformLabel(app.platform))}</p>
+        <div class="pik-ref-card-body">
+          <div class="pik-ref-card-head">
+            ${emblemHtml(app, 'pik-app-emblem pik-app-emblem--card')}
+            <h3 class="pik-ref-card-title">${escapeHtml(app.title)}</h3>
           </div>
+          <div class="pik-ref-card-meta">
+            <span class="pik-ref-card-meta-item">${platIcon}<span>${escapeHtml(platformLabel(app.platform))}</span></span>
+            <span class="pik-ref-card-meta-item">${REF_CARD_ICON_LAYOUT}<span>${escapeHtml(countLabel)}</span></span>
+          </div>
+        </div>
+        <footer class="pik-ref-card-footer">
+          <span class="pik-ref-card-more">Открыть</span>
+          <span class="pik-ref-card-arrow">${REF_CARD_ICON_ARROW}</span>
         </footer>
       </article>
     `;
@@ -646,7 +671,7 @@
     root.querySelectorAll('.pik-app-card').forEach((card) => {
       if (card.dataset.bound) return;
       card.dataset.bound = '1';
-      card.querySelectorAll('.pik-app-cover, .pik-app-previews img').forEach((img) => {
+      card.querySelectorAll('.pik-ref-card-img, .pik-app-preview-mosaic img').forEach((img) => {
         const raw = img.dataset.src || img.getAttribute('src');
         if (raw) {
           hydrateImage(img, raw);
@@ -991,52 +1016,50 @@
 
   function cardHtml(item, i) {
     const src = resolveImageSrc(item);
-    const videoBadge = item.is_video ? '<span class="pik-card-badge">Video</span>' : '';
     const plat = String(item.platform || 'web').toLowerCase() === 'ios' ? 'iOS' : 'Web';
-    const platClass = plat === 'Web' ? 'pik-card-platform--web' : '';
-    const mediaAspectClass = plat === 'iOS' ? 'pik-screen-card-media-wrap--ios' : 'pik-screen-card-media-wrap--web';
+    const isIos = plat === 'iOS';
     const screenLabel = item.screen_type_label || item.subtitle?.split('·')[0]?.trim() || 'Экран';
+    const title = state.appKey ? screenLabel : item.title;
+    const metaScreen = screenLabel || sourceLabel(item.source);
+    const metaSource = item.subtitle || sourceLabel(item.source);
+    const platIcon = isIos ? REF_CARD_ICON_PHONE : REF_CARD_ICON_GLOBE;
+    const videoBadge = item.is_video ? '<span class="pik-ref-card-badge">Video</span>' : '';
 
-    if (state.appKey) {
-      return `
-        <article class="pik-screen-card" style="--pik-i:${i % 32}" data-item-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(screenLabel)}">
-          <span class="pik-screen-card-plat ${platClass}">${escapeHtml(plat)}</span>
-          <div class="pik-screen-card-media-wrap ${mediaAspectClass}">
-            <img class="pik-screen-card-media" data-src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async" />
-          </div>
-          <div class="pik-screen-card-actions">
-            <button type="button" class="pik-screen-card-btn pik-screen-card-btn--save" data-action="save">Сохранить</button>
-            <button type="button" class="pik-screen-card-btn pik-screen-card-btn--copy" data-action="copy">Копировать</button>
-            <button type="button" class="pik-screen-card-btn pik-screen-card-btn--agent" data-action="agent">Konstancia</button>
-          </div>
-        </article>
-      `;
-    }
-
-    const cardTitle = item.title;
-    const cardSubtitle = item.subtitle || sourceLabel(item.source);
     return `
-      <article class="pik-card" style="--pik-i:${i % 32}" data-id="${escapeHtml(item.id)}" data-item-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(item.title)}">
-        <span class="pik-card-platform ${platClass}">${escapeHtml(plat)}</span>
-        <span class="pik-card-source">${escapeHtml(screenLabel || sourceLabel(item.source))}</span>
-        <span class="pik-card-media-wrap">
-          <img class="pik-card-media" data-src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async" />
-        </span>
-        ${videoBadge}
-        <div class="pik-card-overlay">
-          <p class="pik-card-title">${escapeHtml(cardTitle)}</p>
-          <p class="pik-card-subtitle">${escapeHtml(cardSubtitle)}</p>
-          <p class="pik-card-tags">${escapeHtml((item.tags || []).filter((t) => t !== 'mobbin').slice(0, 4).join(' · '))}</p>
+      <article class="pik-ref-card${isIos ? ' pik-ref-card--ios' : ' pik-ref-card--web'}" style="--pik-i:${i % 32}" data-id="${escapeHtml(item.id)}" data-item-id="${escapeHtml(item.id)}" tabindex="0" role="button" aria-label="${escapeHtml(title)}">
+        <div class="pik-ref-card-media">
+          <div class="pik-ref-card-media-inner">
+            <img class="pik-ref-card-img" data-src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async" />
+          </div>
+          <span class="pik-ref-card-plat pik-ref-card-plat--${isIos ? 'ios' : 'web'}">${escapeHtml(plat)}</span>
+          ${videoBadge}
         </div>
+        <div class="pik-ref-card-body">
+          <h3 class="pik-ref-card-title">${escapeHtml(title)}</h3>
+          <div class="pik-ref-card-meta">
+            <span class="pik-ref-card-meta-item">${platIcon}<span>${escapeHtml(plat)}</span></span>
+            <span class="pik-ref-card-meta-item">${REF_CARD_ICON_LAYOUT}<span>${escapeHtml(metaScreen)}</span></span>
+          </div>
+          ${!state.appKey && metaSource !== metaScreen ? `<p class="pik-ref-card-sub">${escapeHtml(metaSource)}</p>` : ''}
+        </div>
+        <footer class="pik-ref-card-footer">
+          <span class="pik-ref-card-more">Подробнее</span>
+          <div class="pik-ref-card-actions">
+            <button type="button" class="pik-ref-card-action pik-ref-card-action--save" data-action="save" title="Сохранить">Сохранить</button>
+            <button type="button" class="pik-ref-card-action pik-ref-card-action--copy" data-action="copy" title="Копировать">Копировать</button>
+            <button type="button" class="pik-ref-card-action pik-ref-card-action--agent" data-action="agent" title="Konstancia">Konstancia</button>
+          </div>
+          <span class="pik-ref-card-arrow">${REF_CARD_ICON_ARROW}</span>
+        </footer>
       </article>
     `;
   }
 
   function bindCards(root) {
-    root.querySelectorAll('.pik-card, .pik-screen-card').forEach((card) => {
+    root.querySelectorAll('.pik-ref-card').forEach((card) => {
       if (card.dataset.bound) return;
       card.dataset.bound = '1';
-      const img = card.querySelector('.pik-card-media, .pik-screen-card-media');
+      const img = card.querySelector('.pik-ref-card-img');
       if (img) {
         const raw = img.dataset.src || img.getAttribute('src');
         if (raw) hydrateImage(img, raw);
@@ -1091,7 +1114,7 @@
     masonry.classList.remove('hidden');
     masonry.classList.toggle('pik-masonry--company', !!state.appKey);
 
-    const start = append ? masonry.querySelectorAll('.pik-card, .pik-screen-card').length : 0;
+    const start = append ? masonry.querySelectorAll('.pik-ref-card').length : 0;
     const chunk = items.map((item, i) => cardHtml(item, start + i)).join('');
 
     if (append) {
@@ -1259,8 +1282,6 @@
         setSyncStatus('', false);
       }
     });
-
-    $('pik-app-back')?.addEventListener('click', backToApps);
 
     const scroll = $('pik-scroll');
     if (scroll && typeof ResizeObserver !== 'undefined') {

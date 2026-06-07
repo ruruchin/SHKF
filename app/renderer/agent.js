@@ -6,7 +6,7 @@
     bannerNano: 'Сделай баннер в NanoBanana: извлеки тему из описания задачи и сгенерируй изображение.',
     figmaEdit: 'Сформируй и примени план правок прямо в Figma: сначала покажи список изменений, потом по кнопке внеси их в макет.',
     landing: 'По описанию задачи: структура лендинга (блоки) и один детальный промпт для Figma Make — только то, что следует из задачи.',
-    make: 'Сформулируй детальный промпт для Figma Make под эту задачу: экраны, компоненты, состояния — строго из описания, без generic UI.',
+    make: 'Сформируй детальный промпт для Figma Make по этой задаче и отправь его в Make: экраны, компоненты, состояния — строго из описания.',
     split: 'Разбей работу по задаче на подзадачи для дизайнера с порядком. Оценку часов — только если я просил. Только формулировки из описания задачи.',
     labor: 'Покажи все трудозатраты по этой задаче: кто сколько часов списал, даты и кратко что делал. Если спрашиваю про одного человека — только по нему. Только данные из Redmine, без выдумок.',
     // --- Разработка / продуктивность ---
@@ -203,13 +203,28 @@
     return SITE_BUILD_RE.test(t) && !NB_WORD_RE.test(t);
   }
 
+  function isFigmaMakeSendIntent(text) {
+    const t = String(text || '').trim();
+    if (!t) return false;
+    if (t === QUICK.make) return true;
+    if (/^(?:что|кто|как|зачем|почему|объясни|расскажи|чем\s+отлича)/i.test(t)) return false;
+    if (isFigmaEditIntent(t) || isSiteBuildIntent(t)) return false;
+    if (/^\/make\b/i.test(t)) return true;
+    if (!/\bfigma\s*make\b|\bфигма\s*мэйк\b|\bmake\s*it\b/i.test(t)) return false;
+    if (/(?:отправ|закин|открой|запуст|сформируй|сделай|собери|сгенериру|создай|промпт|макет|в\s+make)/i.test(t)) return true;
+    if (/\bfigma\s*make\b/i.test(t) && t.length <= 140) return true;
+    return false;
+  }
+
   const HISTORY_KEY = 'shkf-agent-history-v1';
   const SESSIONS_KEY = 'shkf-agent-sessions-v2';
+  const IMPORTED_SHARES_KEY = 'shkf-agent-imported-shares-v1';
   const ACTIVE_SESSION_KEY = 'shkf-agent-active-session-v2';
   const SIDEBAR_COLLAPSED_KEY = 'shkf-agent-sidebar-collapsed-v1';
   const AGENT_CHAT_OPTS_KEY = 'shkf-agent-chat-opts-v1';
   const MAX_SESSIONS = 50;
   const MAX_MESSAGES_PER_SESSION = 80;
+  const MAX_STORED_MESSAGE_CHARS = 24000;
   const BRIEF_SHOWN_KEY = 'agent-brief-shown-date-v1';
   const BRIEF_LIST_LIMIT = 10;
   let lastBriefData = null;
@@ -230,77 +245,71 @@
   let chatHistory = [];
   let agentSessions = [];
   let activeSessionId = null;
+  let sessionSelectMode = false;
+  const selectedSessionIds = new Set();
+  let shareColleagues = [];
+  let shareSelectedColleagueId = null;
+  let incomingShares = [];
+  let sharePollTimer = null;
+  let shareInboxInitialized = false;
+  let shareSubmitting = false;
   let kanbanTasks = [];
   let sending = false;
   let messageAnimIndex = 0;
   let taskThreadActive = false;
-  let pendingAgentImage = null;
+  let pendingAgentImages = [];
+  const MAX_PENDING_AGENT_IMAGES = 4;
+
+  function isImageAttachmentFile(file) {
+    if (!file) return false;
+    if (file.type?.startsWith('image/')) return true;
+    return /\.(png|jpe?g|webp|bmp|gif|heic|heif|avif)$/i.test(String(file.name || ''));
+  }
+
+  function revokePendingImageUrls(images = pendingAgentImages) {
+    for (const img of images) {
+      if (img?.previewUrl) {
+        try { URL.revokeObjectURL(img.previewUrl); } catch { /* ignore */ }
+      }
+    }
+  }
+
+  function clearPendingAgentImages() {
+    revokePendingImageUrls();
+    pendingAgentImages = [];
+    renderPendingAgentImages();
+    updateSendState();
+    syncStageState();
+  }
   const pendingMockupPosts = new Map();
   const pendingFigmaPlans = new Map();
+  const pendingFigmaMakeSessions = new Map();
   const pendingMobbinSessions = new Map();
   const shownCommentNotifyKeys = new Set();
   let metaskCommentWatchdogTimer = null;
   let metaskCommentWatchdogBusy = false;
 
-  function isDinDonMusicIntent(text) {
-    const t = String(text || '').toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
-    if (!t) return false;
-    const hasArtist = /крип[\s-]*а[\s-]*крип|krip[\s-]*a[\s-]*krip|крипл/.test(t);
-    const hasTitle = /динь[\s-]*дон|диньдон|дин дон/.test(t);
-    if (hasArtist && hasTitle) return true;
-    if (/^(?:включи|поставь|запусти|играй|play|слушаем|давай)(?:\s|$)/.test(t) && (hasArtist || hasTitle)) return true;
-    if (/лавк[аи].{0,50}цветов/.test(t) && hasTitle) return true;
-    const sig = ['еду на заднем сиденье', 'круглосуточной лавки цветов', 'раздался динь-дон', 'раздался динь дон', 'палец машинально включает инст', 'пит стоп', 'пит-стоп'];
-    const hits = sig.filter((line) => t.includes(line)).length;
-    if (hits >= 2) return true;
-    if (hits >= 1 && (hasTitle || /меладзе|пит[\s-]*стоп|инст/.test(t))) return true;
+  function isCasualChatQuery(text) {
+    const raw = String(text || '').trim();
+    const t = raw.replace(/[?!.,…]+$/g, '').replace(/\s+/g, ' ').trim();
+    if (!t || t.length < 2) return false;
+    if (/что\s+такое|кто\s+такой|кто\s+такая|расскажи\s+о|объясни\s+(?:что|как|почему)|история\s+|в\s+интернет|погугли/i.test(t)) return false;
+    if (/текущ(ей|ую|ая)\s+задач|по\s+этой\s+задач|эту\s+задач|трудозатрат|figma\s+make/i.test(t)) return false;
+    if (/^(?:привет|здравствуй|здрав|хай|hello|хелло|йо|yo|хэй|салют|спасибо|благодар|пока|до\s+свидан)/i.test(t) || /^(?:привет|здравствуй|здрав|хай|hello|хелло|йо|yo|хэй|салют|спасибо|благодар|пока|до\s+свидан)/i.test(raw)) return true;
+    if (/^(?:как\s+дела|как\s+ты|как\s+сам|как\s+жизнь|что\s+делаешь|чем\s+занят|чо\s+ты|чё\s+ты|че\s+ты|ты\s+тут|ты\s+здесь|норм|нормально|эй|алло|ау)$/i.test(t)) return true;
+    if (/как\s+дела|как\s+ты|как\s+сам|как\s+настроение|как\s+у\s+тебя/.test(t) && t.length <= 40) return true;
+    if (t.length <= 80 && /(?:^|\s)(?:konstancia|konstantsi|констанци[яи]|kost-?in)(?:\s|$|[?!.,])/i.test(t)) {
+      if (/кто\s+такая?\s+констанци|что\s+такое\s+констанци|история\s+констанци/i.test(t)) return false;
+      return true;
+    }
+    if (t.length <= 24 && /^(?:ок|окей|ага|угу|лол|хаха|хм+|эм+|ого|класс|круто|понял|ясно|спс|thanks)[\s!?.]*$/i.test(t)) return true;
     return false;
-  }
-
-  const DIN_DON_YANDEX_URL = 'https://music.yandex.ru/search?text=%D0%9A%D1%80%D0%B8%D0%BF-%D0%B0-%D0%9A%D1%80%D0%B8%D0%BF%20%D0%94%D0%B8%D0%BD%D1%8C%20%D0%94%D0%BE%D0%BD';
-
-  async function sendDinDonMusic(textOverride, options = {}) {
-    const text = (textOverride ?? promptEl?.value ?? '').trim();
-    if (!text || sending) return;
-
-    sending = true;
-    updateSendState();
-    updateTaskThread(text);
-
-    const displayText = options.displayText ?? userDisplayText(text, []);
-    addMessage('user', buildUserMessageHtml(displayText, []));
-    chatHistory.push({ role: 'user', content: text, taskThread: false });
-    saveHistory();
-
-    if (window.appSettings?.agent?.clearInputAfterSend !== false && promptEl && textOverride == null) {
-      promptEl.value = '';
-      autoResize();
-    }
-
-    const body = [
-      '**Крип-а-Крип — «Динь Дон»**',
-      '',
-      'Открываю Яндекс Музыку — пит-стоп у круглосуточной лавки цветов. Динь-дон.',
-    ].join('\n');
-
-    try {
-      openExternalUrl(DIN_DON_YANDEX_URL);
-      addMessage('assistant', enhanceAssistantHtml(body), 'Яндекс Музыка', { pushHistory: false, emotionCtx: { mood: 'happy' } });
-      chatHistory.push({ role: 'assistant', content: body });
-      saveHistory();
-      window.AgentVtuber?.onAssistantResponse?.({ mood: 'happy' });
-    } catch (err) {
-      addMessage('assistant', `<p>Не удалось открыть Яндекс Музыку: ${escapeHtml(err?.message || 'ошибка')}</p>`, null, { pushHistory: false });
-    } finally {
-      sending = false;
-      updateSendState();
-      promptEl?.focus();
-    }
   }
 
   function isGeneralKnowledgeQuery(text) {
     const t = String(text || '').trim();
     if (!t || t.length < 3) return false;
+    if (isCasualChatQuery(t)) return false;
     if (/текущ(ей|ую|ая)\s+задач|по\s+этой\s+задач|эту\s+задач|описани[ея]\s+задачи\s+целиком|разбей\s+работу\s+по\s+задач|трудозатрат|figma\s+make|промпт.*(?:баннер|лендинг)/i.test(t)) return false;
     if (/найди\s+файл|найти\s+файл|проиндексир|переиндексир|\.(psd|pdf|fig)\b|листовк|флаер|flyer/i.test(t)) return false;
     if (/похож.*задач|выучил|playbook|опыт\s+по\s+прошл/i.test(t)) return false;
@@ -351,7 +360,17 @@
     return isTaskWorkRequest(t);
   }
 
-  const TASK_REQUIRED_REPLY = 'Сначала выберите <strong>задачу Redmine</strong> в списке сверху («— Без задачи —» → нужная карточка). Без текущей задачи не с чем сопоставлять опыт и нельзя разбирать ТЗ.';
+  const TASK_OPTIONAL_DECLINE = 'Не-а';
+  let pendingTaskOptionalQuery = null;
+
+  function isTaskOptionalDecline(text) {
+    return /^не-а$/i.test(String(text || '').trim());
+  }
+
+  function parseTaskOptionalPick(text) {
+    const m = String(text || '').trim().match(/^да\s*[—-]\s*задача\s*#(\d+)/i);
+    return m ? Number(m[1]) : null;
+  }
 
   function isOffTopicChat(text) {
     const t = String(text || '').trim().toLowerCase();
@@ -496,27 +515,12 @@
     const issueUrl = String(event?.issueUrl || '').trim();
     const userName = String(event?.user?.name || 'Участник').trim() || 'Участник';
     const text = String(event?.text || '').trim() || 'Добавил комментарий';
-    const avatarHtml = event?.user?.avatarUrl
-      ? `<span class="agent-bg-notify-avatar agent-bg-notify-avatar--user"><img class="agent-avatar-img" src="${escapeAttr(event.user.avatarUrl)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" /></span>`
-      : `<span class="agent-bg-notify-avatar agent-bg-notify-avatar--initials">${escapeHtml(getInitials(userName))}</span>`;
-    const image = Array.isArray(event?.images) && event.images[0]
-      ? `<img class="agent-bg-comment-image" src="${escapeAttr(event.images[0])}" alt="" loading="lazy" />`
-      : '';
-    const html = `
-      <div class="agent-bg-comment">
-        <div class="agent-bg-notify-body"><strong>${escapeHtml(userName)}</strong> написал(а) в задаче <strong>#${escapeHtml(issueId)}</strong></div>
-        <div class="agent-bg-comment-text">${escapeHtml(text)}</div>
-        ${image}
-        <div class="agent-bg-notify-foot">
-          <button type="button" class="agent-bg-notify-open" data-bg-open-metask-task="${escapeAttr(issueId)}" data-bg-open-metask-url="${escapeAttr(issueUrl)}">Открыть задачу в Канбан</button>
-        </div>
-      </div>`;
-    pushBackgroundNotifyCard({
-      title: 'Комментарий Redmine',
-      html,
-      avatarHtml,
-      sticky: false,
-    });
+    window.api.agentNotifyBackground?.({
+      title: `Redmine · #${issueId}`,
+      subtitle: `${userName}: ${text.slice(0, 180)}`,
+      icon: 'redmine',
+      action: { type: 'metask-open-task', id: issueId, url: issueUrl },
+    }).catch(() => {});
   }
 
   function markBackgroundMockupDecision(token, text, ok = false) {
@@ -580,10 +584,6 @@
       shownCommentNotifyKeys.add(key);
       showBackgroundTaskCommentCard(event);
       beepAgentNotification();
-      window.api.agentNotifyBackground?.({
-        title: `Redmine · #${event?.issueId || ''}`,
-        body: `${event?.user?.name || 'Участник'}: ${String(event?.text || '').slice(0, 180)}`,
-      }).catch(() => {});
     }
   }
 
@@ -646,13 +646,9 @@
     if (isAgentPageActive()) return;
     const text = String(body || '').trim();
     if (!text) return;
-    pushBackgroundNotifyCard({
-      title,
-      body: text.length > 220 ? `${text.slice(0, 220)}…` : text,
-    });
     beepAgentNotification();
     try {
-      await window.api.agentNotifyBackground?.({ title, body: text });
+      await window.api.agentNotifyBackground?.({ title, subtitle: text, icon: 'agent' });
     } catch {
       /* ignore */
     }
@@ -858,7 +854,10 @@
       if (img.dataset.taskAvBound) return;
       img.dataset.taskAvBound = '1';
       const onFail = () => {
-        img.closest('.agent-task-avatar')?.classList.add('is-fallback');
+        const wrap = img.closest('.agent-task-avatar');
+        if (!wrap) return;
+        wrap.classList.add('is-fallback');
+        img.remove();
       };
       img.addEventListener('error', onFail, { once: true });
       if (img.complete && img.naturalWidth === 0) onFail();
@@ -2074,23 +2073,13 @@
   }
 
   function showAgentToast(message, type = 'ok') {
-    const stack = document.getElementById('metask-toast-stack');
-    if (!stack) return;
-    const btn = document.createElement('div');
-    btn.className = `metask-toast agent-action-toast agent-action-toast--${type}`;
-    btn.innerHTML = `
-      <span class="metask-toast-accent" aria-hidden="true"></span>
-      <span class="metask-toast-body">
-        <span class="metask-toast-title">${type === 'ok' ? 'Redmine' : 'Ошибка'}</span>
-        <span class="metask-toast-subject">${escapeHtml(message)}</span>
-      </span>`;
-    stack.prepend(btn);
-    requestAnimationFrame(() => requestAnimationFrame(() => btn.classList.add('is-visible')));
-    setTimeout(() => {
-      btn.classList.remove('is-visible');
-      btn.classList.add('is-leaving');
-      setTimeout(() => btn.remove(), 320);
-    }, 4200);
+    window.api.showPillNotify?.({
+      title: type === 'ok' ? 'Konstancia' : 'Ошибка',
+      subtitle: String(message || '').slice(0, 220),
+      icon: type === 'ok' ? 'ok' : 'error',
+      durationMs: 4200,
+      action: { type: 'focus-agent' },
+    }).catch(() => {});
   }
 
   async function postQuestionToRedmine(btn) {
@@ -2138,7 +2127,8 @@
   }
 
   function buildThinkingSteps(task) {
-    const steps = ['Подключаюсь к GigaChat…', 'Обрабатываю контекст переписки…'];
+    const engine = isKonstanciaProvider() ? 'Konstancia' : 'GigaChat';
+    const steps = [`Запускаю ${engine}…`, 'Обрабатываю контекст переписки…'];
     if (task?.id) {
       steps.push(
         `Читаю задачу #${task.id}…`,
@@ -2209,12 +2199,90 @@
     migrateStorageKey(AGENT_CHAT_OPTS_KEY, ['firuru-agent-chat-opts-v1', 'SHKF-agent-chat-opts-v1']);
   }
 
+  function sanitizeImagesForStorage(images) {
+    if (!Array.isArray(images) || !images.length) return undefined;
+    return images.map((img) => ({
+      filename: String(img?.filename || 'image.png').slice(0, 180),
+      stored: true,
+    }));
+  }
+
+  function sanitizeMessageForStorage(msg) {
+    if (!msg || typeof msg !== 'object') return msg;
+    const next = { ...msg };
+    if (Array.isArray(next.images) && next.images.length) {
+      next.images = sanitizeImagesForStorage(next.images);
+    }
+    if (typeof next.content === 'string' && next.content.length > MAX_STORED_MESSAGE_CHARS) {
+      next.content = next.content.slice(0, MAX_STORED_MESSAGE_CHARS);
+    }
+    if (typeof next.imageContext === 'string' && next.imageContext.length > 8000) {
+      next.imageContext = next.imageContext.slice(0, 8000);
+    }
+    delete next.pending;
+    return next;
+  }
+
+  function sanitizeMessagesForStorage(messages) {
+    return (Array.isArray(messages) ? messages : [])
+      .slice(-MAX_MESSAGES_PER_SESSION)
+      .map(sanitizeMessageForStorage);
+  }
+
+  function sanitizeSessionsForStorage(sessions, { stripImages = false } = {}) {
+    return (Array.isArray(sessions) ? sessions : []).slice(0, MAX_SESSIONS).map((session) => ({
+      ...session,
+      messages: sanitizeMessagesForStorage(session?.messages).map((msg) => {
+        if (!stripImages) return msg;
+        const copy = { ...msg };
+        delete copy.images;
+        delete copy.imageContext;
+        delete copy.attachments;
+        return copy;
+      }),
+    }));
+  }
+
+  function writeSessionsToStorage(sessions) {
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+    if (activeSessionId) localStorage.setItem(ACTIVE_SESSION_KEY, activeSessionId);
+    else localStorage.removeItem(ACTIVE_SESSION_KEY);
+  }
+
   function saveSessionsStore() {
     try {
-      localStorage.setItem(SESSIONS_KEY, JSON.stringify(agentSessions.slice(0, MAX_SESSIONS)));
-      if (activeSessionId) localStorage.setItem(ACTIVE_SESSION_KEY, activeSessionId);
-      else localStorage.removeItem(ACTIVE_SESSION_KEY);
-    } catch { /* ignore */ }
+      writeSessionsToStorage(sanitizeSessionsForStorage(agentSessions));
+    } catch (err) {
+      if (err?.name === 'QuotaExceededError') {
+        try {
+          writeSessionsToStorage(sanitizeSessionsForStorage(agentSessions, { stripImages: true }));
+          return;
+        } catch {
+          /* fall through */
+        }
+      }
+      console.warn('[agent] saveSessionsStore failed', err?.message || err);
+    }
+  }
+
+  function appendAssistantToHistory({
+    content,
+    meta = null,
+    followups = [],
+    taskId = null,
+    chatFollowups = false,
+    showFollowups = false,
+  } = {}) {
+    chatHistory.push({
+      role: 'assistant',
+      content: String(content || '').trim() || '—',
+      meta,
+      followups: followups || [],
+      taskId: taskId || null,
+      chatFollowups: !!chatFollowups,
+      showFollowups: !!showFollowups,
+    });
+    saveHistory();
   }
 
   function loadSessionsStore() {
@@ -2224,7 +2292,14 @@
     try {
       const raw = localStorage.getItem(SESSIONS_KEY);
       const parsed = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(parsed)) agentSessions = parsed.filter((s) => s?.id);
+      if (Array.isArray(parsed)) {
+        agentSessions = parsed
+          .filter((s) => s?.id)
+          .map((session) => ({
+            ...session,
+            messages: sanitizeMessagesForStorage(session.messages),
+          }));
+      }
       activeSessionId = localStorage.getItem(ACTIVE_SESSION_KEY) || null;
     } catch {
       agentSessions = [];
@@ -2269,7 +2344,7 @@
         createdAt: now,
         updatedAt: now,
         taskId: null,
-        messages,
+        messages: sanitizeMessagesForStorage(messages),
       };
     } catch {
       return null;
@@ -2290,7 +2365,7 @@
     const prev = agentSessions[idx];
     agentSessions[idx] = {
       ...prev,
-      messages: chatHistory.slice(-MAX_MESSAGES_PER_SESSION),
+      messages: sanitizeMessagesForStorage(chatHistory),
       taskId: task?.id || null,
       updatedAt: new Date().toISOString(),
       title: chatHistory.length ? title : (prev.title || 'Новый чат'),
@@ -2301,8 +2376,7 @@
   }
 
   function applySessionToUi(session) {
-    pendingAgentImage = null;
-    renderPendingAgentImage();
+    clearPendingAgentImages();
     chatHistory = Array.isArray(session?.messages) ? [...session.messages] : [];
     messageAnimIndex = 0;
     syncTaskThreadFromHistory();
@@ -2350,23 +2424,111 @@
   function deleteSession(sessionId) {
     if (!sessionId) return;
     if (!window.confirm('Удалить этот чат? История сообщений будет потеряна.')) return;
+    deleteSessionsByIds([sessionId]);
+  }
+
+  function deleteSessionsByIds(sessionIds) {
+    const ids = [...new Set((sessionIds || []).filter(Boolean))];
+    if (!ids.length) return;
 
     persistCurrentSession();
-    agentSessions = agentSessions.filter((s) => s.id !== sessionId);
+    const removedActive = ids.includes(activeSessionId);
+    agentSessions = agentSessions.filter((s) => !ids.includes(s.id));
+    ids.forEach((id) => selectedSessionIds.delete(id));
 
     if (!agentSessions.length) {
+      setSessionSelectMode(false);
       createNewSession();
       return;
     }
 
-    if (activeSessionId === sessionId) {
+    if (removedActive) {
       activeSessionId = agentSessions[0].id;
       saveSessionsStore();
       applySessionToUi(getActiveSession());
     } else {
       saveSessionsStore();
     }
+    updateSessionBulkUi();
     renderSessionList();
+  }
+
+  function deleteSelectedSessions() {
+    if (!selectedSessionIds.size) return;
+    const count = selectedSessionIds.size;
+    const label = count === 1 ? 'этот чат' : `${count} чатов`;
+    if (!window.confirm(`Удалить ${label}? История сообщений будет потеряна.`)) return;
+    deleteSessionsByIds([...selectedSessionIds]);
+    setSessionSelectMode(false);
+  }
+
+  function updateSessionBulkUi() {
+    const bulkBar = $('agent-session-bulk');
+    const bulkBtn = $('agent-session-bulk-delete');
+    const bulkCount = $('agent-session-bulk-count');
+    const selectBtn = $('agent-session-select-mode');
+    const count = selectedSessionIds.size;
+    bulkBar?.classList.toggle('hidden', !sessionSelectMode);
+    if (bulkBtn) bulkBtn.disabled = count === 0;
+    if (bulkCount) {
+      bulkCount.textContent = count === 0
+        ? 'Отметьте чаты для удаления'
+        : count === 1
+          ? '1 чат выбран'
+          : `${count} чатов выбрано`;
+    }
+    if (selectBtn) {
+      selectBtn.classList.toggle('is-active', sessionSelectMode);
+      selectBtn.setAttribute('aria-pressed', sessionSelectMode ? 'true' : 'false');
+      selectBtn.title = sessionSelectMode ? 'Завершить выбор' : 'Выбрать несколько';
+    }
+  }
+
+  function setSessionSelectMode(enabled) {
+    sessionSelectMode = Boolean(enabled);
+    if (!sessionSelectMode) selectedSessionIds.clear();
+    updateSessionBulkUi();
+    sessionListEl?.querySelectorAll('.agent-session-item').forEach((row) => {
+      const session = agentSessions.find((s) => s.id === row.dataset.sessionId);
+      fillSessionRow(row, session);
+    });
+    if (!sessionSelectMode) promptEl?.focus();
+  }
+
+  function toggleSessionSelection(sessionId) {
+    if (!sessionId) return;
+    if (selectedSessionIds.has(sessionId)) selectedSessionIds.delete(sessionId);
+    else selectedSessionIds.add(sessionId);
+    updateSessionBulkUi();
+    const row = sessionListEl?.querySelector(`.agent-session-item[data-session-id="${sessionId}"]`);
+    if (row) {
+      const selected = selectedSessionIds.has(sessionId);
+      row.classList.toggle('is-selected', selected);
+      row.setAttribute('aria-selected', selected ? 'true' : 'false');
+      const check = row.querySelector('.agent-session-check');
+      if (check) check.checked = selected;
+    }
+  }
+
+  function syncSessionRowSelectUi(row, session) {
+    if (!row) return;
+    row.classList.toggle('is-select-mode', sessionSelectMode);
+    row.classList.toggle('is-selected', selectedSessionIds.has(session?.id));
+    let check = row.querySelector('.agent-session-check');
+    if (sessionSelectMode) {
+      if (!check) {
+        check = document.createElement('input');
+        check.type = 'checkbox';
+        check.className = 'agent-session-check';
+        check.addEventListener('click', (event) => event.stopPropagation());
+        check.addEventListener('change', () => toggleSessionSelection(session?.id));
+        row.prepend(check);
+      }
+      check.checked = selectedSessionIds.has(session?.id);
+      check.setAttribute('aria-label', `Выбрать чат «${session?.title || 'Новый чат'}»`);
+    } else if (check) {
+      check.remove();
+    }
   }
 
   function sessionRowMeta(session) {
@@ -2377,10 +2539,21 @@
   }
 
   function fillSessionRow(row, session) {
-    row.className = `agent-session-item${session.id === activeSessionId ? ' is-active' : ''}`;
+    const classes = ['agent-session-item'];
+    if (session.id === activeSessionId) classes.push('is-active');
+    if (sessionSelectMode) classes.push('is-select-mode');
+    if (selectedSessionIds.has(session.id)) classes.push('is-selected');
+    row.className = classes.join(' ');
     row.dataset.sessionId = session.id;
-    row.setAttribute('role', 'button');
-    row.tabIndex = 0;
+    if (sessionSelectMode) {
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', selectedSessionIds.has(session.id) ? 'true' : 'false');
+      row.tabIndex = 0;
+    } else {
+      row.setAttribute('role', 'button');
+      row.removeAttribute('aria-selected');
+      row.tabIndex = -1;
+    }
     let titleEl = row.querySelector('.agent-session-title');
     let metaEl = row.querySelector('.agent-session-meta');
     let delBtn = row.querySelector('.agent-session-delete');
@@ -2401,6 +2574,8 @@
     titleEl.textContent = session.title || 'Новый чат';
     metaEl.textContent = sessionRowMeta(session);
     delBtn.dataset.deleteSession = session.id;
+    delBtn.classList.toggle('hidden', sessionSelectMode);
+    syncSessionRowSelectUi(row, session);
   }
 
   function createSessionRow(session) {
@@ -2486,8 +2661,11 @@
     $('agent-chat-clear')?.addEventListener('click', createNewSession);
     $('agent-sidebar-hide')?.addEventListener('click', () => setSidebarCollapsed(true));
     $('agent-sidebar-toggle')?.addEventListener('click', () => setSidebarCollapsed(false));
+    $('agent-session-select-mode')?.addEventListener('click', () => setSessionSelectMode(!sessionSelectMode));
+    $('agent-session-bulk-delete')?.addEventListener('click', deleteSelectedSessions);
 
     setSidebarCollapsed(loadSidebarCollapsed());
+    updateSessionBulkUi();
 
     sessionListEl?.addEventListener('click', (event) => {
       const del = event.target.closest('[data-delete-session]');
@@ -2498,6 +2676,11 @@
       }
       const item = event.target.closest('.agent-session-item');
       if (!item?.dataset.sessionId) return;
+      if (sessionSelectMode) {
+        event.preventDefault();
+        toggleSessionSelection(item.dataset.sessionId);
+        return;
+      }
       switchSession(item.dataset.sessionId);
     });
 
@@ -2506,7 +2689,529 @@
       const item = event.target.closest('.agent-session-item');
       if (!item?.dataset.sessionId || event.target.closest('[data-delete-session]')) return;
       event.preventDefault();
+      if (sessionSelectMode) {
+        toggleSessionSelection(item.dataset.sessionId);
+        return;
+      }
       switchSession(item.dataset.sessionId);
+    });
+  }
+
+  function buildSharePayloadForSend(session = {}) {
+    const messages = (Array.isArray(session.messages) ? session.messages : [])
+      .filter((m) => m?.role === 'user' || m?.role === 'assistant')
+      .slice(-80)
+      .map((m) => {
+        let content = String(m.content || '').slice(0, 12000);
+        if (Array.isArray(m.images) && m.images.length && !/\[изображение\]/i.test(content)) {
+          content = content ? `${content}\n[изображение]` : '[изображение]';
+        }
+        return {
+          role: m.role,
+          content,
+          taskThread: !!m.taskThread,
+        };
+      })
+      .filter((m) => m.content.trim());
+    return {
+      title: String(session.title || 'Чат').slice(0, 120),
+      taskId: session.taskId || null,
+      messageCount: messages.length,
+      messages,
+    };
+  }
+
+  function warmShareDmRoom(recipientId) {
+    const id = String(recipientId || '').trim();
+    if (!id) return;
+    void window.api.teamChatOpenDm?.({ recipientId: id });
+  }
+
+  function formatColleagueLabel(profile = {}) {
+    const name = String(profile.full_name || '').trim();
+    const username = String(profile.username || '').trim();
+    const position = String(profile.position || '').trim();
+    if (name && username) return position ? `${name} (@${username}) · ${position}` : `${name} (@${username})`;
+    if (name) return position ? `${name} · ${position}` : name;
+    if (username) return `@${username}`;
+    return String(profile.email || 'Коллега').split('@')[0] || 'Коллега';
+  }
+
+  function formatColleagueInitials(profile = {}) {
+    const name = String(profile.full_name || profile.username || profile.email || '?').trim();
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) return `${parts[0][0] || ''}${parts[1][0] || ''}`.toUpperCase();
+    return (parts[0] || '?').slice(0, 2).toUpperCase();
+  }
+
+  function readImportedShareIds() {
+    try {
+      const raw = localStorage.getItem(IMPORTED_SHARES_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      return new Set(Array.isArray(parsed) ? parsed : []);
+    } catch {
+      return new Set();
+    }
+  }
+
+  function markShareImported(shareId) {
+    const id = String(shareId || '').trim();
+    if (!id) return;
+    const set = readImportedShareIds();
+    set.add(id);
+    try {
+      localStorage.setItem(IMPORTED_SHARES_KEY, JSON.stringify([...set].slice(-200)));
+    } catch {
+      /* ignore quota */
+    }
+  }
+
+  function buildImportedShareTitle(share = {}) {
+    const payload = share?.payload && typeof share.payload === 'object' ? share.payload : {};
+    const title = String(payload.title || share.title || 'Чат').trim();
+    return title.length > 120 ? `${title.slice(0, 119)}…` : title;
+  }
+
+  function formatColleagueSubtitle(profile = {}) {
+    const position = String(profile.position || '').trim();
+    if (position) return position;
+    const username = String(profile.username || '').trim();
+    if (username) return `@${username}`;
+    const role = String(profile.role || '').trim();
+    return role || 'Сотрудник SHKF';
+  }
+
+  function getShareSelectedColleague() {
+    if (!shareSelectedColleagueId) return null;
+    return shareColleagues.find((profile) => String(profile.id) === String(shareSelectedColleagueId)) || null;
+  }
+
+  function updateShareSelectionUi() {
+    const selected = getShareSelectedColleague();
+    const selectedWrap = $('agent-share-selected');
+    const selectedName = $('agent-share-selected-name');
+    const submit = $('agent-share-submit');
+
+    if (selectedWrap && selectedName) {
+      if (selected) {
+        selectedWrap.classList.remove('hidden');
+        selectedName.textContent = formatColleagueLabel(selected);
+      } else {
+        selectedWrap.classList.add('hidden');
+        selectedName.textContent = '';
+      }
+    }
+
+    if (submit) {
+      submit.disabled = !selected;
+      submit.textContent = selected
+        ? `Отправить ${formatColleagueLabel(selected)}`
+        : 'Отправить';
+    }
+  }
+
+  function closeShareModal() {
+    $('agent-share-overlay')?.classList.add('hidden');
+    shareSelectedColleagueId = null;
+    updateShareSelectionUi();
+  }
+
+  function renderShareColleagueList(filter = '') {
+    const listEl = $('agent-share-list');
+    if (!listEl) return;
+    const q = String(filter || '').trim().toLowerCase();
+    const tokens = q.split(/\s+/).filter(Boolean);
+    const rows = shareColleagues.filter((profile) => {
+      if (!tokens.length) return true;
+      const hay = [
+        profile.full_name,
+        profile.username,
+        profile.position,
+        profile.email,
+        profile.role,
+      ].map((v) => String(v || '').toLowerCase()).join(' ');
+      return tokens.every((token) => hay.includes(token));
+    });
+
+    if (!rows.length) {
+      listEl.innerHTML = '<p class="agent-share-empty">Никого не найдено. Попробуйте другой запрос.</p>';
+      updateShareSelectionUi();
+      return;
+    }
+
+    listEl.innerHTML = rows.map((profile) => {
+      const selected = String(shareSelectedColleagueId) === String(profile.id);
+      const avatar = profile.avatar_url
+        ? `<img src="${escapeHtml(profile.avatar_url)}" alt="" />`
+        : escapeHtml(formatColleagueInitials(profile));
+      return (
+        `<button type="button" class="agent-share-colleague${selected ? ' is-selected' : ''}" data-share-colleague-id="${escapeHtml(profile.id)}" role="option" aria-selected="${selected ? 'true' : 'false'}">`
+        + `<span class="agent-share-colleague-check" aria-hidden="true">✓</span>`
+        + `<span class="agent-share-colleague-avatar">${avatar}</span>`
+        + `<span class="agent-share-colleague-copy">`
+        + `<span class="agent-share-colleague-name">${escapeHtml(formatColleagueLabel(profile))}</span>`
+        + `<span class="agent-share-colleague-sub">${escapeHtml(formatColleagueSubtitle(profile))}</span>`
+        + `</span></button>`
+      );
+    }).join('');
+
+    updateShareSelectionUi();
+
+    if (shareSelectedColleagueId) {
+      const safeId = String(shareSelectedColleagueId).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+      const active = listEl.querySelector(`[data-share-colleague-id="${safeId}"]`);
+      active?.scrollIntoView({ block: 'nearest' });
+    }
+  }
+
+  async function openShareModal() {
+    persistCurrentSession();
+    const session = getActiveSession();
+    if (!session?.messages?.length) {
+      showAgentToast('В этом чате пока нет сообщений', 'error');
+      return;
+    }
+
+    const overlay = $('agent-share-overlay');
+    if (!overlay) return;
+    overlay.classList.remove('hidden');
+
+    const hint = $('agent-share-hint');
+    if (hint) {
+      hint.textContent = `Экспорт «${session.title || 'Чат'}» (${session.messages.length} сообщ.) — коллега увидит переписку в Konstancia и сможет продолжить.`;
+    }
+
+    const search = $('agent-share-search');
+    if (search) {
+      search.value = '';
+      search.focus();
+    }
+
+    shareSelectedColleagueId = null;
+    updateShareSelectionUi();
+
+    const listEl = $('agent-share-list');
+    if (listEl) listEl.innerHTML = '<p class="agent-share-empty">Загрузка коллег…</p>';
+
+    const result = await window.api.agentChatShareColleagues?.();
+    if (!result?.ok) {
+      if (listEl) {
+        listEl.innerHTML = `<p class="agent-share-empty">${escapeHtml(result?.message || 'Не удалось загрузить коллег')}</p>`;
+      }
+      return;
+    }
+
+    shareColleagues = result.colleagues || [];
+    renderShareColleagueList();
+  }
+
+  async function submitShareChat() {
+    if (!shareSelectedColleagueId || shareSubmitting) return;
+    const active = getActiveSession();
+    const payload = buildSharePayloadForSend({
+      title: active?.title || deriveSessionTitle(chatHistory),
+      taskId: active?.taskId || null,
+      messages: chatHistory,
+    });
+    if (!payload.messages.length) {
+      showAgentToast('В чате нет сообщений для отправки', 'error');
+      return;
+    }
+    void Promise.resolve().then(() => persistCurrentSession());
+
+    const submit = $('agent-share-submit');
+    const submitDefaultLabel = submit?.dataset.defaultLabel || submit?.textContent || 'Отправить';
+    if (submit && !submit.dataset.defaultLabel) submit.dataset.defaultLabel = submitDefaultLabel;
+    shareSubmitting = true;
+    if (submit) {
+      submit.disabled = true;
+      submit.textContent = 'Отправляем…';
+    }
+
+    try {
+      const result = await window.api.agentChatShareSend?.({
+        recipientId: shareSelectedColleagueId,
+        payload,
+      });
+
+      if (!result?.ok) {
+        showAgentToast(result?.message || 'Не удалось отправить чат', 'error');
+        return;
+      }
+
+      const recipient = shareColleagues.find((p) => p.id === shareSelectedColleagueId);
+      const label = formatColleagueLabel(recipient);
+      closeShareModal();
+      showAgentToast(`Чат экспортирован для ${label}`, 'ok');
+    } finally {
+      shareSubmitting = false;
+      if (submit) {
+        submit.disabled = false;
+        submit.textContent = submit.dataset.defaultLabel || submitDefaultLabel;
+        updateShareSelectionUi();
+      }
+    }
+  }
+
+  function renderShareInbox() {
+    const inbox = $('agent-share-inbox');
+    if (!inbox) return;
+
+    if (!incomingShares.length) {
+      inbox.classList.add('hidden');
+      inbox.innerHTML = '';
+      return;
+    }
+
+    inbox.classList.remove('hidden');
+    inbox.innerHTML = `
+      <div class="agent-share-inbox-head">Входящие чаты (${incomingShares.length})</div>
+      ${incomingShares.map((share) => {
+        const count = share.payload?.messageCount || share.payload?.messages?.length || 0;
+        const from = share.owner_name || share.owner_username || 'Коллега';
+        return `
+          <div class="agent-share-inbox-item" data-share-id="${escapeHtml(share.id)}">
+            <div class="agent-share-inbox-title">${escapeHtml(share.title || 'Чат')}</div>
+            <div class="agent-share-inbox-meta">От ${escapeHtml(from)} · ${count} сообщ.</div>
+            <div class="agent-share-inbox-actions">
+              <button type="button" class="agent-share-inbox-btn agent-share-inbox-btn--primary" data-share-accept="${escapeHtml(share.id)}">Открыть</button>
+              <button type="button" class="agent-share-inbox-btn agent-share-inbox-btn--ghost" data-share-dismiss="${escapeHtml(share.id)}">Скрыть</button>
+            </div>
+          </div>`;
+      }).join('')}
+    `;
+  }
+
+  function importSharedSession(share) {
+    const payload = share?.payload || {};
+    const messages = Array.isArray(payload.messages) ? payload.messages : [];
+    if (!messages.length) return null;
+
+    const existing = agentSessions.find((item) => item.sharedFrom?.shareId === share.id);
+    if (existing) {
+      activeSessionId = existing.id;
+      saveSessionsStore();
+      applySessionToUi(existing);
+      renderSessionList({ full: true });
+      return existing;
+    }
+
+    const session = {
+      id: createSessionId(),
+      title: buildImportedShareTitle(share),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      taskId: payload.taskId || null,
+      messages: messages.map((msg) => ({ ...msg })),
+      sharedFrom: {
+        userId: share.owner_id,
+        name: share.owner_name || share.owner_username || '',
+        shareId: share.id,
+      },
+      exported: true,
+    };
+
+    agentSessions.unshift(session);
+    if (agentSessions.length > MAX_SESSIONS) agentSessions.length = MAX_SESSIONS;
+    activeSessionId = session.id;
+    saveSessionsStore();
+    applySessionToUi(session);
+    renderSessionList({ full: true });
+    promptEl?.focus();
+    return session;
+  }
+
+  async function autoImportIncomingShare(share, { notify = false } = {}) {
+    if (!share?.id) return null;
+    if (readImportedShareIds().has(share.id)) return null;
+    if (agentSessions.some((item) => item.sharedFrom?.shareId === share.id)) {
+      markShareImported(share.id);
+      return null;
+    }
+
+    const result = await window.api.agentChatShareAccept?.({ shareId: share.id });
+    if (!result?.ok || !result.share) return null;
+
+    const session = importSharedSession(result.share);
+    markShareImported(share.id);
+    incomingShares = incomingShares.filter((item) => item.id !== share.id);
+    renderShareInbox();
+
+    if (notify && session) {
+      const from = share.owner_name || share.owner_username || 'коллега';
+      showAgentToast(`Экспорт чата от ${from}: «${session.title}»`, 'ok');
+      window.api.showPillNotify?.({
+        title: session.title || 'Новый чат',
+        body: `${from} поделился перепиской Konstancia.`,
+        meta: from,
+        badge: 'Konstancia',
+        tag: 'Команда',
+        icon: 'agent',
+        action: { type: 'konstancia-open-share', shareId: share.id },
+      });
+    }
+    return session;
+  }
+
+  async function openKonstanciaShare(shareId) {
+    const id = String(shareId || '').trim();
+    if (!id) return false;
+
+    document.querySelector('.nav-item[data-page="agent"]')?.click();
+
+    let session = agentSessions.find((item) => item.sharedFrom?.shareId === id);
+    if (session) {
+      switchSession(session.id);
+      return true;
+    }
+
+    const pending = incomingShares.find((item) => item.id === id);
+    if (pending) {
+      await autoImportIncomingShare(pending, { notify: false });
+      session = agentSessions.find((item) => item.sharedFrom?.shareId === id);
+      if (session) {
+        switchSession(session.id);
+        return true;
+      }
+    }
+
+    await refreshIncomingShares({ notify: false, autoImport: true });
+    session = agentSessions.find((item) => item.sharedFrom?.shareId === id);
+    if (session) {
+      switchSession(session.id);
+      return true;
+    }
+
+    const fetched = await window.api.agentChatShareGet?.({ shareId: id });
+    if (fetched?.ok && fetched.share) {
+      if (fetched.share.status === 'pending') {
+        await autoImportIncomingShare(fetched.share, { notify: false });
+      } else {
+        session = importSharedSession(fetched.share);
+        if (session) markShareImported(id);
+      }
+      session = agentSessions.find((item) => item.sharedFrom?.shareId === id);
+      if (session) {
+        switchSession(session.id);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  window.openKonstanciaShare = openKonstanciaShare;
+
+  async function acceptIncomingShare(shareId) {
+    const share = incomingShares.find((item) => item.id === shareId);
+    if (share) {
+      const session = await autoImportIncomingShare(share, { notify: false });
+      if (session) {
+        showAgentToast('Чат добавлен — продолжайте переписку с Konstancia', 'ok');
+        return;
+      }
+    }
+    const result = await window.api.agentChatShareAccept?.({ shareId });
+    if (!result?.ok) {
+      showAgentToast(result?.message || 'Не удалось открыть чат', 'error');
+      return;
+    }
+    importSharedSession(result.share);
+    markShareImported(shareId);
+    incomingShares = incomingShares.filter((s) => s.id !== shareId);
+    renderShareInbox();
+    showAgentToast('Чат добавлен — продолжайте переписку с Konstancia', 'ok');
+    await refreshIncomingShares();
+  }
+
+  async function dismissIncomingShare(shareId) {
+    const result = await window.api.agentChatShareDismiss?.({ shareId });
+    if (!result?.ok) {
+      showAgentToast(result?.message || 'Не удалось скрыть чат', 'error');
+      return;
+    }
+    incomingShares = incomingShares.filter((s) => s.id !== shareId);
+    renderShareInbox();
+    await refreshIncomingShares();
+  }
+
+  async function refreshIncomingShares({ notify = false, autoImport = true } = {}) {
+    const result = await window.api.agentChatShareIncoming?.();
+    if (!result?.ok) {
+      if (!incomingShares.length) renderShareInbox();
+      return;
+    }
+
+    const next = result.shares || [];
+    const prevIds = new Set(incomingShares.map((s) => s.id));
+    incomingShares = next;
+    renderShareInbox();
+
+    const fresh = next.filter((share) => !prevIds.has(share.id));
+    if (autoImport) {
+      for (const share of fresh) {
+        await autoImportIncomingShare(share, { notify: shareInboxInitialized && notify });
+      }
+    } else if (shareInboxInitialized && notify) {
+      if (fresh[0]) {
+        const from = fresh[0].owner_name || fresh[0].owner_username || 'коллега';
+        window.api.showPillNotify?.({
+          title: fresh[0].title || 'Новый чат',
+          body: `${from} поделился перепиской Konstancia.`,
+          meta: from,
+          badge: 'Konstancia',
+          tag: 'Команда',
+          icon: 'agent',
+          action: { type: 'konstancia-open-share', shareId: fresh[0].id },
+        });
+      }
+    }
+    shareInboxInitialized = true;
+  }
+
+  function startSharePolling() {
+    stopSharePolling();
+    refreshIncomingShares({ notify: true, autoImport: true });
+    sharePollTimer = window.setInterval(() => {
+      refreshIncomingShares({ notify: true, autoImport: true });
+    }, 20000);
+  }
+
+  function stopSharePolling() {
+    if (!sharePollTimer) return;
+    clearInterval(sharePollTimer);
+    sharePollTimer = null;
+  }
+
+  function bindShareUi() {
+    $('agent-chat-share-btn')?.addEventListener('click', () => openShareModal());
+    $('agent-share-close')?.addEventListener('click', closeShareModal);
+    $('agent-share-cancel')?.addEventListener('click', closeShareModal);
+    $('agent-share-submit')?.addEventListener('click', () => submitShareChat());
+    $('agent-share-overlay')?.addEventListener('click', (event) => {
+      if (event.target === $('agent-share-overlay')) closeShareModal();
+    });
+    $('agent-share-search')?.addEventListener('input', (event) => {
+      renderShareColleagueList(event.target.value);
+    });
+    $('agent-share-list')?.addEventListener('click', (event) => {
+      const btn = event.target.closest('[data-share-colleague-id]');
+      if (!btn) return;
+      shareSelectedColleagueId = btn.getAttribute('data-share-colleague-id');
+      warmShareDmRoom(shareSelectedColleagueId);
+      renderShareColleagueList($('agent-share-search')?.value || '');
+      updateShareSelectionUi();
+    });
+    $('agent-share-inbox')?.addEventListener('click', (event) => {
+      const accept = event.target.closest('[data-share-accept]');
+      if (accept) {
+        acceptIncomingShare(accept.getAttribute('data-share-accept'));
+        return;
+      }
+      const dismiss = event.target.closest('[data-share-dismiss]');
+      if (dismiss) dismissIncomingShare(dismiss.getAttribute('data-share-dismiss'));
+    });
+    window.api.onTeamchatSharePingFailed?.((detail) => {
+      showAgentToast(detail?.message || 'Не удалось отправить ссылку в «Команда»', 'error');
     });
   }
 
@@ -2564,8 +3269,7 @@
 
   function showEmptyState() {
     if (!messagesEl) return;
-    const live2dOn = window.appSettings?.vtubeStudio?.enabled === true
-      && Boolean(String(window.appSettings?.vtubeStudio?.live2dModelPath || '').trim());
+    const live2dOn = window.appSettings?.vtubeStudio?.enabled === true;
     messagesEl.innerHTML = `
       <div class="agent-welcome">
         <div class="agent-welcome-icon${live2dOn ? ' agent-welcome-icon--live2d' : ''}" id="agent-vtuber-hero-anchor" aria-hidden="true">
@@ -2586,6 +3290,10 @@
         const key = btn.getAttribute('data-welcome-action');
         const text = QUICK[key] || '';
         if (!text) return;
+        if (key === 'make') {
+          sendFigmaMake(text);
+          return;
+        }
         if (promptEl) {
           promptEl.value = text;
           autoResize();
@@ -2603,7 +3311,7 @@
 
   function syncStageState() {
     const hasChat = chatHistory.length > 0 || !!messagesEl?.querySelector('.agent-msg');
-    const drafting = Boolean(promptEl?.value?.trim());
+    const drafting = Boolean(promptEl?.value?.trim()) || pendingAgentImages.length > 0;
     const active = hasChat || drafting;
 
     if (!hasChat && !drafting && !messagesEl?.querySelector('.agent-welcome')) {
@@ -2624,7 +3332,7 @@
   }
 
   function hideWelcomeIfDrafting() {
-    if (!promptEl?.value?.trim()) return;
+    if (!promptEl?.value?.trim() && !pendingAgentImages.length) return;
     clearWelcomePanel();
     syncStageState();
   }
@@ -2713,7 +3421,7 @@
     const next = String(text || '').trim();
     if (!next) {
       bar.classList.add('hidden');
-      step.textContent = '';
+      step.textContent = 'Думаю…';
       return;
     }
     step.textContent = next;
@@ -2724,15 +3432,21 @@
     setComposerThinkingStatus('');
   }
 
-  function syncThinkingStepUi(wrap, text, { pushToLog = true } = {}) {
+  function removeThinking(thinking) {
+    if (thinking?._thinkingTimer) clearInterval(thinking._thinkingTimer);
+    thinking?.remove();
+    clearComposerThinkingStatus();
+    window.AgentVtuber?.clearThinking?.();
+  }
+
+  function syncThinkingStepUi(wrap, text, { dockOnly = false } = {}) {
+    if (dockOnly) {
+      setComposerThinkingStatus(text);
+      return;
+    }
     const stepEl = wrap?.querySelector?.('.agent-thinking-step-text');
-    const logEl = wrap?.querySelector?.('.agent-thinking-log');
     const next = String(text || '').trim();
     if (!next) return;
-
-    window.AgentVtuber?.setThinkingStep?.(next);
-    setComposerThinkingStatus(next);
-
     if (stepEl) {
       stepEl.classList.add('agent-thinking-step-text--swap');
       window.setTimeout(() => {
@@ -2740,27 +3454,21 @@
         stepEl.classList.remove('agent-thinking-step-text--swap');
       }, 180);
     }
-
-    if (pushToLog && logEl) {
-      const item = document.createElement('li');
-      item.className = 'agent-thinking-log-item';
-      item.textContent = next;
-      logEl.appendChild(item);
-      while (logEl.children.length > 4) {
-        logEl.removeChild(logEl.firstChild);
-      }
-    }
   }
 
   function addThinking(task, customSteps) {
     clearWelcomePanel();
     messagesEl?.classList.remove('agent-messages--idle');
     const steps = customSteps?.length ? customSteps : buildThinkingSteps(task);
+    const useDockStatus = window.AgentVtuber?.usesDockThinking?.();
 
-    const wrap = document.createElement('div');
-    wrap.className = 'agent-msg agent-msg-assistant agent-thinking agent-msg--enter';
-    wrap.style.setProperty('--agent-msg-i', String(messageAnimIndex++));
-    wrap.innerHTML = `
+    let wrap = { remove() {} };
+
+    if (!useDockStatus) {
+      wrap = document.createElement('div');
+      wrap.className = 'agent-msg agent-msg-assistant agent-thinking agent-msg--enter';
+      wrap.style.setProperty('--agent-msg-i', String(messageAnimIndex++));
+      wrap.innerHTML = `
       <div class="agent-msg-avatar">${agentAvatarHtml()}</div>
       <div class="agent-msg-body">
         <div class="agent-msg-bubble agent-thinking-bubble">
@@ -2774,40 +3482,108 @@
           <div class="agent-thinking-track" aria-hidden="true">
             <span class="agent-thinking-track-fill"></span>
           </div>
-          <ul class="agent-thinking-log" aria-live="polite"></ul>
         </div>
       </div>`;
+      messagesEl.appendChild(wrap);
+      scrollBottom();
+      syncStageState();
+    }
 
-    messagesEl.appendChild(wrap);
-    scrollBottom();
-    syncStageState();
-    window.AgentVtuber?.onThinking?.(steps[0]);
-    syncThinkingStepUi(wrap, steps[0], { pushToLog: false });
+    window.AgentVtuber?.onThinking?.();
+    if (useDockStatus) setComposerThinkingStatus(steps[0]);
 
     let stepIndex = 0;
     wrap._thinkingTimer = setInterval(() => {
       stepIndex = (stepIndex + 1) % steps.length;
-      syncThinkingStepUi(wrap, steps[stepIndex]);
+      syncThinkingStepUi(wrap, steps[stepIndex], { dockOnly: useDockStatus });
     }, 1300);
 
     return wrap;
   }
 
-  function removeThinking(thinking) {
-    if (thinking?._thinkingTimer) clearInterval(thinking._thinkingTimer);
-    thinking?.remove();
-    clearComposerThinkingStatus();
-    window.AgentVtuber?.clearThinking?.();
-  }
-
   function autoResize() {
     if (!promptEl) return;
     const composer = document.getElementById('agent-composer');
-    const lineHeight = 22;
+    const lineHeight = 24;
     promptEl.style.height = 'auto';
-    const next = Math.max(lineHeight, Math.min(promptEl.scrollHeight, 140));
+    const next = Math.max(lineHeight, Math.min(promptEl.scrollHeight, 160));
     promptEl.style.height = `${next}px`;
     composer?.classList.toggle('agent-composer--multiline', next > lineHeight + 2);
+  }
+
+  let suggestionsAnimToken = 0;
+  const SUG_ANIM_MS = 500;
+  const SUG_STAGGER_MS = 30;
+
+  function suggestionsAnimDurationMs(el) {
+    const count = el?.querySelectorAll('.agent-sug').length || 0;
+    return SUG_ANIM_MS + Math.max(0, count - 1) * SUG_STAGGER_MS + 24;
+  }
+
+  function prefersReducedMotion() {
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+      || document.documentElement.dataset.noAnim === 'true';
+  }
+
+  function playSuggestionsEntrance() {
+    const el = $('agent-suggestions');
+    if (!el) return;
+    el.classList.remove('is-anim-out');
+    el.classList.remove('is-anim');
+    void el.offsetHeight;
+    el.classList.add('is-anim');
+  }
+
+  function playSuggestionsExit() {
+    const el = $('agent-suggestions');
+    if (!el || el.classList.contains('hidden')) {
+      return Promise.resolve();
+    }
+    if (prefersReducedMotion()) {
+      el.classList.remove('is-anim', 'is-anim-out');
+      return Promise.resolve();
+    }
+    el.classList.remove('is-anim');
+    void el.offsetHeight;
+    el.classList.add('is-anim-out');
+    return new Promise((resolve) => {
+      window.setTimeout(() => {
+        el.classList.remove('is-anim-out');
+        resolve();
+      }, suggestionsAnimDurationMs(el));
+    });
+  }
+
+  async function toggleAgentIdeasPanel(forceOpen) {
+    const shell = $('agent-composer-shell');
+    const btn = $('agent-ideas-toggle');
+    const sug = $('agent-suggestions');
+    if (!shell || !sug) return false;
+    const open = typeof forceOpen === 'boolean'
+      ? forceOpen
+      : !shell.classList.contains('agent-composer-shell--ideas-open');
+    const token = ++suggestionsAnimToken;
+
+    btn?.setAttribute('aria-pressed', open ? 'true' : 'false');
+    btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+    if (open) {
+      shell.classList.add('agent-composer-shell--ideas-open');
+      sug.classList.remove('hidden');
+      playSuggestionsEntrance();
+      return true;
+    }
+
+    shell.classList.remove('agent-composer-shell--ideas-open');
+    await playSuggestionsExit();
+    if (token !== suggestionsAnimToken) return shell.classList.contains('agent-composer-shell--ideas-open');
+    sug.classList.add('hidden');
+    return false;
+  }
+
+  function canAttachAgentImages() {
+    if (isKonstanciaProvider()) return true;
+    return isVisionModelSelected();
   }
 
   function isVisionModelSelected() {
@@ -2846,73 +3622,166 @@
     });
   }
 
-  function renderPendingAgentImage() {
+  function renderPendingAgentImages() {
     const box = $('agent-composer-attachments');
+    const composer = $('agent-composer');
     if (!box) return;
-    if (!pendingAgentImage?.dataUrl) {
+    composer?.classList.toggle('agent-composer--has-attachments', pendingAgentImages.length > 0);
+    box.replaceChildren();
+    if (!pendingAgentImages.length) {
       box.classList.add('hidden');
-      box.innerHTML = '';
       return;
     }
     box.classList.remove('hidden');
-    box.innerHTML = `
-      <div class="agent-pending-image">
-        <img src="${escapeHtml(pendingAgentImage.dataUrl)}" alt="" />
-        <button type="button" class="agent-pending-image-rm" aria-label="Убрать изображение">×</button>
-      </div>`;
-    box.querySelector('.agent-pending-image-rm')?.addEventListener('click', () => {
-      pendingAgentImage = null;
-      renderPendingAgentImage();
-      updateSendState();
+    pendingAgentImages.forEach((img, index) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'agent-pending-image';
+      wrap.dataset.pendingImageIndex = String(index);
+
+      const imageEl = document.createElement('img');
+      imageEl.src = img.previewUrl || img.dataUrl;
+      imageEl.alt = img.filename || '';
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'agent-pending-image-rm';
+      removeBtn.dataset.pendingImageRm = String(index);
+      removeBtn.setAttribute('aria-label', 'Убрать изображение');
+      removeBtn.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+      removeBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const idx = Number(removeBtn.dataset.pendingImageRm);
+        if (!Number.isFinite(idx)) return;
+        const [removed] = pendingAgentImages.splice(idx, 1);
+        if (removed?.previewUrl) {
+          try { URL.revokeObjectURL(removed.previewUrl); } catch { /* ignore */ }
+        }
+        renderPendingAgentImages();
+        updateSendState();
+        syncStageState();
+      });
+
+      wrap.append(imageEl, removeBtn);
+      box.appendChild(wrap);
     });
   }
 
-  async function addAgentImageFromFile(file) {
-    if (!file?.type?.startsWith('image/')) return;
-    if (file.size > 15 * 1024 * 1024) {
-      showAgentToast('Изображение больше 15 МБ', 'error');
+  function appendPendingAgentImages(items = []) {
+    const next = (Array.isArray(items) ? items : [])
+      .filter((img) => img?.dataUrl)
+      .map((img) => ({
+        dataUrl: img.dataUrl,
+        filename: img.filename || 'image.png',
+        previewUrl: img.previewUrl || '',
+      }));
+    if (!next.length) return 0;
+    const free = Math.max(0, MAX_PENDING_AGENT_IMAGES - pendingAgentImages.length);
+    if (!free) {
+      showAgentToast(`Максимум ${MAX_PENDING_AGENT_IMAGES} изображения за раз`, 'error');
+      return 0;
+    }
+    const added = next.slice(0, free);
+    pendingAgentImages.push(...added);
+    if (next.length > free) {
+      showAgentToast(`Добавлено ${added.length} из ${next.length} — лимит ${MAX_PENDING_AGENT_IMAGES}`, 'error');
+    }
+    if (added.length) clearWelcomePanel();
+    renderPendingAgentImages();
+    updateSendState();
+    syncStageState();
+    return added.length;
+  }
+
+  async function addAgentImagesFromFiles(files) {
+    if (!canAttachAgentImages()) {
+      showAgentToast('Изображения поддерживают GigaChat-2, 2-Pro или 2-Max', 'error');
       return;
     }
-    if (!isVisionModelSelected()) {
-      showAgentToast('Изображения: выберите GigaChat-2, 2-Pro или 2-Max', 'error');
+    const list = [...(files || [])].filter(isImageAttachmentFile);
+    if (!list.length) return;
+
+    const free = Math.max(0, MAX_PENDING_AGENT_IMAGES - pendingAgentImages.length);
+    if (!free) {
+      showAgentToast(`Максимум ${MAX_PENDING_AGENT_IMAGES} изображения за раз`, 'error');
       return;
     }
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      pendingAgentImage = { dataUrl, filename: file.name || 'image.png' };
-      renderPendingAgentImage();
-      updateSendState();
-    } catch {
-      showAgentToast('Не удалось прочитать изображение', 'error');
+
+    const batch = list.slice(0, free);
+    const items = [];
+    for (const file of batch) {
+      if (file.size > 15 * 1024 * 1024) {
+        showAgentToast(`«${file.name || 'файл'}» больше 15 МБ — пропущен`, 'error');
+        continue;
+      }
+      try {
+        const dataUrl = await readFileAsDataUrl(file);
+        let previewUrl = '';
+        try { previewUrl = URL.createObjectURL(file); } catch { /* fallback to dataUrl */ }
+        items.push({
+          dataUrl,
+          filename: file.name || 'image.png',
+          previewUrl: previewUrl || '',
+        });
+      } catch {
+        showAgentToast(`Не удалось прочитать «${file.name || 'файл'}»`, 'error');
+      }
+    }
+    if (items.length) appendPendingAgentImages(items);
+    if (list.length > free) {
+      showAgentToast(`Добавлено ${Math.min(items.length, free)} из ${list.length} — лимит ${MAX_PENDING_AGENT_IMAGES}`, 'error');
     }
   }
 
+  async function addAgentImageFromFile(file) {
+    return addAgentImagesFromFiles([file]);
+  }
+
   async function pickAgentImage() {
-    if (!isVisionModelSelected()) {
-      showAgentToast('Изображения: выберите GigaChat-2, 2-Pro или 2-Max', 'error');
+    if (!canAttachAgentImages()) {
+      showAgentToast('Изображения поддерживают GigaChat-2, 2-Pro или 2-Max', 'error');
       return;
     }
-    const r = await window.api.agentPickImage?.();
-    if (r?.canceled) return;
-    if (!r?.ok) {
-      if (r?.message) showAgentToast(r.message, 'error');
-      return;
+    if (window.api?.agentPickImage) {
+      try {
+        const result = await window.api.agentPickImage();
+        if (result?.canceled) return;
+        if (!result?.ok) {
+          if (result?.message) showAgentToast(result.message, 'error');
+          return;
+        }
+        const images = Array.isArray(result.images) && result.images.length
+          ? result.images
+          : (result.image ? [result.image] : []);
+        if (images.length) appendPendingAgentImages(images);
+        return;
+      } catch {
+        /* fallback to hidden file input below */
+      }
     }
-    if (r.image?.dataUrl) {
-      pendingAgentImage = r.image;
-      renderPendingAgentImage();
-      updateSendState();
-    }
+    const input = $('agent-image-input');
+    if (!input) return;
+    input.value = '';
+    input.click();
+  }
+
+  function onAgentImageInputChange(event) {
+    const files = event.target.files;
+    event.target.value = '';
+    if (!files?.length) return;
+    void addAgentImagesFromFiles(files);
   }
 
   function buildUserMessageHtml(text, images) {
     const parts = [];
     const imgs = images?.length ? images : [];
     if (imgs.length) {
-      const imgHtml = imgs
-        .filter((img) => img?.dataUrl)
-        .map((img) => `<img class="agent-user-image" src="${escapeHtml(img.dataUrl)}" alt="" loading="lazy" />`)
-        .join('');
+      const imgHtml = imgs.map((img) => {
+        if (img?.dataUrl) {
+          return `<img class="agent-user-image" src="${escapeHtml(img.dataUrl)}" alt="" loading="lazy" />`;
+        }
+        const name = escapeHtml(img?.filename || 'изображение');
+        return `<div class="agent-user-image agent-user-image--stored" title="${name}">${name}</div>`;
+      }).join('');
       if (imgHtml) parts.push(`<div class="agent-user-images">${imgHtml}</div>`);
     }
     const t = String(text || '').trim();
@@ -2932,7 +3801,7 @@
   }
 
   function updateSendState() {
-    const canSend = !sending && (!!promptEl?.value.trim() || !!pendingAgentImage);
+    const canSend = !sending && (!!promptEl?.value.trim() || pendingAgentImages.length > 0);
     if (sendBtn) sendBtn.disabled = !canSend;
   }
 
@@ -2944,7 +3813,7 @@
         statusBanner.classList.toggle('hidden', !!configured);
         if (!configured) {
           const hint = isKonstanciaProvider()
-            ? 'Обучите локальную Konstancia: <code>npm run ml:train:chat</code> · '
+            ? 'Konstancia сейчас недоступна. '
             : 'Подключите GigaChat: ';
           statusBanner.innerHTML = hint
             + '<a href="#" data-agent-open-settings>Настройки → Konstancia</a>';
@@ -3106,6 +3975,210 @@
       const id = wrap.querySelector('.agent-nb-mockup-btn')?.dataset?.nbGalleryId;
       window.syncBannerMockupFromNanobanana?.({ galleryItemId: id || null, navigate: true });
     });
+  }
+
+  function buildFigmaMakeHtml({ token, summary, prompt, sendResult, enhancements = [], appliedEnhancements = [] }) {
+    const status = sendResult?.submitted
+      ? 'Figma Make открыта — генерация запущена'
+      : (sendResult?.message || 'Figma Make открыта с вашим промптом');
+    const summaryHtml = summary
+      ? `<p>${escapeHtml(summary).replace(/\n/g, '<br>')}</p>`
+      : '';
+    const promptBlock = prompt
+      ? `<details class="agent-nb-prompt"><summary>Промпт для Figma Make</summary><pre class="agent-nb-prompt-pre">${escapeHtml(prompt)}</pre></details>`
+      : '';
+    const available = (enhancements || []).filter((item) => !appliedEnhancements.includes(item.id));
+    const chips = available.map((item) => (
+      `<button type="button" class="agent-make-enhance" data-figma-make-enhance="${escapeAttr(item.id)}" data-figma-make-token="${escapeAttr(token)}" title="${escapeAttr(item.instruction || item.label)}">${escapeHtml(item.label)}</button>`
+    )).join('');
+    const enhanceBlock = chips
+      ? `<div class="agent-make-enhance-wrap"><p class="agent-make-enhance-label">Дополнить промпт и отправить снова:</p><div class="agent-make-enhance-list">${chips}</div></div>`
+      : '';
+    return `
+      <div class="agent-make-ready" data-figma-make-token="${escapeHtml(token)}">
+        <p><strong>Figma Make</strong></p>
+        ${summaryHtml}
+        <p class="agent-make-status">${escapeHtml(status)}</p>
+        ${promptBlock}
+        ${enhanceBlock}
+      </div>`;
+  }
+
+  function bindFigmaMakeActions(wrap) {
+    wrap?.querySelectorAll('[data-figma-make-enhance]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const token = btn.getAttribute('data-figma-make-token');
+        const enhancementId = btn.getAttribute('data-figma-make-enhance');
+        if (!token || !enhancementId) return;
+        btn.disabled = true;
+        btn.classList.add('agent-make-enhance--sending');
+        void sendFigmaMakeEnhance(token, enhancementId).finally(() => {
+          if (btn.isConnected) {
+            btn.disabled = false;
+            btn.classList.remove('agent-make-enhance--sending');
+          }
+        });
+      });
+    });
+  }
+
+  async function sendFigmaMakeEnhance(token, enhancementId) {
+    const session = pendingFigmaMakeSessions.get(token);
+    if (!session) {
+      showAgentToast('Сессия Figma Make устарела — отправьте запрос заново', 'error');
+      return;
+    }
+    if (sending) return;
+    sending = true;
+    updateSendState();
+    const thinking = addThinking(session.task, ['Дополняю промпт…', 'Отправляю в Figma Make…']);
+    try {
+      const result = await window.api.agentFigmaMakeSend?.({
+        message: session.userMessage,
+        task: session.task?.id ? session.task : null,
+        basePrompt: session.prompt,
+        enhancementId,
+      });
+      removeThinking(thinking);
+      if (!result?.ok) {
+        addMessage('assistant', `<p>${escapeHtml(result?.message || 'Ошибка').replace(/\n/g, '<br>')}</p>`, 'Figma Make');
+        return;
+      }
+      session.prompt = result.prompt;
+      session.appliedEnhancements = [...(session.appliedEnhancements || []), enhancementId];
+      pendingFigmaMakeSessions.set(token, session);
+      const root = messagesEl?.querySelector(`[data-figma-make-token="${token}"]`);
+      if (root) {
+        const wrap = root.closest('.agent-msg');
+        const body = wrap?.querySelector('.agent-msg-body .agent-md-wrap, .agent-msg-body .agent-msg-bubble--flat');
+        if (body) {
+          body.innerHTML = buildFigmaMakeHtml({
+            token,
+            summary: result.summary,
+            prompt: result.prompt,
+            sendResult: result.sendResult,
+            enhancements: result.enhancements,
+            appliedEnhancements: session.appliedEnhancements,
+          });
+          bindFigmaMakeActions(body);
+        }
+      } else {
+        const tokenNext = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        pendingFigmaMakeSessions.set(tokenNext, session);
+        const msgWrap = addMessage('assistant', buildFigmaMakeHtml({
+          token: tokenNext,
+          summary: result.summary,
+          prompt: result.prompt,
+          sendResult: result.sendResult,
+          enhancements: result.enhancements,
+          appliedEnhancements: session.appliedEnhancements,
+        }), 'Figma Make');
+        bindFigmaMakeActions(msgWrap);
+      }
+      chatHistory.push({
+        role: 'assistant',
+        content: [result.summary || 'Промпт дополнен и отправлен в Figma Make.', '', result.prompt].join('\n'),
+        meta: 'Figma Make',
+      });
+      saveHistory();
+      showAgentToast('Обновлённый промпт отправлен в Figma Make', 'ok');
+    } catch (err) {
+      removeThinking(thinking);
+      addMessage('assistant', `<p>${escapeHtml(err.message || 'Сбой').replace(/\n/g, '<br>')}</p>`, 'Figma Make');
+    } finally {
+      sending = false;
+      updateSendState();
+    }
+  }
+
+  async function sendFigmaMake(textOverride, options = {}) {
+    const text = (textOverride ?? promptEl?.value ?? '').trim();
+    if (!text || sending) return;
+
+    updateTaskThread(text);
+    sending = true;
+    updateSendState();
+
+    addMessage('user', escapeHtml(text).replace(/\n/g, '<br>'));
+    chatHistory.push({ role: 'user', content: text, taskThread: true });
+    saveHistory();
+
+    if (window.appSettings?.agent?.clearInputAfterSend !== false && promptEl && textOverride == null) {
+      promptEl.value = '';
+      autoResize();
+    }
+
+    const task = getSelectedTask();
+    const thinking = addThinking(task, [
+      'Читаю задачу и запрос…',
+      'Составляю промпт для Figma Make…',
+      'Открываю Figma Make…',
+    ]);
+
+    try {
+      const result = await window.api.agentFigmaMakeSend?.({
+        message: text,
+        task: task?.id ? task : null,
+        enhancementId: options.enhancementId || null,
+        basePrompt: options.basePrompt || null,
+      });
+
+      removeThinking(thinking);
+
+      if (!result?.ok) {
+        let errHtml = `<p>${escapeHtml(result?.message || 'Ошибка').replace(/\n/g, '<br>')}</p>`;
+        if (result?.prompt) {
+          errHtml += `<details class="agent-nb-prompt"><summary>Промпт (не отправлен)</summary><pre class="agent-nb-prompt-pre">${escapeHtml(result.prompt)}</pre></details>`;
+        }
+        addMessage('assistant', errHtml, 'Figma Make');
+        notifyIfAgentInBackground({
+          title: 'Konstancia · Figma Make',
+          body: result?.message || 'Не удалось отправить промпт',
+        });
+        return;
+      }
+
+      const token = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      pendingFigmaMakeSessions.set(token, {
+        prompt: result.prompt,
+        userMessage: text,
+        task,
+        appliedEnhancements: result.enhancementId ? [result.enhancementId] : [],
+      });
+
+      const msgWrap = addMessage('assistant', buildFigmaMakeHtml({
+        token,
+        summary: result.summary,
+        prompt: result.prompt,
+        sendResult: result.sendResult,
+        enhancements: result.enhancements,
+        appliedEnhancements: result.enhancementId ? [result.enhancementId] : [],
+      }), 'Figma Make');
+      bindFigmaMakeActions(msgWrap);
+
+      chatHistory.push({
+        role: 'assistant',
+        content: [result.summary || 'Промпт отправлен в Figma Make.', '', result.prompt].join('\n'),
+        meta: 'Figma Make',
+      });
+      saveHistory();
+
+      notifyIfAgentInBackground({
+        title: 'Konstancia · Figma Make',
+        body: result.summary || 'Промпт отправлен в Figma Make',
+      });
+    } catch (err) {
+      removeThinking(thinking);
+      addMessage('assistant', `<p>${escapeHtml(err.message || 'Сбой').replace(/\n/g, '<br>')}</p>`, 'Figma Make');
+      notifyIfAgentInBackground({
+        title: 'Konstancia · Figma Make',
+        body: err.message || 'Сбой отправки в Figma Make',
+      });
+    } finally {
+      sending = false;
+      updateSendState();
+      promptEl?.focus();
+    }
   }
 
   function buildMockupConfirmHtml({ token, task, mockups }) {
@@ -4052,11 +5125,16 @@
 
   async function sendMessage(textOverride, options = {}) {
     const text = (textOverride ?? promptEl?.value ?? '').trim();
-    const images = pendingAgentImage?.dataUrl ? [{ ...pendingAgentImage }] : [];
+    const images = pendingAgentImages.length
+      ? pendingAgentImages.map((img) => ({ dataUrl: img.dataUrl, filename: img.filename }))
+      : [];
     if ((!text && !images.length) || sending) return;
 
     if (text && isBannerNanobananaIntent(text)) {
       return sendBannerToNanobanana(textOverride);
+    }
+    if (text && isFigmaMakeSendIntent(text)) {
+      return sendFigmaMake(textOverride);
     }
     if (text && isFigmaEditIntent(text)) {
       return sendFigmaPlan(textOverride);
@@ -4064,36 +5142,36 @@
     if (text && isSiteBuildIntent(text)) {
       return sendSiteBuild(textOverride);
     }
-    if (text && isDinDonMusicIntent(text)) {
-      return sendDinDonMusic(textOverride, options);
+    if (options.skipTaskRequirement) taskThreadActive = false;
+    else updateTaskThread(text || 'изображение');
+
+    if (!options.skipTaskRequirement && !isTaskOptionalDecline(text) && !parseTaskOptionalPick(text)) {
+      pendingTaskOptionalQuery = null;
     }
 
-    updateTaskThread(text || 'изображение');
+    if (isTaskOptionalDecline(text) && pendingTaskOptionalQuery) {
+      const deferred = pendingTaskOptionalQuery;
+      pendingTaskOptionalQuery = null;
+      return sendMessage(deferred, {
+        ...options,
+        skipTaskRequirement: true,
+        displayText: TASK_OPTIONAL_DECLINE,
+      });
+    }
+
+    const pickedTaskId = parseTaskOptionalPick(text);
+    if (pickedTaskId && pendingTaskOptionalQuery) {
+      const deferred = pendingTaskOptionalQuery;
+      pendingTaskOptionalQuery = null;
+      setTaskSelectValue(String(pickedTaskId), { silent: true });
+      return sendMessage(deferred, {
+        ...options,
+        displayText: text,
+      });
+    }
 
     const task = getSelectedTask();
-    if (requiresSelectedTask(text) && !task?.id) {
-      sending = true;
-      updateSendState();
-      const displayText = options.displayText ?? userDisplayText(text, images);
-      addMessage('user', buildUserMessageHtml(displayText, images));
-      chatHistory.push({
-        role: 'user',
-        content: text,
-        taskThread: false,
-      });
-      saveHistory();
-      addMessage('assistant', `<p>${TASK_REQUIRED_REPLY}</p>`);
-      chatHistory.push({
-        role: 'assistant',
-        content: TASK_REQUIRED_REPLY.replace(/<\/?strong>/g, '**'),
-      });
-      saveHistory();
-      sending = false;
-      updateSendState();
-      promptEl?.focus();
-      return;
-    }
-
+    window.AgentVtuber?.stopMusicDance?.();
     sending = true;
     updateSendState();
 
@@ -4109,8 +5187,10 @@
     saveHistory();
     window.AgentVtuber?.onChatActive?.({ animate: false });
 
-    pendingAgentImage = null;
-    renderPendingAgentImage();
+    revokePendingImageUrls();
+    pendingAgentImages = [];
+    renderPendingAgentImages();
+    syncStageState();
 
     if (window.appSettings?.agent?.clearInputAfterSend !== false && promptEl && textOverride == null) {
       promptEl.value = '';
@@ -4118,7 +5198,8 @@
     }
 
     const explicitTaskWork = isTaskWorkRequest(text);
-    const useTaskContext = explicitTaskWork
+    const useTaskContext = !options.skipTaskRequirement
+      && explicitTaskWork
       && task
       && window.appSettings?.agent?.useTaskContext !== false;
     const isPikRef = isPikReferencePrompt(text);
@@ -4180,6 +5261,7 @@
           forceRedmineFileSearch: isFileSearch,
           kanbanTasks: kanbanPayload,
           allowFollowups,
+          skipTaskRequirement: options.skipTaskRequirement === true,
           images,
           role: window.RoleNav?.getRole?.() || null,
         });
@@ -4189,23 +5271,43 @@
 
       if (!result?.ok) {
         window.AgentVtuber?.onError?.();
-        addMessage('assistant', `<p>${escapeHtml(result?.message || 'Ошибка запроса').replace(/\n/g, '<br>')}</p>`);
+        const errText = result?.message || 'Ошибка запроса';
+        addMessage('assistant', `<p>${escapeHtml(errText).replace(/\n/g, '<br>')}</p>`, 'Ошибка');
+        appendAssistantToHistory({ content: errText, meta: 'Ошибка' });
         notifyIfAgentInBackground({
           title: 'Konstancia',
-          body: result?.message || 'Ошибка запроса к Konstancia',
+          body: errText,
         });
         return;
       }
 
-      const prepared = prepareAssistantReply(result.content, allowFollowups && !result.direct ? result.followups : []);
-      const meta = result.direct === true
-        ? 'Redmine · поиск файлов'
-        : (useTaskContext && task
+      if (result.taskOptionalPrompt) {
+        pendingTaskOptionalQuery = text;
+      }
+
+      const prepared = prepareAssistantReply(
+        result.content,
+        result.followups?.length ? result.followups : [],
+      );
+      const replyFollowups = result.followups?.length
+        ? result.followups
+        : (allowFollowups && !result.direct ? prepared.followups : []);
+      const meta = result.directMeta
+        || (result.musicAction ? 'Яндекс Музыка'
+          : (result.desktopAction ? 'Компьютер'
+            : (result.indexingStatus ? 'Redmine · поиск файлов' : null)))
+        || (result.direct === true && isFileSearch ? 'Redmine · поиск файлов' : null)
+        || (useTaskContext && task
           ? `Задача #${task.id}`
-          : (result.model ? `GigaChat · ${result.model}` : null));
-      const display = resolveFollowupsForDisplay(prepared.followups, task, allowFollowups, {
-        chatFollowups: isPikRef,
-      });
+          : (result.model
+            ? `${isKonstanciaProvider() || String(result.model).includes('konstancia') ? 'Konstancia' : 'GigaChat'} · ${result.model}`
+            : null));
+      const display = resolveFollowupsForDisplay(
+        replyFollowups,
+        task,
+        allowFollowups || !!result.followups?.length || !!result.taskOptionalPrompt,
+        { chatFollowups: isPikRef || !!result.taskOptionalPrompt },
+      );
 
       const laborHtml = Array.isArray(result.laborEntries) && result.laborEntries.length
         ? buildLaborCardsHtml(result.laborEntries)
@@ -4230,6 +5332,7 @@
           meta: meta || '',
           direct: result.direct === true,
           ok: true,
+          musicPlaying: Boolean(result.musicAction),
         },
       });
       bindLaborAvatarFallbacks(msgWrap);
@@ -4253,6 +5356,14 @@
           }
         }
       }
+      if (result.imageContext) {
+        for (let i = chatHistory.length - 1; i >= 0; i -= 1) {
+          if (chatHistory[i].role === 'user') {
+            chatHistory[i].imageContext = result.imageContext;
+            break;
+          }
+        }
+      }
       chatHistory.push({
         role: 'assistant',
         content: prepared.content,
@@ -4266,10 +5377,12 @@
     } catch (err) {
       removeThinking(thinking);
       window.AgentVtuber?.onError?.();
-      addMessage('assistant', `<p>${escapeHtml(err.message || 'Сбой сети')}</p>`);
+      const errText = err.message || 'Сбой сети';
+      addMessage('assistant', `<p>${escapeHtml(errText)}</p>`, 'Ошибка');
+      appendAssistantToHistory({ content: errText, meta: 'Ошибка' });
       notifyIfAgentInBackground({
         title: 'Konstancia',
-        body: err.message || 'Сбой сети при ответе агента',
+        body: errText,
       });
     } finally {
       sending = false;
@@ -4525,6 +5638,14 @@
           sendBannerToNanobanana(prompt);
           return;
         }
+        if (key === 'make') {
+          if (promptEl) {
+            promptEl.value = prompt;
+            autoResize();
+          }
+          sendFigmaMake(prompt);
+          return;
+        }
         if (key === 'figmaEdit') {
           if (promptEl) {
             promptEl.value = prompt;
@@ -4552,7 +5673,35 @@
   }
 
   function bindComposer() {
-    $('agent-attach')?.addEventListener('click', () => pickAgentImage());
+    $('agent-attach')?.addEventListener('click', () => { void pickAgentImage(); });
+    $('agent-image-input')?.addEventListener('change', onAgentImageInputChange);
+
+    const composerDrop = $('agent-composer-shell') || $('agent-composer');
+    composerDrop?.addEventListener('dragover', (event) => {
+      if (![...event.dataTransfer?.types || []].includes('Files')) return;
+      event.preventDefault();
+    });
+    composerDrop?.addEventListener('drop', (event) => {
+      const files = [...(event.dataTransfer?.files || [])].filter(isImageAttachmentFile);
+      if (!files.length) return;
+      event.preventDefault();
+      void addAgentImagesFromFiles(files);
+    });
+    $('agent-ideas-toggle')?.addEventListener('click', () => toggleAgentIdeasPanel());
+    $('agent-web-hint')?.addEventListener('click', () => {
+      if (!promptEl) return;
+      const prefix = 'Найди актуальную информацию в интернете: ';
+      if (!promptEl.value.trim()) promptEl.value = prefix;
+      else if (!/интернет|погугли|найди/i.test(promptEl.value)) promptEl.value = `${prefix}${promptEl.value}`;
+      promptEl.focus();
+      autoResize();
+      updateSendState();
+    });
+
+    $('agent-composer')?.addEventListener('click', (event) => {
+      if (event.target.closest('.agent-composer-send, .agent-composer-tool, .agent-composer-ideas')) return;
+      promptEl?.focus();
+    });
 
     promptEl?.addEventListener('input', () => {
       autoResize();
@@ -4568,15 +5717,22 @@
     promptEl?.addEventListener('paste', async (event) => {
       const items = event.clipboardData?.items;
       if (!items) return;
+      const imageFiles = [];
       for (const item of items) {
-        if (!item.type.startsWith('image/')) continue;
-        event.preventDefault();
-        const file = item.getAsFile();
-        if (file) await addAgentImageFromFile(file);
-        return;
+        const file = item.getAsFile?.();
+        if (!file || !isImageAttachmentFile(file)) continue;
+        imageFiles.push(file);
       }
+      if (!imageFiles.length) return;
+      event.preventDefault();
+      void addAgentImagesFromFiles(imageFiles);
     });
     sendBtn?.addEventListener('click', () => sendMessage());
+
+    window.addEventListener('beforeunload', () => persistCurrentSession());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') persistCurrentSession();
+    });
 
     messagesEl?.addEventListener('click', (event) => {
       const link = event.target.closest('[data-agent-href]');
@@ -4702,22 +5858,15 @@
     });
   }
 
-  function playSuggestionsEntrance() {
-    const el = $('agent-suggestions');
-    if (!el) return;
-    el.classList.remove('is-anim');
-    void el.offsetHeight;
-    el.classList.add('is-anim');
-  }
-
   window.activateAgentPage = async function activateAgentPage() {
     window.detachMetaskBoard?.();
     renderRoleSuggestions();
     await refreshAgentStatus();
     await loadKanbanTasks();
     renderSessionList({ full: true });
-    playSuggestionsEntrance();
     maybeShowMorningBriefOnActivate();
+    refreshIncomingShares({ notify: true });
+    window.requestAnimationFrame(() => promptEl?.focus());
     window.requestAnimationFrame(() => {
       window.requestAnimationFrame(() => {
         syncStageState();
@@ -4745,15 +5894,7 @@
     document.querySelector('.nav-item[data-page="agent"]')?.click();
     await window.activateAgentPage?.();
 
-    const visionOk = await ensureVisionModelForImages();
-    if (!visionOk) {
-      showAgentToast('Для изображений нужен GigaChat-2', 'error');
-      return { ok: false };
-    }
-
-    pendingAgentImage = { dataUrl, filename: filename || 'pik-reference.png' };
-    renderPendingAgentImage();
-    updateSendState();
+    appendPendingAgentImages([{ dataUrl, filename: filename || 'pik-reference.png' }]);
 
     const prompt = buildPikReferencePrompt({ appTitle, screenLabel, platform });
     const caption = `Референс UI: ${appTitle || 'Приложение'} — ${screenLabel || 'Экран'}${platform ? ` · ${platform}` : ''}`;
@@ -4801,6 +5942,8 @@
     }
 
     bindSessionSidebar();
+    bindShareUi();
+    startSharePolling();
     bindComposer();
     bindChatSettingsUi();
     renderRoleSuggestions();
@@ -4810,7 +5953,6 @@
     refreshAgentStatus();
     autoResize();
     loadKanbanTasks();
-    playSuggestionsEntrance();
 
     window.api.onMetaskTasksUpdated?.((result) => {
       if (Array.isArray(result?.tasks)) applyKanbanTasks(result.tasks);
@@ -4829,6 +5971,7 @@
 
     window.api.onAuthChanged?.(() => {
       refreshUserMessageAvatars();
+      refreshIncomingShares({ notify: false, autoImport: true });
     });
 
     window.addEventListener('user-avatar-updated', () => {

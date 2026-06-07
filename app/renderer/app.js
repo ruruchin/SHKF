@@ -19,7 +19,52 @@ const CATEGORY_ICONS = {
   'Создание': '✦',
 };
 
+function initPillNotifyInApp() {
+  const handleAction = (action) => {
+    if (!action || typeof action !== 'object') return;
+    if (action.type === 'metask-open-task') {
+      window.openMetaskTask?.(action.id, action.url);
+      return;
+    }
+    if (action.type === 'focus-agent') {
+      document.querySelector('.nav-item[data-page="agent"]')?.click();
+      return;
+    }
+    if (action.type === 'konstancia-open-share') {
+      window.openKonstanciaShare?.(action.shareId);
+    }
+  };
+
+  window.api.onKonstanciaOpenShare?.((payload) => {
+    window.openKonstanciaShare?.(payload?.shareId);
+  });
+
+  window.api.onPillNotifyInApp?.((item) => {
+    const stack = document.getElementById('pill-notify-inapp-stack');
+    if (!stack || !window.PillNotifyUI) return;
+    window.PillNotifyUI.showPill(stack, {
+      title: item?.title,
+      subtitle: item?.subtitle,
+      body: item?.body || item?.subtitle,
+      meta: item?.meta,
+      badge: item?.badge,
+      tag: item?.tag,
+      tags: item?.tags,
+      imageUrl: item?.imageUrl || item?.thumbUrl,
+      icon: item?.icon || 'spark',
+      durationMs: item?.durationMs ?? 12000,
+      action: item?.action,
+      onClick: () => handleAction(item?.action),
+    });
+  });
+
+  window.api.onPillNotifyFocusAgent?.(() => {
+    document.querySelector('.nav-item[data-page="agent"]')?.click();
+  });
+}
+
 async function init() {
+  initPillNotifyInApp();
   const auth = await window.initAuthGate?.();
   config = auth?.config || await window.api.getConfig();
   window.__APP_CONFIG__ = config;
@@ -51,7 +96,6 @@ async function init() {
   });
   bindEvents();
   initSettings();
-  initMakeIt();
   initTemplates();
   window.initAgent?.();
   window.initNanobanana?.();
@@ -380,10 +424,12 @@ function bindEvents() {
       $$('.page').forEach((p) => p.classList.remove('active'));
       if (btn.dataset.page !== 'metask') window.detachMetaskBoard?.();
       if (btn.dataset.page !== 'mail') window.detachMailView?.();
+      if (btn.dataset.page !== 'teamchat') window.deactivateTeamChatPage?.();
       btn.classList.add('active');
       $(`#page-${btn.dataset.page}`).classList.add('active');
       if (btn.dataset.page === 'metask') window.activateMetaskPage?.();
       if (btn.dataset.page === 'agent') window.activateAgentPage?.();
+      if (btn.dataset.page === 'teamchat') window.activateTeamChatPage?.();
       if (btn.dataset.page === 'nanobanana') window.activateNanobananaPage?.();
       if (btn.dataset.page === 'magnific') window.activateMagnificPage?.();
       if (btn.dataset.page === 'bannermockup') window.activateBannerMockupPage?.();

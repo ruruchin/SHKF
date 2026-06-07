@@ -48,32 +48,96 @@
     if ($('pf-fullname') && document.activeElement !== $('pf-fullname')) $('pf-fullname').value = p.full_name || '';
     if ($('pf-position') && document.activeElement !== $('pf-position')) $('pf-position').value = p.position || '';
 
-    const img = $('pf-avatar-img');
-    if (img) {
-      if (p.avatar_url) {
-        img.style.backgroundImage = `url("${p.avatar_url}")`;
-        img.textContent = '';
-        img.classList.add('has-img');
-      } else {
-        img.style.backgroundImage = '';
-        img.textContent = initials(p);
-        img.classList.remove('has-img');
-      }
-    }
+    paintAllAvatars(p);
     syncPreview();
   }
 
-  function paintAvatar(el, p) {
-    if (!el || !p) return;
-    if (p.avatar_url) {
-      el.style.backgroundImage = `url("${p.avatar_url}")`;
-      el.textContent = '';
-      el.classList.add('has-img');
-    } else {
-      el.style.backgroundImage = '';
-      el.textContent = initials(p);
-      el.classList.remove('has-img');
+  function avatarDisplayUrl(profile, overrideUrl = null) {
+    const raw = String(overrideUrl || profile?.avatar_url || '').trim();
+    if (!raw) return '';
+    if (raw.startsWith('data:') || raw.startsWith('blob:')) return raw;
+    if (profile?.updated_at && !/[?&]v=/.test(raw)) {
+      const sep = raw.includes('?') ? '&' : '?';
+      return `${raw}${sep}v=${encodeURIComponent(profile.updated_at)}`;
     }
+    if (!/[?&]v=/.test(raw)) {
+      const sep = raw.includes('?') ? '&' : '?';
+      return `${raw}${sep}v=${Date.now()}`;
+    }
+    return raw;
+  }
+
+  const AVATAR_PHOTO_CLASS = 'profile-avatar-photo';
+
+  function preloadAvatarUrl(url) {
+    const src = String(url || '').trim();
+    if (!src) return Promise.resolve(null);
+    if (src.startsWith('data:') || src.startsWith('blob:')) return Promise.resolve(src);
+    return new Promise((resolve) => {
+      const probe = new Image();
+      probe.onload = () => resolve(src);
+      probe.onerror = () => resolve(null);
+      probe.src = src;
+    });
+  }
+
+  function paintAvatar(el, p, { urlOverride = null } = {}) {
+    if (!el) return;
+    const url = avatarDisplayUrl(p, urlOverride);
+    const label = initials(p);
+    let img = el.querySelector(`img.${AVATAR_PHOTO_CLASS}`);
+
+    if (!url) {
+      img?.remove();
+      el.textContent = label;
+      el.classList.remove('has-img');
+      delete el.dataset.avatarUrl;
+      el.style.background = '';
+      return;
+    }
+
+    if (!img) {
+      img = document.createElement('img');
+      img.className = AVATAR_PHOTO_CLASS;
+      img.alt = '';
+      img.draggable = false;
+      el.appendChild(img);
+    }
+
+    for (const node of [...el.childNodes]) {
+      if (node !== img) node.remove();
+    }
+
+    el.classList.add('has-img');
+    el.dataset.avatarUrl = url;
+    el.style.background = '';
+
+    img.onerror = () => {
+      img.remove();
+      el.textContent = label;
+      el.classList.remove('has-img');
+      delete el.dataset.avatarUrl;
+    };
+    img.onload = () => {
+      el.classList.add('has-img');
+    };
+
+    if (img.getAttribute('src') !== url) {
+      img.src = url;
+    } else if (img.complete && img.naturalWidth > 0) {
+      el.classList.add('has-img');
+    }
+  }
+
+  function paintAllAvatars(p, { urlOverride = null } = {}) {
+    paintAvatar($('pf-avatar-img'), p, { urlOverride });
+    paintAvatar($('pf-preview-avatar'), p, { urlOverride });
+    const sidebar = $('sidebar-user-avatar');
+    if (sidebar) paintAvatar(sidebar, p, { urlOverride });
+  }
+
+  function broadcastAvatarUpdate(p) {
+    window.dispatchEvent(new CustomEvent('user-avatar-updated', { detail: { profile: p } }));
   }
 
   function syncPreview() {
@@ -112,7 +176,7 @@
     setProfile(profile || window.getAuthState?.()?.profile);
   }
 
-  function resizeImage(file, max = 512) {
+  function resizeImage(file, max = 384) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
@@ -120,18 +184,15 @@
         const img = new Image();
         img.onerror = () => reject(new Error('Не удалось открыть изображение'));
         img.onload = () => {
-          let { width, height } = img;
-          if (width > max || height > max) {
-            const scale = Math.min(max / width, max / height);
-            width = Math.round(width * scale);
-            height = Math.round(height * scale);
-          }
+          const cropSize = Math.min(img.width, img.height);
+          const sx = Math.floor((img.width - cropSize) / 2);
+          const sy = Math.floor((img.height - cropSize) / 2);
           const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
+          canvas.width = max;
+          canvas.height = max;
           const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', 0.9));
+          ctx.drawImage(img, sx, sy, cropSize, cropSize, 0, 0, max, max);
+          resolve(canvas.toDataURL('image/jpeg', 0.88));
         };
         img.src = reader.result;
       };
@@ -144,20 +205,41 @@
     event.target.value = '';
     if (!file) return;
     const card = $('pf-avatar');
+    const base = profile || window.getAuthState?.()?.profile || {};
+    const full_name = $('pf-fullname')?.value?.trim() ?? base.full_name ?? '';
+    const position = $('pf-position')?.value?.trim() ?? base.position ?? '';
     card?.classList.add('is-uploading');
+    setStatus('pf-save-status', 'Сохраняем аватар…');
     try {
       const dataUrl = await resizeImage(file);
-      const res = await window.api.authUploadAvatar?.({ dataUrl });
+      const optimistic = { ...base, full_name, position, avatar_url: dataUrl };
+      profile = optimistic;
+      paintAllAvatars(optimistic, { urlOverride: dataUrl });
+      broadcastAvatarUpdate(optimistic);
+
+      const res = await window.api.authUploadAvatar?.({ dataUrl, full_name, position });
       if (!res?.ok) {
+        profile = base;
+        paintAllAvatars(base);
+        broadcastAvatarUpdate(base);
         setStatus('pf-save-status', res?.message || 'Не удалось загрузить аватар', 'error');
         return;
       }
-      if (res.profile) {
-        setProfile(res.profile);
-        window.dispatchEvent(new CustomEvent('user-avatar-updated'));
-      }
-      setStatus('pf-save-status', 'Аватар обновлён', 'ok');
+      const remoteUrl = res.avatarUrl || res.profile?.avatar_url || '';
+      const verifiedUrl = remoteUrl ? await preloadAvatarUrl(remoteUrl) : null;
+      const finalAvatarUrl = verifiedUrl || dataUrl;
+      const next = res.profile
+        ? { ...res.profile, avatar_url: finalAvatarUrl }
+        : { ...optimistic, avatar_url: finalAvatarUrl };
+      profile = next;
+      paintAllAvatars(next, { urlOverride: finalAvatarUrl });
+      syncPreview();
+      broadcastAvatarUpdate(next);
+      setStatus('pf-save-status', verifiedUrl ? 'Аватар сохранён' : 'Аватар сохранён локально — проверьте интернет', verifiedUrl ? 'ok' : 'error');
     } catch (err) {
+      profile = base;
+      paintAllAvatars(base);
+      broadcastAvatarUpdate(base);
       setStatus('pf-save-status', err?.message || 'Ошибка загрузки аватара', 'error');
     } finally {
       card?.classList.remove('is-uploading');
@@ -242,5 +324,5 @@
     bind();
   }
 
-  window.Profile = { setProfile, open: openProfilePage };
+  window.Profile = { setProfile, open: openProfilePage, paintAllAvatars, preloadAvatarUrl };
 })();

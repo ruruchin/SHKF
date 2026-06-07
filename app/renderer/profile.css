@@ -31,6 +31,7 @@
 .sidebar-user-card.is-empty:hover { background: color-mix(in srgb, var(--elevated) 55%, transparent); border-color: var(--border); }
 
 .sidebar-user-avatar {
+  position: relative;
   width: 38px;
   height: 38px;
   flex: 0 0 38px;
@@ -38,15 +39,12 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   font-size: 14px;
   font-weight: 800;
   color: var(--accent-text);
   background: var(--accent);
-  background-size: cover;
-  background-position: center;
 }
-
-.sidebar-user-avatar.has-img { color: transparent; }
 
 .sidebar-user-meta {
   flex: 1 1 auto;
@@ -95,7 +93,7 @@
   gap: 24px;
   padding: 28px;
   border-radius: 24px;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid var(--border);
   background: var(--panel);
   margin-bottom: 22px;
@@ -114,24 +112,43 @@
   padding: 0;
   cursor: pointer;
   background: none;
+  overflow: hidden;
 }
 
 .pf-avatar-img {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   height: 100%;
-  border-radius: 28px;
+  border-radius: inherit;
+  overflow: hidden;
   font-size: 42px;
   font-weight: 900;
   color: var(--accent-text);
   background: var(--accent);
-  background-size: cover;
-  background-position: center;
 }
 
-.pf-avatar-img.has-img { color: transparent; }
+.pf-avatar-img .profile-avatar-photo,
+.pf-preview-avatar .profile-avatar-photo,
+.sidebar-user-avatar .profile-avatar-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: inherit;
+}
+
+.pf-avatar-img.has-img,
+.pf-preview-avatar.has-img,
+.sidebar-user-avatar.has-img {
+  color: transparent;
+  background: color-mix(in srgb, var(--elevated) 70%, transparent);
+}
 
 .pf-avatar-edit {
   position: absolute;
@@ -368,15 +385,12 @@
   height: 90px;
   margin: 28px auto 14px;
   border-radius: 24px;
+  overflow: hidden;
   background: var(--accent);
-  background-position: center;
-  background-size: cover;
   color: var(--accent-text);
   font-size: 28px;
   font-weight: 900;
 }
-
-.pf-preview-avatar.has-img { color: transparent; }
 
 .pf-preview-name {
   font-size: 21px;
@@ -564,6 +578,7 @@
   height: 148px;
   flex-basis: 148px;
   border-radius: 36px;
+  overflow: hidden;
   transform: rotate(2deg);
   transition: transform 0.2s ease, filter 0.2s ease;
 }
@@ -573,10 +588,17 @@
   transform: rotate(0deg) translateY(-2px);
 }
 
-[data-theme="mobbin"] .pf-avatar-img {
+[data-theme="mobbin"] .pf-avatar-img:not(.has-img) {
   border-radius: 36px;
   background: linear-gradient(135deg, #6E56CF, #13A36E);
   box-shadow: var(--mobbin-shadow-strong);
+}
+
+[data-theme="mobbin"] .pf-avatar-img.has-img,
+[data-theme="mobbin"] .pf-preview-avatar.has-img {
+  border-radius: inherit;
+  box-shadow: var(--mobbin-shadow-strong);
+  background: color-mix(in srgb, var(--elevated) 70%, transparent);
 }
 
 [data-theme="mobbin"] .pf-avatar-edit {
@@ -631,7 +653,7 @@
     radial-gradient(circle at 50% 90%, rgba(221, 248, 238, 0.70), transparent 36%);
 }
 
-[data-theme="mobbin"] .pf-preview-avatar {
+[data-theme="mobbin"] .pf-preview-avatar:not(.has-img) {
   position: relative;
   z-index: 1;
   display: inline-flex;
@@ -652,7 +674,18 @@
 }
 
 [data-theme="mobbin"] .pf-preview-avatar.has-img {
-  color: transparent;
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+  margin: 46px auto 18px;
+  border: 8px solid rgba(255,255,255,0.88);
+  border-radius: 36px;
+  overflow: hidden;
+  box-shadow: var(--mobbin-shadow-strong);
 }
 
 [data-theme="mobbin"] .pf-preview-name {

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { existsSync, writeFileSync, mkdirSync } from 'fs';
 import path from 'path';
 import { SUPABASE_CONFIG } from '../shared/supabase-config.js';
 
@@ -10,12 +10,30 @@ function readEnv(name) {
 export function isSupabaseNetworkError(err) {
   const msg = String(err?.message || err || '');
   const code = String(err?.code || err?.cause?.code || '');
-  return /fetch failed|network|timeout|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|UND_ERR_CONNECT_TIMEOUT|Connect Timeout/i.test(msg)
+  return /fetch failed|network|timeout|aborted|ECONNREFUSED|ENOTFOUND|ETIMEDOUT|EAI_AGAIN|UND_ERR_CONNECT_TIMEOUT|Connect Timeout|AbortError/i.test(msg)
     || /^UND_ERR_/.test(code);
 }
 
+function fetchWithTimeout(url, options = {}, timeoutMs = 25000) {
+  const { timeoutMs: _drop, ...rest } = options;
+  const ms = Number(timeoutMs) > 0 ? Number(timeoutMs) : 25000;
+  const signals = [];
+  if (rest.signal) signals.push(rest.signal);
+  if (typeof AbortSignal.timeout === 'function') {
+    signals.push(AbortSignal.timeout(ms));
+  } else {
+    const ac = new AbortController();
+    setTimeout(() => ac.abort(), ms);
+    signals.push(ac.signal);
+  }
+  const signal = signals.length > 1 && typeof AbortSignal.any === 'function'
+    ? AbortSignal.any(signals)
+    : signals[signals.length - 1];
+  return fetch(url, { ...rest, signal });
+}
+
 export const SUPABASE_OFFLINE_HINT =
-  'Supabase недоступен (сеть или таймаут 10 с). Проверьте интернет/VPN. Локальные функции и сохранённый вход работают без облака.';
+  'Supabase недоступен (сеть или таймаут). Проверьте интернет/VPN. Локальные функции работают без облака.';
 
 function safeUser(user) {
   if (!user) return null;
@@ -56,6 +74,8 @@ export class AuthService {
     this.client = null;
     this.session = null;
     this.profile = null;
+    this._restAuthToken = null;
+    this._sessionEnsuredAt = 0;
 
     if (this.isConfigured()) {
       this.client = createClient(this.supabaseUrl, this.supabaseAnonKey, {
@@ -64,9 +84,48 @@ export class AuthService {
           persistSession: false,
           detectSessionInUrl: false,
         },
+        global: {
+          fetch: (url, options = {}) => fetchWithTimeout(url, options, 25000),
+        },
       });
-      this.restoreSession();
+      this.clearStoredSession();
     }
+  }
+
+  /** Каждый запуск — с чистого листа, без автологина из auth-session.json. */
+  clearStoredSession() {
+    this.session = null;
+    this.profile = null;
+    this._restAuthToken = null;
+    try {
+      if (existsSync(this.sessionPath)) {
+        writeFileSync(this.sessionPath, '{}', 'utf-8');
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  /** Применить JWT к PostgREST/Storage без сетевого auth.setSession (быстрый путь после рестарта). */
+  applyRestAuth() {
+    const token = String(this.session?.access_token || '').trim();
+    if (!this.client || !token) return false;
+    if (this._restAuthToken === token) return true;
+    const authHeader = `Bearer ${token}`;
+
+    const setHeader = (headers) => {
+      if (!headers) return;
+      if (typeof headers.set === 'function') {
+        headers.set('Authorization', authHeader);
+        return;
+      }
+      headers.Authorization = authHeader;
+    };
+
+    setHeader(this.client.rest?.headers);
+    setHeader(this.client.storage?.headers);
+    this._restAuthToken = token;
+    return true;
   }
 
   isConfigured() {
@@ -79,27 +138,17 @@ export class AuthService {
     }
   }
 
-  restoreSession() {
-    try {
-      if (!existsSync(this.sessionPath)) return;
-      const raw = JSON.parse(readFileSync(this.sessionPath, 'utf-8'));
-      if (raw?.access_token && raw?.refresh_token) this.session = raw;
-    } catch {
-      this.session = null;
-    }
-  }
-
   persistSession(session) {
-    mkdirSync(this.userDataPath, { recursive: true });
-    if (!session) {
-      try {
-        writeFileSync(this.sessionPath, '{}', 'utf-8');
-      } catch {
-        /* ignore */
-      }
+    if (session) {
+      // Токены держим только в памяти до закрытия приложения.
       return;
     }
-    writeFileSync(this.sessionPath, JSON.stringify(session, null, 2), 'utf-8');
+    mkdirSync(this.userDataPath, { recursive: true });
+    try {
+      writeFileSync(this.sessionPath, '{}', 'utf-8');
+    } catch {
+      /* ignore */
+    }
   }
 
   async refreshSession() {
@@ -117,6 +166,7 @@ export class AuthService {
       }
       this.session = data.session;
       this.persistSession(this.session);
+      this.applyRestAuth();
       return this.session;
     } catch (err) {
       if (isSupabaseNetworkError(err)) return this.session;
@@ -214,15 +264,44 @@ export class AuthService {
     if (!this.session?.access_token || !this.session?.refresh_token) {
       throw new Error('Не выполнен вход');
     }
+    this.applyRestAuth();
+
+    const now = Date.now();
+    const expiresAt = Number(this.session.expires_at || 0) * 1000;
+    if (this._sessionEnsuredAt && now - this._sessionEnsuredAt < 45_000 && expiresAt - now > 90_000) {
+      return true;
+    }
+
+    if (expiresAt && expiresAt - now < 60_000) {
+      try {
+        await this.refreshSession();
+      } catch (err) {
+        if (isSupabaseNetworkError(err)) {
+          this._sessionEnsuredAt = now;
+          return true;
+        }
+        throw err;
+      }
+      this.applyRestAuth();
+    }
+
+    this._sessionEnsuredAt = now;
+    return true;
+  }
+
+  /** Полная синхронизация с GoTrue (нужна для auth.updateUser). */
+  async ensureGoTrueSession() {
+    await this.ensureClientSession();
     try {
-      await this.client.auth.setSession({
+      const { error } = await this.client.auth.setSession({
         access_token: this.session.access_token,
         refresh_token: this.session.refresh_token,
       });
+      if (error) throw error;
       return true;
     } catch (err) {
-      if (isSupabaseNetworkError(err)) return false;
-      return false;
+      if (isSupabaseNetworkError(err)) return this.applyRestAuth();
+      throw err;
     }
   }
 
@@ -234,6 +313,7 @@ export class AuthService {
       if (error) return { ok: false, message: this.formatAuthError(error) };
       this.session = data.session;
       this.persistSession(this.session);
+      this.applyRestAuth();
       let profile = null;
       try {
         profile = await this.fetchProfile();
@@ -257,6 +337,7 @@ export class AuthService {
   async signOut() {
     this.session = null;
     this.profile = null;
+    this._restAuthToken = null;
     this.persistSession(null);
     return { ok: true };
   }
@@ -296,7 +377,7 @@ export class AuthService {
     if (!this.session?.user?.id) return { ok: false, message: 'Не выполнен вход' };
     const pwd = String(newPassword || '');
     if (pwd.length < 6) return { ok: false, message: 'Пароль должен быть не короче 6 символов' };
-    await this.ensureClientSession();
+    await this.ensureGoTrueSession();
     const { error } = await this.client.auth.updateUser({ password: pwd });
     if (error) return { ok: false, message: error.message };
 
@@ -340,30 +421,68 @@ export class AuthService {
   }
 
   /** Загрузить аватар (data:URL) в storage и записать ссылку в профиль. */
-  async uploadAvatar(dataUrl) {
+  async uploadAvatar(dataUrl, profilePatch = {}) {
     this.ensureConfigured();
     if (!this.session?.user?.id) return { ok: false, message: 'Не выполнен вход' };
     const match = String(dataUrl || '').match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i);
     if (!match) return { ok: false, message: 'Неподдерживаемый формат изображения' };
-    const contentType = match[1];
-    const ext = contentType.split('/')[1].replace('jpeg', 'jpg').replace('+xml', '').replace('svg', 'svg');
-    const buffer = Buffer.from(match[2], 'base64');
-    if (buffer.length > 4 * 1024 * 1024) return { ok: false, message: 'Аватар слишком большой (макс. 4 МБ)' };
 
-    await this.ensureClientSession();
-    const userId = this.session.user.id;
-    const filePath = `${userId}/avatar_${Date.now()}.${ext || 'png'}`;
-    const { error: upErr } = await this.client.storage
-      .from('avatars')
-      .upload(filePath, buffer, { contentType, upsert: true });
-    if (upErr) return { ok: false, message: upErr.message };
+    try {
+      await this.ensureClientSession();
+      const userId = this.session.user.id;
+      const contentType = match[1].includes('jpeg') || match[1].includes('jpg') ? 'image/jpeg' : match[1];
+      const buffer = Buffer.from(match[2], 'base64');
+      if (buffer.length > 2 * 1024 * 1024) {
+        return { ok: false, message: 'Аватар слишком большой — выберите файл поменьше' };
+      }
 
-    const { data: pub } = this.client.storage.from('avatars').getPublicUrl(filePath);
-    const url = pub?.publicUrl || '';
-    const { error: pErr } = await this.client.from('profiles').update({ avatar_url: url }).eq('id', userId);
-    if (pErr) return { ok: false, message: pErr.message };
-    if (this.profile) this.profile.avatar_url = url;
-    return { ok: true, avatarUrl: url, profile: this.profile };
+      const filePath = `${userId}/avatar.jpg`;
+      const uploadUrl = `${this.supabaseUrl}/storage/v1/object/avatars/${filePath}`;
+      const uploadRes = await fetchWithTimeout(uploadUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.session.access_token}`,
+          apikey: this.supabaseAnonKey,
+          'Content-Type': contentType,
+          'x-upsert': 'true',
+        },
+        body: buffer,
+      }, 90000);
+
+      if (!uploadRes.ok) {
+        const detail = await uploadRes.text().catch(() => '');
+        const message = detail || uploadRes.statusText || 'Не удалось загрузить файл';
+        return { ok: false, message: String(message).slice(0, 240) };
+      }
+
+      const { data: pub } = this.client.storage.from('avatars').getPublicUrl(filePath);
+      const baseUrl = pub?.publicUrl || '';
+      if (!baseUrl) return { ok: false, message: 'Не удалось получить ссылку на аватар' };
+
+      const avatarUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+      const update = { avatar_url: avatarUrl };
+      if (profilePatch.full_name !== undefined) {
+        update.full_name = String(profilePatch.full_name || '');
+      }
+      if (profilePatch.position !== undefined) {
+        update.position = String(profilePatch.position || '');
+      }
+
+      const { data, error: pErr } = await this.client
+        .from('profiles')
+        .update(update)
+        .eq('id', userId)
+        .select(PROFILE_COLUMNS)
+        .single();
+      if (pErr) return { ok: false, message: pErr.message };
+      this.profile = data || { ...(this.profile || {}), ...update };
+      return { ok: true, avatarUrl, profile: this.profile };
+    } catch (err) {
+      if (isSupabaseNetworkError(err)) {
+        return { ok: false, message: 'Таймаут загрузки аватара. Проверьте интернет и попробуйте ещё раз.' };
+      }
+      return { ok: false, message: err?.message || 'Не удалось загрузить аватар' };
+    }
   }
 
   async fetchUserSettings() {

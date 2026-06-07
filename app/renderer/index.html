@@ -12,7 +12,6 @@
   <link rel="stylesheet" href="search-page.css" />
   <link rel="stylesheet" href="demos.css" />
   <link rel="stylesheet" href="hotkeys-ui.css" />
-  <link rel="stylesheet" href="make-it.css" />
   <link rel="stylesheet" href="agent.css" />
   <link rel="stylesheet" href="agent-vtuber.css" />
   <link rel="stylesheet" href="onboarding.css" />
@@ -24,11 +23,14 @@
   <link rel="stylesheet" href="studio-theme.css" />
   <link rel="stylesheet" href="search-ui.css" />
   <link rel="stylesheet" href="sidebar-ui.css" />
+  <link rel="stylesheet" href="sidebar-rail.css" />
   <link rel="stylesheet" href="custom-themes.css" />
   <link rel="stylesheet" href="metask.css" />
+  <link rel="stylesheet" href="pill-notify.css" />
   <link rel="stylesheet" href="mail.css" />
   <link rel="stylesheet" href="webtab.css" />
   <link rel="stylesheet" href="notes.css" />
+  <link rel="stylesheet" href="team-chat.css" />
   <link rel="stylesheet" href="nanobanana.css" />
   <link rel="stylesheet" href="banner-mockup.css" />
   <link rel="stylesheet" href="role-picker.css" />
@@ -42,8 +44,12 @@
 </head>
 <body>
   <div class="auth-gate hidden" id="auth-gate">
-    <div class="auth-bg-scene" aria-hidden="true"></div>
-    <div class="auth-card" id="auth-card">
+    <div class="auth-bg-scene" aria-hidden="true">
+      <div class="auth-bg-glow auth-bg-glow--lavender"></div>
+      <div class="auth-bg-glow auth-bg-glow--blue"></div>
+    </div>
+    <div class="auth-layout">
+      <div class="auth-card" id="auth-card">
       <form class="auth-step" id="auth-step-login">
         <div class="auth-brand">
           <span class="auth-logo" aria-hidden="true">
@@ -98,6 +104,8 @@
           <button type="submit" class="auth-submit" id="auth-cp-submit">Сохранить и войти</button>
         </div>
       </form>
+      </div>
+      <div class="auth-live2d-host" id="auth-live2d-host" aria-hidden="true"></div>
     </div>
   </div>
   <div class="shell">
@@ -180,13 +188,25 @@
       <div class="manga-onomatopoeia manga-fx-don">ドン</div>
     </div>
     <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">
-          <img class="brand-logo" src="assets/brand/logo.png" alt="" width="28" height="28" decoding="async" />
+    <aside class="sidebar sidebar-rail" id="app-sidebar">
+      <div class="sidebar-rail-top">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <img class="brand-logo" src="assets/brand/logo.png" alt="" width="32" height="32" decoding="async" />
+          </div>
+          <span class="brand-name">SHKF</span>
         </div>
-        <span class="brand-name">SHKF</span>
+
+        <button type="button" class="sidebar-user-card is-empty" id="sidebar-user-card" title="Профиль">
+          <span class="sidebar-user-avatar" id="sidebar-user-avatar"></span>
+          <span class="sidebar-user-meta">
+            <span class="sidebar-user-name" id="sidebar-user-name">Гость</span>
+            <span class="sidebar-user-position" id="sidebar-user-position">Не выполнен вход</span>
+          </span>
+          <svg class="sidebar-user-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
       </div>
+
       <div class="sidebar-update-wrap hidden" id="sidebar-update-wrap">
         <button type="button" class="sidebar-update-btn" id="sidebar-update-btn">
           <svg class="sidebar-update-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -213,10 +233,6 @@
           <button class="nav-item" data-page="pikfolder">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
             PIK-FOLDER
-          </button>
-          <button class="nav-item" data-page="makeit">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z"/><circle cx="18" cy="18" r="2" fill="currentColor" stroke="none"/></svg>
-            Make it
           </button>
           <button class="nav-item" data-page="templates">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
@@ -249,6 +265,13 @@
               <img class="agent-brand-avatar-img" data-agent-brand-avatar alt="" width="18" height="18" />
             </span>
             Konstancia
+          </button>
+          <button class="nav-item" data-page="teamchat" data-tooltip="Команда">
+            <span class="nav-item-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/></svg>
+              <span class="nav-item-badge hidden" id="nav-teamchat-badge" aria-hidden="true"></span>
+            </span>
+            <span class="nav-item-label">Команда</span>
           </button>
           <button class="nav-item" data-page="mail">
             <img class="nav-icon" src="assets/icons/gmail.png" alt="" width="18" height="18" decoding="async" />
@@ -296,14 +319,14 @@
         </video>
       </div>
 
-      <button type="button" class="sidebar-user-card is-empty" id="sidebar-user-card" title="Профиль">
-        <span class="sidebar-user-avatar" id="sidebar-user-avatar"></span>
-        <span class="sidebar-user-meta">
-          <span class="sidebar-user-name" id="sidebar-user-name">Гость</span>
-          <span class="sidebar-user-position" id="sidebar-user-position">Не выполнен вход</span>
-        </span>
-        <svg class="sidebar-user-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
+      <div class="sidebar-rail-footer">
+        <button type="button" class="sidebar-rail-foot-btn" id="sidebar-rail-toggle" aria-label="Развернуть меню" title="Развернуть меню">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/><path d="M19 6v12"/></svg>
+        </button>
+        <button type="button" class="sidebar-rail-foot-btn" id="sidebar-rail-help" aria-label="Справка" title="Справка">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.6 2.6 0 014.8 1c0 1.6-2.3 1.8-2.3 3.1"/><circle cx="12" cy="17" r="0.5" fill="currentColor" stroke="none"/></svg>
+        </button>
+      </div>
     </aside>
 
     <!-- Main panel -->
@@ -343,12 +366,6 @@
                 <span class="pik-filter-label">Тип экрана</span>
                 <div class="pik-screen-types" id="pik-screen-types" aria-label="Тип экрана"></div>
               </div>
-            </div>
-            <div class="pik-app-bar hidden" id="pik-app-bar">
-              <button type="button" class="pik-app-back" id="pik-app-back" aria-label="Назад к приложениям">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-                Приложения
-              </button>
             </div>
             <header class="pik-company-hero hidden" id="pik-company-hero"></header>
             <div class="pik-scroll" id="pik-scroll">
@@ -534,60 +551,6 @@
             </div>
             <button class="btn-secondary" id="btn-open-plugin" style="margin-top:16px">Открыть папку плагина</button>
           </div>
-          </div>
-        </section>
-
-        <!-- MAKE IT — Chat -->
-        <section class="page" id="page-makeit">
-          <div class="make-chat">
-            <div class="make-chat-bg" aria-hidden="true">
-              <img class="make-chat-bg-gif" src="assets/mangaplus/make-bg.gif" alt="" draggable="false" />
-            </div>
-            <div class="make-bg-layer" aria-hidden="true">
-              <span class="make-bg-base"></span>
-              <span class="make-bg-spotlight"></span>
-              <span class="make-bg-accent make-bg-accent--warm"></span>
-              <span class="make-bg-accent make-bg-accent--cool"></span>
-              <span class="make-bg-grid"></span>
-              <span class="make-bg-vignette"></span>
-              <span class="make-bg-noise"></span>
-            </div>
-            <header class="make-chat-header">
-              <div class="make-chat-brand">
-                <div class="make-chat-avatar">✦</div>
-                <div>
-                  <h2 class="make-chat-title">Figma Make</h2>
-                  <span class="make-chat-sub" id="make-chat-sub">AI-прототипы из текста</span>
-                </div>
-              </div>
-              <button type="button" class="make-chat-new" id="make-chat-clear" title="Новый чат">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-                Новый
-              </button>
-            </header>
-
-            <div class="make-messages" id="make-messages"></div>
-
-            <div class="make-composer-wrap">
-              <div class="make-suggestions" id="make-suggestions">
-                <button type="button" class="make-sug" data-prompt-key="onboard">Onboarding</button>
-                <button type="button" class="make-sug" data-prompt-key="dash">Dashboard</button>
-                <button type="button" class="make-sug" data-prompt-key="land">Landing</button>
-                <button type="button" class="make-sug" data-prompt-key="modal">Modal</button>
-              </div>
-              <div class="make-composer" id="make-composer">
-                <textarea id="make-prompt" class="make-composer-input" rows="1" placeholder="Опишите интерфейс для Figma Make…"></textarea>
-                <div class="make-composer-bar">
-                  <button type="button" class="make-composer-mic" id="make-mic" title="Голосовой ввод">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
-                  </button>
-                  <span class="make-mic-label" id="make-mic-status"></span>
-                  <button type="button" class="make-composer-send" id="make-send" disabled aria-label="Создать">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-                  </button>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -1204,12 +1167,20 @@
                     <h3 class="agent-sidebar-title">Чаты</h3>
                   </div>
                   <div class="agent-sidebar-head-actions">
+                    <button type="button" class="agent-sidebar-select-btn" id="agent-session-select-mode" title="Выбрать несколько" aria-pressed="false" aria-label="Выбрать несколько">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12l2 2 4-4"/></svg>
+                    </button>
                     <button type="button" class="agent-sidebar-new" id="agent-session-new" title="Новый чат">+ Новый</button>
                     <button type="button" class="agent-sidebar-hide" id="agent-sidebar-hide" title="Скрыть чаты" aria-label="Скрыть чаты" aria-expanded="true">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
                     </button>
                   </div>
                 </div>
+                <div class="agent-session-bulk hidden" id="agent-session-bulk">
+                  <span class="agent-session-bulk-count" id="agent-session-bulk-count">0 выбрано</span>
+                  <button type="button" class="agent-session-bulk-delete" id="agent-session-bulk-delete" disabled>Удалить</button>
+                </div>
+                <div class="agent-share-inbox hidden" id="agent-share-inbox" aria-live="polite"></div>
                 <div class="agent-session-list" id="agent-session-list"></div>
               </aside>
               <div class="agent-main">
@@ -1249,6 +1220,9 @@
                       </select>
                     </div>
                     <button type="button" class="agent-tool-btn" id="agent-morning-brief-btn" title="Утренний бриф по задачам Kanban">Бриф</button>
+                    <button type="button" class="agent-settings-btn" id="agent-chat-share-btn" title="Поделиться чатом" aria-label="Поделиться чатом">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+                    </button>
                     <button type="button" class="agent-settings-btn" id="agent-settings-btn" title="Настройки чата" aria-label="Настройки чата">
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
                     </button>
@@ -1319,7 +1293,6 @@
               </div>
 
               <footer class="agent-dock">
-                <div class="agent-composer-attachments hidden" id="agent-composer-attachments" aria-live="polite"></div>
                 <div class="agent-dock-bottom">
                   <div class="agent-dock-presence hidden" id="agent-vtuber-composer-slot" aria-hidden="true">
                     <div class="agent-vtuber-thought hidden" id="agent-vtuber-thought" aria-live="polite">
@@ -1329,14 +1302,8 @@
                     </div>
                   </div>
                   <div class="agent-dock-main">
-                <div class="agent-composer-status hidden" id="agent-composer-status" aria-live="polite" aria-atomic="true">
-                  <span class="agent-composer-status-pulse" aria-hidden="true"></span>
-                  <span class="agent-composer-status-copy">
-                    <strong class="agent-composer-status-label">Konstancia думает</strong>
-                    <span class="agent-composer-status-step" id="agent-composer-status-step"></span>
-                  </span>
-                </div>
-                <div class="agent-suggestions" id="agent-suggestions">
+                <div class="agent-composer-shell" id="agent-composer-shell">
+                <div class="agent-suggestions hidden" id="agent-suggestions">
                   <button type="button" class="agent-sug agent-sug--analyze" data-agent-action="analyze" title="Оценить задачу">
                     <span class="agent-sug-icon" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
                     <span class="agent-sug-label">Оценить</span>
@@ -1366,14 +1333,32 @@
                     <span class="agent-sug-label">Трудозатраты</span>
                   </button>
                 </div>
+                <div class="agent-composer-attachments hidden" id="agent-composer-attachments" aria-live="polite"></div>
                 <div class="agent-composer" id="agent-composer">
-                  <button type="button" class="agent-composer-attach" id="agent-attach" title="Прикрепить изображение (GigaChat-2 / Pro / Max)" aria-label="Прикрепить изображение">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
-                  </button>
                   <textarea id="agent-prompt" class="agent-composer-input" rows="1" placeholder="Спросите Konstancia или вставьте код для проверки…" spellcheck="true"></textarea>
-                  <button type="button" class="agent-composer-send" id="agent-send" disabled aria-label="Отправить">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M7 17L17 7M17 7H9M17 7v8"/></svg>
-                  </button>
+                  <div class="agent-composer-toolbar">
+                    <div class="agent-composer-tools">
+                      <button type="button" class="agent-composer-tool" id="agent-attach" title="Прикрепить изображения (можно несколько за раз)" aria-label="Прикрепить изображения">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                      </button>
+                      <button type="button" class="agent-composer-tool" id="agent-web-hint" title="Вопрос с поиском в интернете" aria-label="Поиск в интернете">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                      </button>
+                      <button type="button" class="agent-composer-ideas" id="agent-ideas-toggle" aria-pressed="false" aria-expanded="false">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 017 7c0 2.5-1.3 4.7-3.2 6.1L15 18H9l-.8-2.9A7 7 0 0112 2z"/></svg>
+                        <span>Подсказки</span>
+                      </button>
+                    </div>
+                    <button type="button" class="agent-composer-send" id="agent-send" disabled aria-label="Отправить">
+                      <svg class="agent-composer-send-icon agent-composer-send-icon--send" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <input type="file" id="agent-image-input" class="agent-file-input-offscreen" multiple accept="image/png,image/jpeg,image/jpg,image/webp,image/bmp,image/gif,.png,.jpg,.jpeg,.webp,.bmp,.gif" tabindex="-1" aria-hidden="true" />
+                <div class="agent-composer-status hidden" id="agent-composer-status" aria-live="polite" aria-atomic="true">
+                  <span class="agent-composer-status-spinner" aria-hidden="true"></span>
+                  <span class="agent-composer-status-text" id="agent-composer-status-step">Думаю…</span>
+                </div>
                 </div>
                   </div>
                 </div>
@@ -1587,6 +1572,96 @@
                 allowpopups
                 src="about:blank"
               ></webview>
+            </div>
+          </div>
+        </section>
+
+        <!-- TEAM CHAT -->
+        <section class="page" id="page-teamchat">
+          <div class="teamchat-page">
+            <div class="teamchat-auth hidden" id="teamchat-auth">
+              <p id="teamchat-auth-text">Войдите в SHKF, чтобы писать коллегам.</p>
+              <button type="button" class="btn-secondary btn-sm" id="teamchat-auth-login">Открыть вход</button>
+            </div>
+
+            <div class="teamchat-body hidden" id="teamchat-workspace">
+              <aside class="teamchat-sidebar">
+                <div class="teamchat-sidebar-top">
+                  <h2 class="teamchat-sidebar-title">Переписки</h2>
+                  <button type="button" class="teamchat-icon-btn" id="teamchat-refresh" title="Обновить" aria-label="Обновить">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12a9 9 0 11-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+                  </button>
+                </div>
+                <label class="teamchat-search-wrap">
+                  <svg class="teamchat-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                  <input type="search" id="teamchat-people-search" class="teamchat-people-search" placeholder="Поиск по имени или @логину…" autocomplete="off" />
+                </label>
+                <div class="teamchat-sidebar-scroll">
+                  <section class="teamchat-section">
+                    <h3 class="teamchat-section-label">Каналы</h3>
+                    <div class="teamchat-rooms" id="teamchat-rooms"></div>
+                  </section>
+                  <section class="teamchat-section">
+                    <h3 class="teamchat-section-label">Личные сообщения <span class="teamchat-people-count" id="teamchat-people-count"></span></h3>
+                    <div class="teamchat-colleagues" id="teamchat-colleagues"></div>
+                  </section>
+                </div>
+                <div class="teamchat-sidebar-status" id="teamchat-status-text" aria-live="polite"></div>
+              </aside>
+
+              <div class="teamchat-main">
+                <header class="teamchat-profile-head">
+                  <div class="teamchat-profile-avatar-wrap" id="teamchat-profile-avatar-wrap">
+                    <div class="teamchat-profile-avatar" id="teamchat-profile-avatar" aria-hidden="true">ALL</div>
+                  </div>
+                  <div class="teamchat-profile-copy">
+                    <h2 class="teamchat-main-title" id="teamchat-main-title">Общий</h2>
+                    <p class="teamchat-main-sub" id="teamchat-main-sub"></p>
+                  </div>
+                  <div class="teamchat-profile-actions">
+                    <button type="button" class="teamchat-icon-btn teamchat-pin-room-btn hidden" id="teamchat-pin-room" title="Закрепить чат" aria-label="Закрепить чат">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 17v5"/><path d="M9 3h6l1 7H8L9 3z"/><path d="M9 10v2a3 3 0 006 0v-2"/></svg>
+                    </button>
+                  </div>
+                </header>
+
+                <div class="teamchat-pinned-bar hidden" id="teamchat-pinned-bar"></div>
+
+                <div class="teamchat-messages" id="teamchat-messages"></div>
+
+                <footer class="teamchat-composer-wrap">
+                  <div class="teamchat-composer-label">Продолжить переписку</div>
+                  <div class="teamchat-pending hidden" id="teamchat-pending"></div>
+                  <div class="teamchat-composer">
+                    <button type="button" class="teamchat-composer-btn" id="teamchat-attach" title="Прикрепить файл" aria-label="Прикрепить файл">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                    </button>
+                    <textarea id="teamchat-input" class="teamchat-input" rows="1" placeholder="Напишите сообщение…"></textarea>
+                    <button type="button" class="teamchat-send-btn" id="teamchat-send" title="Отправить" aria-label="Отправить">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    </button>
+                  </div>
+                  <input type="file" id="teamchat-file-input" class="hidden" multiple accept="image/*,video/*,.pdf,.zip,.fig,.sketch" />
+                </footer>
+              </div>
+            </div>
+          </div>
+          <div class="teamchat-context-menu hidden" id="teamchat-context-menu" role="menu" aria-hidden="true"></div>
+          <div class="teamchat-forward-overlay hidden" id="teamchat-forward-overlay" aria-hidden="true">
+            <div class="teamchat-forward-modal" role="dialog" aria-labelledby="teamchat-forward-title">
+              <div class="teamchat-forward-head">
+                <h3 id="teamchat-forward-title">Переслать сообщение</h3>
+                <button type="button" class="teamchat-forward-close" id="teamchat-forward-close" aria-label="Закрыть">×</button>
+              </div>
+              <p class="teamchat-forward-preview" id="teamchat-forward-preview"></p>
+              <label class="teamchat-forward-search-wrap">
+                <input type="search" id="teamchat-forward-search" class="teamchat-forward-search" placeholder="Поиск коллеги…" autocomplete="off" />
+              </label>
+              <div class="teamchat-forward-list" id="teamchat-forward-list"></div>
+              <div class="teamchat-forward-actions">
+                <button type="button" class="btn-secondary btn-sm" id="teamchat-forward-cancel">Отмена</button>
+                <button type="button" class="btn-primary btn-sm" id="teamchat-forward-submit" disabled>Отправить</button>
+              </div>
             </div>
           </div>
         </section>
@@ -1860,52 +1935,13 @@
                 </div>
               </div>
 
-              <div class="settings-section">
-                <div class="settings-section-title">Make it — чат</div>
-                <div class="settings-list">
-                  <div class="settings-item">
-                    <div class="settings-item-info">
-                      <div class="settings-label">Быстрые подсказки</div>
-                      <div class="settings-hint">Чипы Onboarding, Dashboard, Landing…</div>
-                    </div>
-                    <label class="toggle settings-control"><input type="checkbox" id="set-make-suggestions" checked /><span class="toggle-slider"></span></label>
-                  </div>
-                  <div class="settings-item">
-                    <div class="settings-item-info">
-                      <div class="settings-label">Очищать поле после отправки</div>
-                      <div class="settings-hint">Сбрасывать текст промпта после Create</div>
-                    </div>
-                    <label class="toggle settings-control"><input type="checkbox" id="set-make-clear" checked /><span class="toggle-slider"></span></label>
-                  </div>
-                  <div class="settings-item">
-                    <div class="settings-item-info">
-                      <div class="settings-label">История чата</div>
-                      <div class="settings-hint">Сохранять сообщения до «Новый чат»</div>
-                    </div>
-                    <label class="toggle settings-control"><input type="checkbox" id="set-make-history" checked /><span class="toggle-slider"></span></label>
-                  </div>
-                  <div class="settings-item">
-                    <div class="settings-item-info">
-                      <div class="settings-label">Язык голосового ввода</div>
-                      <div class="settings-hint" id="set-speech-lang-hint">Windows Speech — только установленные в системе языки</div>
-                    </div>
-                    <select class="settings-select settings-control" id="set-speech-lang">
-                      <option value="ru-RU">Русский</option>
-                      <option value="en-US">English (US)</option>
-                      <option value="uk-UA">Українська</option>
-                      <option value="de-DE">Deutsch</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
               <div class="settings-section" id="settings-agent">
                 <div class="settings-section-title">Konstancia · нейросеть</div>
                 <div class="settings-list">
                   <div class="settings-item">
                     <div class="settings-item-info">
                       <div class="settings-label">Движок агента</div>
-                      <div class="settings-hint">По умолчанию — <strong>своя</strong> локальная модель Konstancia (Hugging Face). GigaChat — опционально.</div>
+                      <div class="settings-hint">По умолчанию — <strong>локальная Konstancia</strong>. GigaChat — только если явно переключите.</div>
                     </div>
                     <select id="set-agent-provider" class="settings-control w-wide">
                       <option value="konstancia">Konstancia (локальная нейросеть)</option>
@@ -1914,12 +1950,19 @@
                   </div>
                   <div class="settings-item settings-item--stack" id="set-agent-konstancia-panel">
                     <div class="settings-item-info">
-                      <div class="settings-label">Локальная модель</div>
-                      <div class="settings-hint" id="set-konstancia-llm-hint">Обучение: <code>npm run ml:train:knowledge</code> · диалоги <code>config/konstancia-chat-feedback.jsonl</code> · план: <code>ml/KNOWLEDGE.md</code></div>
+                      <div class="settings-label">Статус Konstancia</div>
+                      <div class="settings-hint" id="set-konstancia-llm-hint">Встроенный движок агента — без ручной настройки</div>
                     </div>
                     <div class="settings-control settings-inline">
                       <span class="settings-badge" id="set-konstancia-llm-status">…</span>
                     </div>
+                  </div>
+                  <div class="settings-item">
+                    <div class="settings-item-info">
+                      <div class="settings-label">Управление компьютером</div>
+                      <div class="settings-hint">Агент может открывать программы, сайты и папки по команде в чате (Windows, белый список)</div>
+                    </div>
+                    <label class="toggle settings-control"><input type="checkbox" id="set-desktop-agent-enabled" checked /><span class="toggle-slider"></span></label>
                   </div>
                   <div class="settings-item settings-item--stack">
                     <div class="settings-item-info">
@@ -1935,16 +1978,6 @@
                         <button type="button" class="btn-secondary btn-sm" id="set-knowledge-learning-clear">Очистить</button>
                       </div>
                       <div class="settings-hint" id="set-knowledge-learning-progress"></div>
-                    </div>
-                  </div>
-                  <div class="settings-item settings-item--stack">
-                    <div class="settings-item-info">
-                      <div class="settings-label">Облачный API Konstancia</div>
-                      <div class="settings-hint">Если указан URL — чат идёт на GPU-сервер (RunPod, HF, Yandex Cloud), локальный Python не нужен</div>
-                    </div>
-                    <div class="settings-control settings-stack">
-                      <input type="url" id="set-konstancia-cloud-url" class="w-full" placeholder="https://your-gpu.example.com:8080" autocomplete="off" />
-                      <input type="password" id="set-konstancia-cloud-key" class="w-full" placeholder="API key (KONSTANCIA_API_KEY на сервере)" autocomplete="off" />
                     </div>
                   </div>
                   <div class="settings-item settings-item--stack hidden" id="set-agent-gigachat-panel">
@@ -2044,10 +2077,10 @@
                   <div class="settings-item settings-item--stack">
                     <div class="settings-item-info">
                       <div class="settings-label">Файл модели</div>
-                      <div class="settings-hint">Выберите <strong>*.model3.json</strong> (лучший вариант), <strong>*.vtube.json</strong> или папку модели. Не physics3.json и не cdi3.json.</div>
+                      <div class="settings-hint">По умолчанию используется встроенная модель. При необходимости выберите свой <strong>*.model3.json</strong>, <strong>*.vtube.json</strong> или папку модели.</div>
                     </div>
                     <div class="settings-control settings-stack">
-                      <input type="text" id="set-vts-live2d-path" class="w-full" readonly placeholder="Выберите model3.json…" />
+                      <input type="text" id="set-vts-live2d-path" class="w-full" readonly placeholder="Встроенная модель Konstancia" />
                       <div class="settings-inline">
                         <button type="button" class="btn-secondary btn-sm" id="set-vts-pick-live2d">Выбрать JSON…</button>
                         <button type="button" class="btn-secondary btn-sm" id="set-vts-pick-live2d-dir">Папка модели…</button>
@@ -2427,7 +2460,7 @@
             <p>Хоткеи, AI-прототипы и готовые компоненты — всё в одном приложении, которое работает поверх Figma.</p>
             <ul class="ob-features">
               <li>Глобальные шорткаты без переключения окон</li>
-              <li>Make it — промпты в Figma Make одним кликом</li>
+              <li>Figma Make — промпт из чата Konstancia сразу в Make</li>
               <li>Библиотека шаблонов UI</li>
             </ul>
           </div>
@@ -2477,13 +2510,13 @@
             </div>
           </div>
           <div class="ob-slide-content">
-            <span class="ob-tag">Make it</span>
-            <h2>AI-прототипы из текста</h2>
-            <p>Опишите интерфейс в чате или голосом — приложение сформирует промпт и откроет Figma Make.</p>
+            <span class="ob-tag">Konstancia</span>
+            <h2>Figma Make из чата</h2>
+            <p>Опишите интерфейс агенту — Konstancia соберёт промпт, сразу откроет Figma Make и предложит, чем дополнить макет.</p>
             <ul class="ob-features">
-              <li>Голосовой ввод через микрофон</li>
-              <li>Быстрые подсказки для старта</li>
-              <li>Авто-Submit через CDP</li>
+              <li>Отправка промпта без отдельной вкладки</li>
+              <li>Дополнения: mobile, dark mode, SHKF Studio</li>
+              <li>Auto-Submit через CDP</li>
             </ul>
           </div>
         </div>
@@ -2581,6 +2614,32 @@
     </div>
   </div>
 
+  <!-- Agent chat share -->
+  <div class="modal-overlay hidden" id="agent-share-overlay">
+    <div class="modal agent-share-modal" role="dialog" aria-modal="true" aria-labelledby="agent-share-title">
+      <div class="modal-header">
+        <h2 id="agent-share-title">Поделиться чатом</h2>
+        <button type="button" class="icon-btn" id="agent-share-close" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="agent-share-hint" id="agent-share-hint">Коллега получит экспорт чата в Konstancia — со всей перепиской, как будто он сам с ней общался. Можно продолжить диалог.</p>
+        <div class="agent-share-selected hidden" id="agent-share-selected" aria-live="polite">
+          <span class="agent-share-selected-label">Получатель</span>
+          <span class="agent-share-selected-name" id="agent-share-selected-name"></span>
+        </div>
+        <div class="agent-share-search-wrap">
+          <svg class="agent-share-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+          <input type="search" class="agent-share-search-input" id="agent-share-search" placeholder="Поиск по имени, @логину или должности…" autocomplete="off" />
+        </div>
+        <div class="agent-share-list" id="agent-share-list" role="listbox" aria-label="Коллеги"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-ghost" id="agent-share-cancel">Отмена</button>
+        <button type="button" class="btn-play btn-sm" id="agent-share-submit" disabled>Отправить</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal -->
   <div class="modal-overlay hidden" id="modal-overlay">
     <div class="modal">
@@ -2617,12 +2676,10 @@
     </div>
   </div>
 
-  <div class="metask-toast-stack" id="metask-toast-stack" aria-live="polite"></div>
+  <div class="pill-notify-stack" id="pill-notify-inapp-stack" aria-live="polite"></div>
 
-  <script src="make-prompts.js"></script>
   <script src="search.js"></script>
   <script src="demos.js"></script>
-  <script src="make-it.js"></script>
   <script src="nanobanana.js"></script>
   <script src="magnific.js"></script>
   <script src="banner-mockup.js"></script>
@@ -2630,12 +2687,15 @@
   <script src="vendor/live2d/pixi.min.js"></script>
   <script src="vendor/live2d/cubism4.min.js"></script>
   <script src="agent-live2d.js"></script>
+  <script src="auth-live2d.js"></script>
   <script src="agent-vtuber.js"></script>
   <script src="agent.js"></script>
   <script src="templates.js"></script>
+  <script src="pill-notify-ui.js"></script>
   <script src="kanban-notify.js"></script>
   <script src="metask.js"></script>
   <script src="mail.js"></script>
+  <script src="team-chat.js"></script>
   <script src="webtab.js"></script>
   <script src="notes.js"></script>
   <script src="onboarding.js"></script>
@@ -2647,6 +2707,7 @@
   <script src="profile.js"></script>
   <script src="auth.js"></script>
   <script src="settings.js"></script>
+  <script src="sidebar-rail.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

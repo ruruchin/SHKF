@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { app, BrowserWindow, BrowserView, ipcMain, Tray, Menu, nativeImage, shell, dialog, session, Notification, clipboard, protocol, net } from 'electron';
 import electronUpdater from 'electron-updater';
 import path from 'path';
@@ -10,6 +11,8 @@ import { CloudSettingsService } from '../server/cloud-settings-service.js';
 import { MetaskService } from '../server/metask-service.js';
 import { ZimbraService } from '../server/zimbra-service.js';
 import { AgentService } from '../server/agent-service.js';
+import { AgentChatShareService } from '../server/agent-chat-share-service.js';
+import { TeamChatService } from '../server/team-chat-service.js';
 import { TaskLinkerService } from '../server/task-linker-service.js';
 import { pairKey } from '../shared/task-linker.js';
 import {
@@ -25,21 +28,50 @@ import { runRedmineFileSearch } from '../server/redmine-file-search.js';
 import {
   fromLive2dProtocolUrl,
   readLive2dMeta,
+  resolveEffectiveLive2dEntryPath,
   resolveModelEntryPath,
   toLive2dProtocolUrl,
 } from '../server/live2d-model-service.js';
 import { getLive2dModelHttpUrl, stopAllLive2dStaticServers } from '../server/live2d-static-server.js';
-import { isRedmineFileSearch, wantsLearnedExperience, wantsProcessInsights, wantsRedmineKnowledge, wantsFileSearch, wantsReindexTasks, requiresCurrentTask, isLearnedExperienceQuery, TASK_REQUIRED_REPLY } from '../shared/task-learning-intent.js';
-import { isGeneralKnowledgeQuery, wantsWebSearch } from '../shared/general-knowledge-intent.js';
+import { isRedmineFileSearch, wantsLearnedExperience, wantsProcessInsights, wantsRedmineKnowledge, wantsFileSearch, wantsReindexTasks, isLearnedExperienceQuery } from '../shared/task-learning-intent.js';
+import {
+  buildTaskOptionalPrompt,
+  requiresTaskSelection,
+} from '../shared/task-optional-prompt.js';
+import { isGeneralKnowledgeQuery, isCasualChatQuery, wantsWebSearch } from '../shared/general-knowledge-intent.js';
 import { searchWeb, formatWebSearchBlock } from '../server/web-search-service.js';
 import { KnowledgeIngestService, formatKnowledgeRagBlock } from '../server/knowledge-ingest-service.js';
 import { getTopMlIntent, mlOverridesTaskRequirement, mlWantsFileSearch, mlWantsReindex, mlWantsLearnedExperience } from '../shared/konstancia-intent-ml.js';
 import { classifyIntent as classifyMlIntent, getMlStatus } from '../server/hf-ml-service.js';
-import { getKonstanciaLlmStatus, configureKonstanciaCloud } from '../server/konstancia-llm-service.js';
-import { isDinDonMusicIntent, getDinDonMusicPayload } from '../shared/agent-music-triggers.js';
+import {
+  getKonstanciaLlmStatus,
+  configureKonstanciaCloud,
+  configureKonstanciaYandex,
+  isKonstanciaLlmTrained,
+} from '../server/konstancia-llm-service.js';
+import {
+  isDinDonMusicIntent,
+  isPlayMusicIntent,
+  isVaguePlayMusicRequest,
+  parseMusicPlayQuery,
+  parseMusicExecuteFollowup,
+  shouldExecuteMusicPlay,
+  getPlayMusicReply,
+} from '../shared/agent-music-triggers.js';
+import { buildDesktopSuggestion } from '../shared/desktop-agent-suggest.js';
+import { getCasualChatReply } from '../shared/casual-chat-replies.js';
+import { playYandexMusicTrack } from '../server/yandex-music-desktop.js';
+import {
+  isDesktopControlQuery,
+  parseDesktopCommand,
+  extractDesktopToolFromResponse,
+  stripDesktopToolFromResponse,
+} from '../shared/desktop-agent-intent.js';
+import { executeDesktopAction } from '../server/desktop-agent-service.js';
 import { createMetaskReadOnly } from '../server/metask-readonly.js';
 import { TaskKnowledgeService } from '../server/task-knowledge-service.js';
 import { ProcessAnalyticsService } from '../server/process-analytics-service.js';
+import { PillNotifyService } from '../server/pill-notify-service.js';
 import { sendMakePrompt } from '../server/figma-make.js';
 import {
   recognizeSpeechOnce,
@@ -49,7 +81,15 @@ import {
 } from '../server/speech-input.js';
 import { ACTIONS, checkConflict, formatKeys, generateId, ACTION_META } from '../shared/keys.js';
 import { patchSettings } from '../shared/app-settings.js';
-import { getConfigPath, getPluginPath, getUserLibraryPaths, getCustomThemeAssetsDir, getNotesLibraryPath, getNanobananaGalleryPath } from './paths.js';
+import {
+  getConfigPath,
+  getPluginPath,
+  getBundledLive2dModelPath,
+  getUserLibraryPaths,
+  getCustomThemeAssetsDir,
+  getNotesLibraryPath,
+  getNanobananaGalleryPath,
+} from './paths.js';
 import { NanobananaService, resolveModelForResolution } from '../server/nanobanana-service.js';
 import {
   fetchNanobananaImageBytes,
@@ -63,6 +103,14 @@ import {
   buildBannerBuilderUserMessage,
   extractNanobananaPrompt,
 } from '../shared/banner-nanobanana.js';
+import {
+  FIGMA_MAKE_BUILDER_PROMPT,
+  FIGMA_MAKE_ENHANCE_PROMPT,
+  FIGMA_MAKE_ENHANCEMENTS,
+  buildMakeBuilderUserMessage,
+  buildMakeEnhanceUserMessage,
+  extractMakePrompt,
+} from '../shared/figma-make-agent.js';
 import { DesignMemoryService } from '../server/design-memory-service.js';
 import { PikFolderService } from '../server/pik-folder-service.js';
 import { MobbinService } from '../server/mobbin-service.js';
@@ -143,6 +191,7 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let mainWindow = null;
+let pillNotifyService = null;
 let splashWindow = null;
 let keyboardWindow = null;
 let keyboardSplashWindow = null;
@@ -158,6 +207,14 @@ const cloudSettingsService = new CloudSettingsService(authService);
 const metaskService = new MetaskService();
 const zimbraService = new ZimbraService();
 const agentService = new AgentService();
+const teamChatService = new TeamChatService(authService);
+const agentChatShareService = new AgentChatShareService(authService, teamChatService);
+agentChatShareService.onSharePingComplete = (detail) => {
+  broadcast('teamchat-konstancia-share-sent', detail || {});
+};
+agentChatShareService.onSharePingFailed = (detail) => {
+  broadcast('teamchat-konstancia-share-ping-failed', detail || {});
+};
 const taskLinkerService = new TaskLinkerService(agentService);
 const nanobananaService = new NanobananaService();
 const nanobananaGallery = createNanobananaGalleryStore(nanobananaGalleryPath);
@@ -365,10 +422,26 @@ function configureTaskLearning() {
 }
 
 function configureAgentIntegrations() {
-  const agentSettings = service.config.settings?.agent || {};
+  let agentSettings = service.config.settings?.agent || {};
+  if (
+    isKonstanciaLlmTrained()
+    && agentSettings.provider !== 'konstancia'
+    && !agentSettings.konstanciaCloudUrl
+  ) {
+    agentSettings = {
+      ...agentSettings,
+      provider: 'konstancia',
+      model: 'Konstancia',
+    };
+    service.updateAppSettings({ agent: agentSettings });
+  }
+  configureKonstanciaYandex({
+    apiKey: process.env.KONSTANCIA_YANDEX_API_KEY || '',
+    folderId: process.env.KONSTANCIA_YANDEX_FOLDER_ID || '',
+  });
   configureKonstanciaCloud({
-    url: agentSettings.konstanciaCloudUrl || process.env.KONSTANCIA_CLOUD_URL || '',
-    apiKey: agentSettings.konstanciaCloudApiKey || process.env.KONSTANCIA_CLOUD_API_KEY || '',
+    url: process.env.KONSTANCIA_CLOUD_URL || agentSettings.konstanciaCloudUrl || '',
+    apiKey: process.env.KONSTANCIA_CLOUD_API_KEY || agentSettings.konstanciaCloudApiKey || '',
   });
   agentService.configure(agentSettings);
   mobbinService.configure(agentSettings);
@@ -466,19 +539,23 @@ function registerLive2dIpcHandlers() {
 
   ipcMain.handle('live2d-get-model', async () => {
     const cfg = service.config.settings?.vtubeStudio || {};
-    const entryPath = String(cfg.live2dModelPath || '').trim();
+    const userPath = String(cfg.live2dModelPath || '').trim();
+    const bundledPath = getBundledLive2dModelPath(__dirname);
+    const entryPath = resolveEffectiveLive2dEntryPath(userPath, bundledPath);
     if (!entryPath) {
-      return { ok: false, message: 'Укажите model3.json или папку модели в настройках Konstancia' };
+      return { ok: false, message: 'Не найдена Live2D-модель (встроенная или в настройках)' };
     }
     const meta = readLive2dMeta(entryPath);
     if (!meta.ok) return meta;
     const served = await getLive2dModelHttpUrl(meta.settingsPath);
     if (!served.ok) return served;
+    const usesBundled = !userPath || !resolveModelEntryPath(userPath);
     return {
       ...meta,
       modelUrl: served.modelUrl,
       emotions: cfg.emotions || {},
       costume: String(cfg.live2dCostume || '').trim(),
+      bundled: usesBundled,
     };
   });
 
@@ -873,21 +950,60 @@ async function pushCloudSettingsFromConfig() {
   }
 }
 
+function initPillNotifyService() {
+  if (pillNotifyService) return pillNotifyService;
+  pillNotifyService = new PillNotifyService({
+    getMainWindow: () => mainWindow,
+    onInApp: (item) => broadcast('pill-notify-in-app', item),
+    onAction: (action) => {
+      const type = String(action?.type || '');
+      if (type === 'metask-open-task') {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (!mainWindow.isVisible()) mainWindow.show();
+          mainWindow.focus();
+        }
+        broadcast('metask-open-task', { id: action.id, url: action.url });
+        return;
+      }
+      if (type === 'focus-agent') {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (!mainWindow.isVisible()) mainWindow.show();
+          mainWindow.focus();
+        }
+        broadcast('pill-notify-focus-agent', {});
+        return;
+      }
+      if (type === 'konstancia-open-share') {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (!mainWindow.isVisible()) mainWindow.show();
+          mainWindow.focus();
+        }
+        broadcast('konstancia-open-share', { shareId: action.shareId });
+      }
+    },
+  });
+  pillNotifyService.bindIpc(ipcMain);
+  return pillNotifyService;
+}
+
+function showPillNotification(payload = {}) {
+  initPillNotifyService();
+  return pillNotifyService.show(payload);
+}
+
 function showMetaskUpdateNotifications(updates) {
   const enabled = service.config.settings?.metask?.notifyOnUpdate !== false;
-  if (!enabled || !updates?.length || !Notification.isSupported()) return;
+  if (!enabled || !updates?.length) return;
 
   for (const task of updates) {
-    const notification = new Notification({
-      title: `Канбан · задача #${task.id}`,
-      body: task.subject || 'Задача обновлена',
-    });
-    notification.on('click', () => {
-      if (mainWindow) {
-        if (!mainWindow.isVisible()) mainWindow.show();
-        mainWindow.focus();
-      }
-      broadcast('metask-open-task', { id: task.id, url: task.url });
+    showPillNotification({
+      title: task.subject || 'Задача обновлена',
+      body: 'Изменения в Redmine — откройте задачу в канбане.',
+      meta: `#${task.id}`,
+      badge: 'Канбан',
+      tag: 'Redmine',
+      icon: 'kanban',
+      action: { type: 'metask-open-task', id: task.id, url: task.url },
     });
   }
 }
@@ -1032,6 +1148,7 @@ service.on('notes-updated', (data) => broadcast('notes-updated', data));
 
 const DEFAULT_WIDTH = 1180;
 const DEFAULT_HEIGHT = 720;
+const APP_ICON_PATH = path.join(__dirname, 'renderer', 'assets', 'brand', 'logo.png');
 
 function createSplash() {
   splashWindow = new BrowserWindow({
@@ -1061,6 +1178,7 @@ function createWindow() {
     minHeight: 640,
     center: true,
     title: 'SHKF',
+    icon: APP_ICON_PATH,
     backgroundColor: '#000000',
     autoHideMenuBar: true,
     show: false,
@@ -1182,8 +1300,7 @@ function createKeyboardWindow() {
 }
 
 function createTray() {
-  const logoPath = path.join(__dirname, 'renderer', 'assets', 'brand', 'logo.png');
-  const icon = nativeImage.createFromPath(logoPath).resize({ width: 16, height: 16 });
+  const icon = nativeImage.createFromPath(APP_ICON_PATH).resize({ width: 16, height: 16 });
   tray = new Tray(icon);
   tray.setToolTip('SHKF');
   tray.setContextMenu(
@@ -1206,11 +1323,18 @@ app.on('second-instance', () => {
 
 app.whenReady().then(() => {
   if (!gotSingleInstanceLock) return;
+  initPillNotifyService();
   registerLive2dProtocol();
   const ws = service.config.settings?.window || {};
   if (ws.showSplash !== false) createSplash();
   createWindow();
   createTray();
+  if (authService.session) {
+    authService.applyRestAuth?.();
+    setTimeout(() => {
+      teamChatService.listDirectory({ previews: false }).catch(() => {});
+    }, 400);
+  }
   setupAutoUpdater();
   startUpdaterPolling();
   scheduleMetaskPolling();
@@ -1345,8 +1469,12 @@ app.whenReady().then(() => {
   });
   ipcMain.handle('auth-upload-avatar', async (_e, payload) => {
     try {
-      const result = await authService.uploadAvatar(payload?.dataUrl || '');
+      const result = await authService.uploadAvatar(payload?.dataUrl || '', {
+        full_name: payload?.full_name,
+        position: payload?.position,
+      });
       if (result.ok && result.profile) {
+        applyAuthProfileToConfig(result.profile);
         broadcast('auth-changed', { profile: result.profile, user: { id: result.profile.id, email: result.profile.email } });
       }
       return result;
@@ -1441,6 +1569,110 @@ app.whenReady().then(() => {
     } catch (err) {
       return { success: false, message: err.message || 'Ошибка отправки в Make' };
     }
+  });
+
+  ipcMain.handle('agent-figma-make-send', async (_e, payload) => {
+    configureAgentIntegrations();
+
+    if (!agentService.isConfigured()) {
+      return {
+        ok: false,
+        message: 'Подключите Konstancia: Настройки → Konstancia',
+      };
+    }
+
+    let task = payload?.task || null;
+    if (task?.id) {
+      metaskService.configure(service.config.settings?.metask || {});
+      try {
+        const full = await metaskService.fetchIssueForAgent(task.id);
+        if (full) task = { ...task, ...full };
+      } catch { /* list fields only */ }
+    }
+
+    const enhancement = FIGMA_MAKE_ENHANCEMENTS.find((item) => item.id === payload?.enhancementId) || null;
+    const systemPrompt = enhancement ? FIGMA_MAKE_ENHANCE_PROMPT : FIGMA_MAKE_BUILDER_PROMPT;
+    const builderMessage = enhancement
+      ? buildMakeEnhanceUserMessage({
+        basePrompt: payload?.basePrompt,
+        enhancement,
+        userMessage: payload?.message,
+      })
+      : buildMakeBuilderUserMessage({
+        userMessage: payload?.message,
+        task,
+      });
+
+    const chatResult = await agentService.chat({
+      message: builderMessage,
+      history: [],
+      task,
+      systemPrompt,
+      allowFollowups: false,
+    });
+
+    if (!chatResult.ok) {
+      return { ok: false, message: chatResult.message || 'Ошибка Konstancia' };
+    }
+
+    let extracted = extractMakePrompt(chatResult.content);
+    if (!extracted.prompt) {
+      const retry = await agentService.chat({
+        message: `${builderMessage}\n\nВАЖНО: Верни ТОЛЬКО блок <<<MAKE_PROMPT ... MAKE_PROMPT>>> без пояснений.`,
+        history: [],
+        task,
+        systemPrompt,
+        allowFollowups: false,
+      });
+      if (retry.ok) extracted = extractMakePrompt(retry.content);
+    }
+
+    const { prompt, summary } = extracted;
+    if (!prompt) {
+      return {
+        ok: false,
+        message: 'Не удалось получить промпт в блоке MAKE_PROMPT. Опишите интерфейс конкретнее.',
+        rawAssistant: chatResult.content,
+      };
+    }
+
+    const summaryText = summary || chatResult.content.replace(/<<<MAKE_PROMPT[\s\S]*?MAKE_PROMPT>>>/i, '').trim();
+    if (payload?.buildOnly === true) {
+      return {
+        ok: true,
+        summary: summaryText,
+        prompt,
+        enhancementId: enhancement?.id || null,
+        model: chatResult.model,
+      };
+    }
+
+    const figmaOpts = service.config.settings?.figma || {};
+    let sendResult = null;
+    try {
+      sendResult = await sendMakePrompt(prompt, service.figma, (url) => shell.openExternal(url), {
+        makeAutoSubmit: figmaOpts.makeAutoSubmit !== false,
+        preferDesktopApp: figmaOpts.preferDesktopApp !== false,
+        makeAutoFocus: figmaOpts.makeAutoFocus !== false,
+      });
+    } catch (err) {
+      return {
+        ok: false,
+        message: err.message || 'Не удалось открыть Figma Make',
+        prompt,
+        summary: summaryText,
+      };
+    }
+
+    return {
+      ok: true,
+      summary: summaryText,
+      prompt,
+      enhancementId: enhancement?.id || null,
+      sendResult,
+      enhancements: FIGMA_MAKE_ENHANCEMENTS,
+      model: chatResult.model,
+    };
   });
   ipcMain.handle('speech-supported', () => isSpeechRecognitionSupported());
   ipcMain.handle('speech-list-languages', () => listInstalledSpeechLanguages());
@@ -1665,6 +1897,49 @@ app.whenReady().then(() => {
   ipcMain.handle('agent-get-ml-status', () => getMlStatus());
   ipcMain.handle('agent-get-konstancia-llm-status', () => getKonstanciaLlmStatus());
 
+  ipcMain.handle('agent-chat-share-colleagues', async () => agentChatShareService.listColleagues());
+  ipcMain.handle('agent-chat-share-send', async (_e, payload) => agentChatShareService.shareChat(payload || {}));
+  ipcMain.handle('agent-chat-share-incoming', async (_e, payload) => agentChatShareService.listIncoming(payload || {}));
+  ipcMain.handle('agent-chat-share-get', async (_e, payload) => agentChatShareService.getShare(payload?.shareId));
+  ipcMain.handle('agent-chat-share-accept', async (_e, payload) => agentChatShareService.acceptShare(payload?.shareId));
+  ipcMain.handle('agent-chat-share-dismiss', async (_e, payload) => agentChatShareService.dismissShare(payload?.shareId));
+
+  ipcMain.handle('team-chat-colleagues', async () => teamChatService.listColleagues());
+  ipcMain.handle('team-chat-directory', async (_e, payload) => teamChatService.listDirectory(payload || {}));
+  ipcMain.handle('team-chat-list-rooms', async () => teamChatService.listRooms());
+  ipcMain.handle('team-chat-list-messages', async (_e, payload) => teamChatService.listMessages(payload || {}));
+  ipcMain.handle('team-chat-open-dm', async (_e, payload) => teamChatService.openDmRoom(payload?.recipientId));
+  ipcMain.handle('team-chat-open-task-room', async (_e, payload) => teamChatService.openTaskRoom(payload?.taskId, payload?.subject));
+  ipcMain.handle('team-chat-send-message', async (_e, payload) => teamChatService.sendMessage(payload || {}));
+  ipcMain.handle('team-chat-upload-attachment', async (_e, payload) => teamChatService.uploadAttachment(payload || {}));
+  ipcMain.handle('team-chat-mark-read', async (_e, payload) => teamChatService.markRead(payload?.roomId));
+  ipcMain.handle('team-chat-pin-room', async (_e, payload) => teamChatService.pinRoom(payload?.roomId));
+  ipcMain.handle('team-chat-unpin-room', async (_e, payload) => teamChatService.unpinRoom(payload?.roomId));
+  ipcMain.handle('team-chat-pin-message', async (_e, payload) => teamChatService.pinMessage(payload || {}));
+  ipcMain.handle('team-chat-unpin-message', async (_e, payload) => teamChatService.unpinMessage(payload || {}));
+  ipcMain.handle('team-chat-forward-message', async (_e, payload) => teamChatService.forwardMessage(payload || {}));
+
+  ipcMain.handle('agent-play-yandex-music', async (_e, payload) => {
+    try {
+      const query = parseMusicPlayQuery(payload?.message || payload?.query || '');
+      if (!query) {
+        return { ok: false, message: 'Укажите название трека.' };
+      }
+      const result = await playYandexMusicTrack(query);
+      const dinDon = isDinDonMusicIntent(payload?.message || query);
+      const trackLabel = result?.track?.artist
+        ? `${result.track.artist} — «${result.track.title}»`
+        : result?.track?.title;
+      return {
+        ok: true,
+        content: getPlayMusicReply(query, { dinDon, trackLabel }),
+        ...result,
+      };
+    } catch (err) {
+      return { ok: false, message: err?.message || String(err) };
+    }
+  });
+
   ipcMain.handle('agent-send-message', async (_e, payload) => {
     configureAgentIntegrations();
     metaskService.configure(service.config.settings?.metask || {});
@@ -1688,27 +1963,168 @@ app.whenReady().then(() => {
       } catch { /* list fields only */ }
     }
 
-    if (requiresCurrentTask(messageText) && !task?.id && !mlOverridesTaskRequirement(mlIntentTop)) {
+    const skipTaskRequirement = payload?.skipTaskRequirement === true;
+    if (skipTaskRequirement) task = null;
+    if (!skipTaskRequirement && requiresTaskSelection(messageText) && !task?.id && !mlOverridesTaskRequirement(mlIntentTop)) {
+      const prompt = buildTaskOptionalPrompt(messageText, payload?.kanbanTasks || []);
       return {
         ok: true,
-        content: TASK_REQUIRED_REPLY,
+        content: prompt.content,
+        followups: prompt.followups,
+        taskOptionalPrompt: true,
         laborEntries: null,
         learnedChunkIds: [],
+        direct: true,
+        directMeta: 'Konstancia',
       };
     }
 
-    if (isDinDonMusicIntent(messageText)) {
-      const music = getDinDonMusicPayload();
-      try {
-        await shell.openExternal(music.url);
-      } catch { /* browser may still open manually */ }
+    if (isVaguePlayMusicRequest(messageText)) {
       return {
         ok: true,
-        content: music.reply,
+        content: 'Какой трек включить? Напиши, например: **поставь крип а крип динь дон** или **включи billie eilish bad guy**.',
+        laborEntries: null,
+        learnedChunkIds: [],
+        direct: true,
+        directMeta: 'Яндекс Музыка',
+      };
+    }
+
+    if (/^отмена$/i.test(messageText.trim())) {
+      return {
+        ok: true,
+        content: 'Ок, отменила.',
         laborEntries: null,
         learnedChunkIds: [],
         direct: true,
       };
+    }
+
+    const musicFollowupQuery = parseMusicExecuteFollowup(messageText);
+    if (musicFollowupQuery) {
+      try {
+        const played = await playYandexMusicTrack(musicFollowupQuery);
+        return {
+          ok: true,
+          content: getPlayMusicReply(musicFollowupQuery, { trackLabel: played?.track?.artist ? `${played.track.artist} — «${played.track.title}»` : played?.track?.title }),
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Яндекс Музыка',
+          musicAction: { query: musicFollowupQuery },
+        };
+      } catch (err) {
+        return {
+          ok: true,
+          content: `Не удалось включить в Яндекс Музыке: ${err?.message || err}`,
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Яндекс Музыка',
+        };
+      }
+    }
+
+    if (isPlayMusicIntent(messageText)) {
+      const query = parseMusicPlayQuery(messageText);
+      const dinDon = isDinDonMusicIntent(messageText);
+      const executeNow = shouldExecuteMusicPlay(messageText, {
+        confirm: payload?.confirmMusicPlay === true,
+      });
+
+      if (!executeNow) {
+        const suggestion = buildDesktopSuggestion(query, messageText);
+        return {
+          ok: true,
+          content: suggestion.message,
+          followups: suggestion.followups,
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Яндекс Музыка',
+          pendingMusicQuery: query,
+        };
+      }
+
+      try {
+        const played = await playYandexMusicTrack(query);
+        const trackLabel = played?.track?.artist
+          ? `${played.track.artist} — «${played.track.title}»`
+          : played?.track?.title;
+        return {
+          ok: true,
+          content: getPlayMusicReply(query, { dinDon, trackLabel }),
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Яндекс Музыка',
+          musicAction: { query, dinDon },
+        };
+      } catch (err) {
+        return {
+          ok: true,
+          content: `Не удалось включить в Яндекс Музыке: ${err?.message || err}`,
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Яндекс Музыка',
+        };
+      }
+    }
+
+    if (isCasualChatQuery(messageText)) {
+      return {
+        ok: true,
+        content: getCasualChatReply(messageText),
+        laborEntries: null,
+        learnedChunkIds: [],
+        direct: true,
+      };
+    }
+
+    const agentSettingsEarly = service.config.settings?.agent || {};
+    if (
+      agentSettingsEarly.desktopAgentEnabled !== false
+      && process.platform === 'win32'
+      && isDesktopControlQuery(messageText)
+    ) {
+      const desktopCmd = parseDesktopCommand(messageText);
+      if (desktopCmd) {
+        try {
+          const desktopResult = await executeDesktopAction(desktopCmd);
+          return {
+            ok: true,
+            content: desktopResult.message,
+            laborEntries: null,
+            learnedChunkIds: [],
+            direct: true,
+            directMeta: desktopResult.action === 'play_yandex_music' ? 'Яндекс Музыка' : 'Компьютер',
+            desktopAction: desktopResult,
+            musicAction: desktopResult.action === 'play_yandex_music' ? { query: desktopResult.query } : null,
+          };
+        } catch (err) {
+          const suggestion = buildDesktopSuggestion(desktopCmd.target || messageText, messageText);
+          if (suggestion.type === 'music' || suggestion.type === 'app') {
+            return {
+              ok: true,
+              content: suggestion.message,
+              followups: suggestion.followups,
+              laborEntries: null,
+              learnedChunkIds: [],
+              direct: true,
+              directMeta: suggestion.type === 'music' ? 'Яндекс Музыка' : 'Компьютер',
+            };
+          }
+          return {
+            ok: true,
+            content: suggestion.message,
+            laborEntries: null,
+            learnedChunkIds: [],
+            direct: true,
+            directMeta: 'Компьютер',
+          };
+        }
+      }
     }
 
     const fileSearchIntent = payload?.forceRedmineFileSearch === true
@@ -1750,23 +2166,31 @@ app.whenReady().then(() => {
     const role = payload?.role || service.config.settings?.user?.role || null;
     let message = payload?.message;
     const agentSettings = service.config.settings?.agent || {};
-    const attachTask = payload?.includeTaskContext === true && task?.id;
-    const generalKnowledgeMode = isGeneralKnowledgeQuery(messageText)
-      || mlIntentTop?.label === 'general_chat';
-    const injectLearning = !generalKnowledgeMode
+    const attachTask = !skipTaskRequirement && payload?.includeTaskContext === true && task?.id;
+    const casualChatMode = isCasualChatQuery(messageText);
+    const desktopControlMode = agentSettings.desktopAgentEnabled !== false
+      && process.platform === 'win32'
+      && isDesktopControlQuery(messageText);
+    const generalKnowledgeMode = !casualChatMode && (
+      isGeneralKnowledgeQuery(messageText)
+      || mlIntentTop?.label === 'general_chat'
+    );
+    const injectLearning = !skipTaskRequirement
+      && !generalKnowledgeMode
       && learningSettings.enabled !== false
       && (payload?.includeLearnedExperience === true
         || mlWantsLearnedExperience(mlIntentTop)
         || wantsLearnedExperience(message)
         || wantsProcessInsights(message));
-    const injectRedmineKb = !generalKnowledgeMode
+    const injectRedmineKb = !skipTaskRequirement
+      && !generalKnowledgeMode
       && learningSettings.enabled !== false
       && !isLearnedExperienceQuery(message)
       && (payload?.includeRedmineKnowledge === true
         || wantsRedmineKnowledge(message)
         || wantsFileSearch(message));
 
-    if (generalKnowledgeMode && agentSettings.knowledgeLearningEnabled !== false) {
+    if (generalKnowledgeMode && !casualChatMode && agentSettings.knowledgeLearningEnabled !== false) {
       const ragHits = await knowledgeIngestService.search(messageText, { limit: 5 });
       const ragBlock = formatKnowledgeRagBlock(ragHits);
       if (ragBlock) message = `${ragBlock}\n\n---\n\n${message}`;
@@ -1972,21 +2396,54 @@ app.whenReady().then(() => {
       history: payload?.history,
       task: generalKnowledgeMode ? null : (attachTask ? task : null),
       systemPrompt: buildSystemPromptForRole(role, {
-        taskLearningEnabled: learningSettings.enabled !== false && !generalKnowledgeMode,
+        taskLearningEnabled: learningSettings.enabled !== false && !generalKnowledgeMode && !casualChatMode,
         redmineKnowledgeMode: injectRedmineKb,
         generalKnowledgeMode,
+        casualChatMode,
+        desktopControlMode,
       }),
       allowFollowups: payload?.allowFollowups === true,
       images: payload?.images,
-      learnedExperienceBlock: generalKnowledgeMode ? '' : learnedExperienceBlock,
-      temperature: generalKnowledgeMode ? 0.82 : (injectLearning || injectRedmineKb ? 0.52 : undefined),
-      maxTokens: generalKnowledgeMode ? 8192 : (injectLearning || injectRedmineKb ? 6144 : undefined),
+      learnedExperienceBlock: (generalKnowledgeMode || casualChatMode) ? '' : learnedExperienceBlock,
+      temperature: casualChatMode ? 0.9 : (generalKnowledgeMode ? 0.82 : (injectLearning || injectRedmineKb ? 0.52 : undefined)),
+      maxTokens: casualChatMode ? 1024 : (generalKnowledgeMode ? 8192 : (injectLearning || injectRedmineKb ? 6144 : undefined)),
     });
 
     let laborEntries = null;
     if (task?.id && isLaborCostQuery(payload?.message)) {
       const all = getLaborDisplayEntries(task);
       laborEntries = filterLaborEntriesByQuery(all, payload?.message || '');
+    }
+
+    if (
+      chatResult?.ok
+      && agentSettings.desktopAgentEnabled !== false
+      && process.platform === 'win32'
+    ) {
+      const desktopTool = extractDesktopToolFromResponse(chatResult.content);
+      if (desktopTool) {
+        try {
+          const desktopResult = await executeDesktopAction(desktopTool);
+          const cleaned = stripDesktopToolFromResponse(chatResult.content);
+          return {
+            ...chatResult,
+            content: [cleaned, desktopResult.message].filter(Boolean).join('\n\n'),
+            laborEntries,
+            learnedChunkIds,
+            indexingStatus,
+            desktopAction: desktopResult,
+          };
+        } catch (err) {
+          const cleaned = stripDesktopToolFromResponse(chatResult.content);
+          return {
+            ...chatResult,
+            content: [cleaned, `Не удалось: ${err?.message || err}`].filter(Boolean).join('\n\n'),
+            laborEntries,
+            learnedChunkIds,
+            indexingStatus,
+          };
+        }
+      }
     }
 
     return { ...chatResult, laborEntries, learnedChunkIds, indexingStatus };
@@ -2887,22 +3344,20 @@ app.whenReady().then(() => {
 
   ipcMain.handle('agent-notify-background', async (_e, payload) => {
     const title = String(payload?.title || 'Konstancia').trim() || 'Konstancia';
-    const body = String(payload?.body || '').trim().slice(0, 280);
-    if (!body) return { ok: false, message: 'empty-body' };
-    try {
-      if (Notification.isSupported()) {
-        const note = new Notification({
-          title,
-          body,
-          silent: false,
-        });
-        note.show();
-        return { ok: true };
-      }
-      return { ok: false, message: 'notifications-not-supported' };
-    } catch (err) {
-      return { ok: false, message: err.message || String(err) };
-    }
+    const subtitle = String(payload?.subtitle || payload?.body || '').trim().slice(0, 280);
+    if (!subtitle) return { ok: false, message: 'empty-body' };
+    return showPillNotification({
+      title,
+      subtitle,
+      body: subtitle,
+      meta: payload?.meta || '',
+      badge: payload?.badge || 'Konstancia',
+      tag: payload?.tag || '',
+      imageUrl: payload?.imageUrl || payload?.thumbUrl || '',
+      icon: payload?.icon || 'agent',
+      durationMs: payload?.durationMs,
+      action: payload?.action || { type: 'focus-agent' },
+    });
   });
 
   ipcMain.handle('agent-test-connection', async () => {
@@ -3064,11 +3519,12 @@ app.whenReady().then(() => {
       const outPath = ensureFileExtension(filePath, ext);
       writeFileSync(outPath, buf);
       if (saveWin && !saveWin.isDestroyed()) saveWin.focus();
-      try {
-        if (Notification.isSupported()) {
-          new Notification({ title: 'NanoBanana', body: `Сохранено: ${path.basename(outPath)}` }).show();
-        }
-      } catch { /* ignore */ }
+      showPillNotification({
+        title: 'NanoBanana',
+        subtitle: `Сохранено: ${path.basename(outPath)}`,
+        icon: 'ok',
+        durationMs: 8000,
+      });
       return { ok: true, path: outPath };
     } catch (err) {
       return { ok: false, message: err.message || 'Не удалось сохранить изображение' };
@@ -3156,30 +3612,28 @@ app.whenReady().then(() => {
 
   ipcMain.handle('agent-pick-image', async () => {
     const { filePaths, canceled } = await dialog.showOpenDialog(mainWindow, {
-      title: 'Изображение для агента',
-      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp'] }],
-      properties: ['openFile'],
+      title: 'Изображения для агента',
+      filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'gif'] }],
+      properties: ['openFile', 'multiSelections'],
     });
-    if (canceled || !filePaths?.[0]) return { ok: false, canceled: true };
-    try {
-      const filePath = filePaths[0];
-      const buf = readFileSync(filePath);
-      if (buf.length > 15 * 1024 * 1024) {
-        return { ok: false, message: 'Изображение больше 15 МБ' };
-      }
-      const ext = path.extname(filePath).toLowerCase().replace('.', '') || 'png';
-      const mime = ext === 'jpg' ? 'jpeg' : ext;
-      const name = path.basename(filePath);
-      return {
-        ok: true,
-        image: {
+    if (canceled || !filePaths?.length) return { ok: false, canceled: true };
+    const images = [];
+    for (const filePath of filePaths.slice(0, 4)) {
+      try {
+        const buf = readFileSync(filePath);
+        if (buf.length > 15 * 1024 * 1024) continue;
+        const ext = path.extname(filePath).toLowerCase().replace('.', '') || 'png';
+        const mime = ext === 'jpg' ? 'jpeg' : ext;
+        images.push({
           dataUrl: `data:image/${mime};base64,${buf.toString('base64')}`,
-          filename: name,
-        },
-      };
-    } catch (err) {
-      return { ok: false, message: err.message || 'Не удалось прочитать файл' };
+          filename: path.basename(filePath),
+        });
+      } catch {
+        /* skip unreadable file */
+      }
     }
+    if (!images.length) return { ok: false, message: 'Не удалось прочитать выбранные файлы' };
+    return { ok: true, images, image: images[0] || null };
   });
 
   ipcMain.handle('notes-get-library', () => service.getNotesLibrary());

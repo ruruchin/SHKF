@@ -19,6 +19,7 @@
   if (!floatEl || !layoutRoot) return;
 
   let emotionTimer = null;
+  let musicDanceActive = false;
   let presenceMode = 'hero';
   let layoutRaf = 0;
   let idleBlinkTimer = null;
@@ -34,7 +35,7 @@
   }
 
   function hasLive2dModel() {
-    return Boolean(String(cfg().live2dModelPath || '').trim());
+    return cfg().enabled === true;
   }
 
   function canShowAvatar() {
@@ -377,15 +378,52 @@
     }
   }
 
-  function onThinking(stepText) {
+  function onThinking() {
+    stopMusicDance({ revertEmotion: false });
     setPresenceMode('composer', { animate: false });
     setEmotion('thoughtful');
-    setThinkingStep(stepText || 'Думаю…');
+    clearThinking();
+  }
+
+  function startMusicDance(ctx = {}) {
+    if (!canShowAvatar()) return;
+    musicDanceActive = true;
+    if (emotionTimer) {
+      clearTimeout(emotionTimer);
+      emotionTimer = null;
+    }
+    setPresenceMode('composer', { animate: false });
+    clearThinking();
+    paintEmotionBadge('joy');
+    floatEl.dataset.vtsEmotion = 'joy';
+    floatEl.classList.add('is-dancing');
+    EMOTION_MOTION_KEYS.forEach((name) => {
+      floatEl.classList.remove(`agent-vtuber-motion-${name}`);
+    });
+    window.AgentLive2d?.startMusicDance?.(ctx);
+  }
+
+  function stopMusicDance({ revertEmotion = true } = {}) {
+    if (!musicDanceActive && !floatEl.classList.contains('is-dancing')) return;
+    musicDanceActive = false;
+    floatEl.classList.remove('is-dancing');
+    window.AgentLive2d?.stopMusicDance?.();
+    if (revertEmotion) {
+      setEmotion('neutral');
+    } else {
+      paintEmotionBadge('neutral');
+      floatEl.dataset.vtsEmotion = '';
+    }
   }
 
   function onAssistantResponse(ctx) {
     setPresenceMode('composer', { animate: false });
     clearThinking();
+    if (ctx?.musicPlaying) {
+      startMusicDance(ctx);
+      return;
+    }
+    stopMusicDance({ revertEmotion: false });
     const emotion = detectEmotion({ ...ctx, phase: 'response' });
     setEmotion(emotion, { autoRevertMs: emotion === 'thoughtful' ? 0 : 12000 });
   }
@@ -396,6 +434,7 @@
   }
 
   function onChatIdle() {
+    stopMusicDance({ revertEmotion: false });
     setPresenceMode('hero', { animate: true });
     setEmotion('neutral');
     window.requestAnimationFrame(() => {
@@ -418,6 +457,9 @@
     onError,
     onChatIdle,
     onChatActive,
+    startMusicDance,
+    stopMusicDance,
+    isMusicDancing: () => musicDanceActive,
     setThinkingStep,
     clearThinking,
     usesDockThinking,

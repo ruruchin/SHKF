@@ -50,6 +50,11 @@
     document.documentElement.toggleAttribute('data-authenticated', !!profile);
     const gate = $('auth-gate');
     gate?.classList.toggle('hidden', !!profile);
+    if (profile) {
+      window.AuthLive2d?.destroy?.();
+    } else {
+      window.AuthLive2d?.mount?.();
+    }
 
     const chip = $('settings-auth-chip');
     if (chip) {
@@ -79,16 +84,15 @@
     const avatarEl = $('sidebar-user-avatar');
     if (nameEl) nameEl.textContent = profile?.full_name || profile?.username || 'Гость';
     if (posEl) posEl.textContent = profile?.position || (profile ? `@${profile.username || ''}` : 'Не выполнен вход');
+    if (avatarEl && window.Profile?.paintAllAvatars) {
+      window.Profile.paintAllAvatars(profile);
+      return;
+    }
     if (avatarEl) {
-      if (profile?.avatar_url) {
-        avatarEl.style.backgroundImage = `url("${profile.avatar_url}")`;
-        avatarEl.classList.add('has-img');
-        avatarEl.textContent = '';
-      } else {
-        avatarEl.style.backgroundImage = '';
-        avatarEl.classList.remove('has-img');
-        avatarEl.textContent = profile ? profileInitials(profile) : '';
-      }
+      avatarEl.textContent = profile ? profileInitials(profile) : '';
+      avatarEl.classList.remove('has-img');
+      avatarEl.style.background = '';
+      avatarEl.querySelector('.profile-avatar-photo')?.remove();
     }
   }
 
@@ -102,6 +106,7 @@
     pendingLogin = null;
     showStep('login');
     applyAuthState(result);
+    if (result?.user?.id) window.prefetchTeamChatDirectory?.();
     window.dispatchEvent(new CustomEvent('auth-ready', { detail: result }));
   }
 
@@ -112,6 +117,7 @@
     const password = $('auth-password')?.value || '';
     if (!login || !password) {
       setError('auth-error', 'Введите логин и пароль.');
+      window.AuthLive2d?.reactError?.();
       return;
     }
 
@@ -120,12 +126,15 @@
       const result = await window.api.authLogin({ login, password });
       if (!result?.ok) {
         setError('auth-error', result?.message || 'Не удалось войти.');
+        window.AuthLive2d?.reactError?.();
         return;
       }
-      // Пароль не меняем принудительно — это можно сделать в профиле.
+      window.AuthLive2d?.reactSuccess?.();
+      await window.AuthLive2d?.wait?.(900);
       finishAuth(result);
     } catch (err) {
       setError('auth-error', err?.message || 'Ошибка связи с сервисом авторизации.');
+      window.AuthLive2d?.reactError?.();
     } finally {
       setBusy('auth-submit', false, 'Входим…', 'Войти');
     }
@@ -138,10 +147,12 @@
     const pw2 = $('auth-newpw2')?.value || '';
     if (pw.length < 6) {
       setError('auth-cp-error', 'Пароль должен быть не короче 6 символов.');
+      window.AuthLive2d?.reactError?.();
       return;
     }
     if (pw !== pw2) {
       setError('auth-cp-error', 'Пароли не совпадают.');
+      window.AuthLive2d?.reactError?.();
       return;
     }
 
@@ -150,6 +161,7 @@
       const res = await window.api.authChangePassword({ password: pw });
       if (!res?.ok) {
         setError('auth-cp-error', res?.message || 'Не удалось сменить пароль.');
+        window.AuthLive2d?.reactError?.();
         return;
       }
       const merged = {
@@ -158,9 +170,12 @@
         profile: { ...(pendingLogin?.profile || {}), ...(res.profile || {}), must_change_password: false },
         config: res.config || pendingLogin?.config,
       };
+      window.AuthLive2d?.reactSuccess?.();
+      await window.AuthLive2d?.wait?.(900);
       finishAuth(merged);
     } catch (err) {
       setError('auth-cp-error', err?.message || 'Ошибка смены пароля.');
+      window.AuthLive2d?.reactError?.();
     } finally {
       setBusy('auth-cp-submit', false, 'Сохраняем…', 'Сохранить и войти');
     }
@@ -184,6 +199,7 @@
     bindPasswordEye();
     $('auth-forgot')?.addEventListener('click', () => {
       setError('auth-error', 'Пароль выдаёт администратор — обратитесь к нему для сброса.');
+      window.AuthLive2d?.reactError?.();
     });
     $('settings-auth-logout')?.addEventListener('click', async () => {
       await window.api.authLogout?.();
@@ -197,7 +213,13 @@
       }
     });
 
-    // Сессия восстанавливается из файла (auth-session.json) — повторно входить не нужно.
+    window.addEventListener('user-avatar-updated', (event) => {
+      const nextProfile = event.detail?.profile;
+      if (!nextProfile) return;
+      applyAuthState({ ...(currentAuth || {}), profile: nextProfile, user: currentAuth?.user });
+    });
+
+    // При каждом запуске показываем экран входа — сессия не восстанавливается с диска.
     const result = await window.api.authGetSession?.();
     if (result?.config) window.__APP_CONFIG__ = result.config;
     applyAuthState(result);

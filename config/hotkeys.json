@@ -286,10 +286,10 @@
       "speechLanguage": "en-US"
     },
     "agent": {
-      "provider": "gigachat",
+      "provider": "konstancia",
       "credentials": "MDE5ZTcwZWEtYTE1Mi03YTk3LThhNjctM2ZkMGY0NzIwYmMxOjZhZjE4YzllLWUwYzQtNDc4ZS04YzQ0LWVhMTBhNWMwMzQ2OA==",
       "scope": "GIGACHAT_API_PERS",
-      "model": "GigaChat",
+      "model": "Konstancia",
       "ignoreTls": true,
       "keepChatHistory": true,
       "clearInputAfterSend": true,
@@ -302,11 +302,17 @@
       "siteBuilderEnabled": false,
       "cursorApiKey": "crsr_e218a2e169d80acc1cea436b11af3988975ca822afb73d3c90be9aecc30aeb03",
       "cursorModel": "auto",
-      "cursorFigmaBuildEnabled": true
+      "cursorFigmaBuildEnabled": true,
+      "webSearchEnabled": true,
+      "knowledgeLearningEnabled": true,
+      "knowledgeAutoIngest": false,
+      "konstanciaCloudUrl": "",
+      "konstanciaCloudApiKey": "",
+      "desktopAgentEnabled": true
     },
     "vtubeStudio": {
       "enabled": true,
-      "live2dModelPath": "C:\\ulvm2_0001\\ulvm2_0001\\ulvm2_0001.model3.json",
+      "live2dModelPath": "",
       "live2dCostume": "costume_v0052.exp3.json",
       "showDock": true,
       "emotions": {
@@ -348,7 +354,11 @@
       "indexAttachments": true,
       "catalogOnlyOnSync": true,
       "maxChunks": 80000,
-      "cloudSync": false
+      "cloudSync": false,
+      "hfMl": {
+        "enabled": true,
+        "intentThreshold": 0.45
+      }
     },
     "zimbra": {
       "baseUrl": "https://zimbra.cinet.ru",

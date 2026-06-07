@@ -692,21 +692,21 @@
     renderAll();
   }
 
-  async function pullTextsFromFigma() {
+  async function pullTextsFromFigma({ silent = false } = {}) {
     const preset = getSelectedPreset();
     if (!preset?.templateId) {
-      setStatus('Сначала экспортируйте этот размер баннера в SHKF', 'error');
+      if (!silent) setStatus('Сначала экспортируйте этот размер баннера в SHKF', 'error');
       return;
     }
     if (pulling) return;
 
     pulling = true;
-    setStatus('Читаем текст из Figma…', 'info');
+    if (!silent) setStatus('Читаем текст из Figma…', 'info');
 
     try {
       const res = await window.api.bannerMockupReadFigmaTexts?.(preset.templateId);
       if (!res?.ok) {
-        setStatus(res?.message || 'Не удалось прочитать текст', 'error');
+        if (!silent) setStatus(res?.message || 'Не удалось прочитать текст', 'error');
         return;
       }
       texts.title = res.texts?.title || '';
@@ -719,10 +719,10 @@
         const idx = presets.findIndex((p) => p.id === preset.id);
         if (idx >= 0) presets[idx].bannerSlots = res.bannerSlots;
       }
-      setStatus('Текст загружен из слоёв Figma', 'info');
+      if (!silent) setStatus('Текст загружен из слоёв Figma', 'info');
       renderAll();
     } catch (err) {
-      setStatus(err.message || 'Ошибка', 'error');
+      if (!silent) setStatus(err.message || 'Ошибка', 'error');
     } finally {
       pulling = false;
     }
@@ -854,10 +854,11 @@
   window.activateBannerMockupPage = async function activateBannerMockupPage() {
     window.detachMetaskBoard?.();
     window.detachMailView?.();
+    setStatus('');
     await loadData();
     const preset = getSelectedPreset();
     if (preset?.templateId) {
-      pullTextsFromFigma().catch(() => { /* optional */ });
+      pullTextsFromFigma({ silent: true }).catch(() => { /* optional */ });
     }
   };
 

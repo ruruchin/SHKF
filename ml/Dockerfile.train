@@ -1,0 +1,13 @@
+FROM pytorch/pytorch:2.2.2-cuda12.1-cudnn8-devel
+
+WORKDIR /app/ml
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONIOENCODING=utf-8
+
+# HF_UPLOAD_REPO, HF_TOKEN, KONSTANCIA_SERVE_AFTER_TRAIN — optional env vars
+CMD ["bash", "cloud_train.sh"]

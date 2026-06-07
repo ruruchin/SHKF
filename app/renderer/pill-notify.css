@@ -1,0 +1,307 @@
+/* In-app pills + desktop overlay glass cards */
+
+.pill-notify-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 14px;
+  pointer-events: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pill-notify-stack--overlay {
+  align-items: stretch;
+  gap: 10px;
+  padding: 0;
+  min-height: 0;
+  background: transparent;
+}
+
+.pill-notify {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, calc(100vw - 24px));
+  padding: 11px 18px 11px 14px;
+  margin: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(28, 28, 30, 0.88);
+  -webkit-backdrop-filter: blur(28px) saturate(1.45);
+  backdrop-filter: blur(28px) saturate(1.45);
+  box-shadow:
+    0 12px 40px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  opacity: 0;
+  transform: translateY(-10px) scale(0.96);
+  transition: opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pill-notify-stack--overlay .pill-notify--card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 0 14px;
+  width: 100%;
+  padding: 16px 16px 18px 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(18, 18, 20, 0.78);
+  -webkit-backdrop-filter: blur(32px) saturate(1.5);
+  backdrop-filter: blur(32px) saturate(1.5);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateX(24px);
+}
+
+.pill-notify-stack--overlay .pill-notify--card .pill-notify__main {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.pill-notify-stack--overlay .pill-notify--card .pill-notify__thumb {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.pill-notify-stack--overlay .pill-notify--card .pill-notify__progress {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  margin-top: 12px;
+  opacity: 1;
+}
+
+.pill-notify.is-visible:not(.pill-notify--card) {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.pill-notify.is-leaving:not(.pill-notify--card) {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  pointer-events: none;
+}
+
+.pill-notify-stack--overlay .pill-notify--card.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.pill-notify-stack--overlay .pill-notify--card.is-leaving {
+  opacity: 0;
+  transform: translateX(18px);
+  pointer-events: none;
+}
+
+.pill-notify:hover {
+  background: rgba(36, 36, 38, 0.92);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.pill-notify-stack--overlay .pill-notify--card:hover {
+  background: rgba(24, 24, 26, 0.86);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.pill-notify__main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pill-notify__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.pill-notify__tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.pill-notify__tag--solid {
+  background: #fff;
+  color: #0a0a0a;
+}
+
+.pill-notify__tag--outline {
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  color: rgba(255, 255, 255, 0.92);
+  background: transparent;
+}
+
+.pill-notify__meta {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.84);
+}
+
+.pill-notify__body {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.52);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pill-notify__thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(255, 120, 180, 0.35), rgba(120, 180, 255, 0.35));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.pill-notify__thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pill-notify__thumb--icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.pill-notify__thumb--icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.pill-notify__icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.pill-notify__icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.pill-notify__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.pill-notify__title {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pill-notify-stack--overlay .pill-notify--card .pill-notify__title {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pill-notify__subtitle {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.52);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pill-notify__progress {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 4px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  opacity: 0;
+}
+
+.pill-notify--timed {
+  position: relative;
+  padding-bottom: 14px;
+}
+
+.pill-notify--timed:not(.pill-notify--card) .pill-notify__progress {
+  opacity: 1;
+}
+
+.pill-notify__progress > i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  background: rgba(255, 255, 255, 0.35);
+  animation: pill-notify-progress linear forwards;
+}
+
+@keyframes pill-notify-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill-notify,
+  .pill-notify.is-visible,
+  .pill-notify.is-leaving,
+  .pill-notify__progress > i {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1;
+    transform: none;
+  }
+}

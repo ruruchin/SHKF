@@ -55,6 +55,20 @@ function verifyModelAssets(settingsPath) {
   }
 }
 
+export function resolveEffectiveLive2dEntryPath(userPath = '', bundledPath = '') {
+  const user = String(userPath || '').trim();
+  if (user) {
+    const hit = resolveModelEntryPath(user);
+    if (hit) return hit;
+  }
+  const bundled = String(bundledPath || '').trim();
+  if (bundled) {
+    const hit = resolveModelEntryPath(bundled);
+    if (hit) return hit;
+  }
+  return null;
+}
+
 export function resolveModelEntryPath(inputPath = '') {
   const raw = String(inputPath || '').trim();
   if (!raw || !existsSync(raw)) return null;

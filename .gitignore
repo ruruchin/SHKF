@@ -11,8 +11,12 @@ supabase/employees.json
 релиз.rar
 image.png
 ml/models/
+ml/models/hf-cache/
+ml/vendor/
+ml/data/konstancia-toucan-sft.jsonl
 ml/data/konstancia-knowledge-chunks.jsonl
 ml/data/konstancia-knowledge-retrieval.jsonl
 ml/data/konstancia-knowledge-qa.jsonl
+ml/__pycache__/
 build/
 .cursor/mcp.json

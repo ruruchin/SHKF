@@ -97,6 +97,30 @@
   let idleAnticBusy = false;
   let lastAnticId = '';
   let stageMotionTimer = 0;
+  let musicDanceActive = false;
+  let musicDanceTimer = 0;
+  let musicDanceMotionTimer = 0;
+  let musicDanceBeatFlip = false;
+
+  const MUSIC_BEAT_MS = 460;
+  const MUSIC_DANCE_PULSE_A = {
+    duration: MUSIC_BEAT_MS,
+    keyframes: [
+      { t: 0, params: { ParamAngleX: 0, ParamAngleY: 0, ParamBodyAngleY: 0, ParamBodyAngleX: 0 } },
+      { t: 0.32, params: { ParamAngleX: 14, ParamAngleY: -6, ParamBodyAngleY: 10, ParamBodyAngleX: 6 } },
+      { t: 0.68, params: { ParamAngleX: -8, ParamAngleY: 3, ParamBodyAngleY: -4, ParamBodyAngleX: -3 } },
+      { t: 1, params: { ParamAngleX: 0, ParamAngleY: 0, ParamBodyAngleY: 0, ParamBodyAngleX: 0 } },
+    ],
+  };
+  const MUSIC_DANCE_PULSE_B = {
+    duration: MUSIC_BEAT_MS,
+    keyframes: [
+      { t: 0, params: { ParamAngleX: 0, ParamAngleY: 0, ParamBodyAngleY: 0, ParamBodyAngleX: 0 } },
+      { t: 0.28, params: { ParamAngleX: -12, ParamAngleY: 5, ParamBodyAngleY: -8, ParamBodyAngleX: -5 } },
+      { t: 0.62, params: { ParamAngleX: 10, ParamAngleY: -4, ParamBodyAngleY: 6, ParamBodyAngleX: 4 } },
+      { t: 1, params: { ParamAngleX: 0, ParamAngleY: 0, ParamBodyAngleY: 0, ParamBodyAngleX: 0 } },
+    ],
+  };
 
   const STAGE_MOTION_CLASSES = [
     'goof-bounce',
@@ -304,7 +328,7 @@
 
   function shouldAutoLoad() {
     const cfg = window.appSettings?.vtubeStudio;
-    return cfg?.enabled === true && Boolean(String(cfg?.live2dModelPath || '').trim());
+    return cfg?.enabled === true;
   }
 
   let loadFlight = null;
@@ -826,6 +850,7 @@
       && !loading
       && !clickReactionBusy
       && !idleAnticBusy
+      && !musicDanceActive
       && !isThinkingActive()
       && !pulseHold;
   }
@@ -1220,6 +1245,7 @@
     if (!model) return;
 
     const key = String(emotion || 'neutral').trim().toLowerCase();
+    if (musicDanceActive && key !== 'neutral') return;
     const customRef = resolveEmotionRef(key, emotionsMap);
     const profile = getEmotionProfile(key);
 
@@ -1266,6 +1292,93 @@
         playEmotion('neutral', emotionsMap);
       }, revertMs);
     }
+  }
+
+  function pickMusicMotionGroup() {
+    const entries = motionEntries();
+    const preferred = ['Dance', 'Tap', 'Wave', 'Idle'];
+    for (const group of preferred) {
+      const list = entries[group];
+      if (Array.isArray(list) && list.length) return group;
+    }
+    const fallback = Object.keys(entries).find((group) => {
+      const list = entries[group];
+      return Array.isArray(list) && list.length && group !== 'Idle';
+    });
+    return fallback || null;
+  }
+
+  function playMusicMotion() {
+    if (!model || !musicDanceActive) return false;
+    const group = pickMusicMotionGroup();
+    if (!group) return false;
+    const list = motionEntries()[group];
+    const idx = group === 'Idle' && list.length > 1
+      ? Math.floor(Math.random() * list.length)
+      : 0;
+    model.motion(group, idx, 3);
+    app?.render?.();
+    return true;
+  }
+
+  function scheduleMusicBeat() {
+    if (!musicDanceActive || !model) return;
+    startEmotionPulse(musicDanceBeatFlip ? MUSIC_DANCE_PULSE_B : MUSIC_DANCE_PULSE_A);
+    musicDanceBeatFlip = !musicDanceBeatFlip;
+    musicDanceTimer = window.setTimeout(scheduleMusicBeat, MUSIC_BEAT_MS);
+  }
+
+  function scheduleMusicMotionSwap() {
+    if (!musicDanceActive || !model) return;
+    playMusicMotion();
+    musicDanceMotionTimer = window.setTimeout(scheduleMusicMotionSwap, 3200 + Math.random() * 1800);
+  }
+
+  function stopMusicDanceTimers() {
+    if (musicDanceTimer) {
+      window.clearTimeout(musicDanceTimer);
+      musicDanceTimer = 0;
+    }
+    if (musicDanceMotionTimer) {
+      window.clearTimeout(musicDanceMotionTimer);
+      musicDanceMotionTimer = 0;
+    }
+  }
+
+  async function startMusicDance() {
+    if (!model) return;
+    musicDanceActive = true;
+    musicDanceBeatFlip = false;
+    if (emotionTimer) {
+      clearTimeout(emotionTimer);
+      emotionTimer = null;
+    }
+    stopIdleAntics();
+    stopIdleBlink();
+    stopMusicDanceTimers();
+    cancelEmotionPulse();
+    clearExpression();
+
+    const joyProfile = EMOTION_PROFILES.joy;
+    if (joyProfile.expressions.length) {
+      await applyEmotionExpressions(joyProfile.expressions);
+    }
+    playMusicMotion();
+    scheduleMusicBeat();
+    scheduleMusicMotionSwap();
+    app?.render?.();
+  }
+
+  function stopMusicDance() {
+    if (!musicDanceActive) return;
+    musicDanceActive = false;
+    stopMusicDanceTimers();
+    cancelEmotionPulse();
+    clearExpression();
+    playIdle();
+    app?.render?.();
+    scheduleIdleBlink();
+    scheduleIdleAntics();
   }
 
   async function load(force = false) {
@@ -1409,6 +1522,8 @@
     playEmotion,
     playClickReaction,
     playIdle,
+    startMusicDance,
+    stopMusicDance,
     applyCostume,
     needsRemount,
     isLoaded: () => Boolean(model && stageEl?.isConnected),

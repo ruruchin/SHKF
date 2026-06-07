@@ -37,11 +37,14 @@
     return config;
   }
 
-  function bindToggle(id, path) {
+  function bindToggle(id, path, opts = {}) {
     const el = $(id);
     if (!el) return;
     el.checked = !!s(path);
-    el.onchange = () => patch(path, el.checked);
+    el.onchange = async () => {
+      await patch(path, el.checked);
+      opts.onChange?.(el.checked);
+    };
   }
 
   function bindNumber(id, path, onSave) {
@@ -407,10 +410,9 @@
       if (!konstStatus) return;
       try {
         const st = await window.api.agentGetKonstanciaLlmStatus?.();
-        if (st?.mode === 'cloud') konstStatus.textContent = `Облако · ${st.cloudUrl || 'подключено'}`;
-        else if (st?.trained) konstStatus.textContent = 'Обучена · локально';
-        else if (st?.ready) konstStatus.textContent = 'Базовая · дообучите npm run ml:train:chat';
-        else konstStatus.textContent = st?.message || 'Нужен Python + ml/requirements.txt';
+        if (st?.ready) konstStatus.textContent = 'Konstancia · готова';
+        else if (st?.trained) konstStatus.textContent = 'Konstancia · подключается';
+        else konstStatus.textContent = st?.message || 'Konstancia · недоступна';
       } catch {
         konstStatus.textContent = 'Статус недоступен';
       }
@@ -421,10 +423,8 @@
       if (provider) provider.value = a.provider || 'konstancia';
       syncProviderPanels();
       refreshKonstanciaLlmStatus();
-      const cloudUrl = $('set-konstancia-cloud-url');
-      const cloudKey = $('set-konstancia-cloud-key');
-      if (cloudUrl) cloudUrl.value = a.konstanciaCloudUrl || '';
-      if (cloudKey) cloudKey.value = a.konstanciaCloudApiKey || '';
+      const desktopAgent = $('set-desktop-agent-enabled');
+      if (desktopAgent) desktopAgent.checked = a.desktopAgentEnabled !== false;
       const knowledgeEnabled = $('set-knowledge-learning-enabled');
       if (knowledgeEnabled) knowledgeEnabled.checked = a.knowledgeLearningEnabled !== false;
       const knowledgeAuto = $('set-knowledge-auto-ingest');
@@ -506,10 +506,9 @@
         cursorApiKey: $('set-cursor-api-key')?.value?.trim() || '',
         cursorModel: $('set-cursor-model')?.value || 'composer-2.5',
         cursorFigmaBuildEnabled: $('set-cursor-figma-build')?.checked === true,
-        konstanciaCloudUrl: $('set-konstancia-cloud-url')?.value?.trim() || '',
-        konstanciaCloudApiKey: $('set-konstancia-cloud-key')?.value?.trim() || '',
         knowledgeLearningEnabled: $('set-knowledge-learning-enabled')?.checked !== false,
         knowledgeAutoIngest: $('set-knowledge-auto-ingest')?.checked === true,
+        desktopAgentEnabled: $('set-desktop-agent-enabled')?.checked !== false,
       };
       if (agentProvider === 'gigachat' && !creds.credentials) {
         alert('Вставьте ключ Authorization (Base64) из GigaChat Studio');
@@ -526,7 +525,7 @@
       if ((provider?.value || 'konstancia') === 'konstancia') {
         await refreshKonstanciaLlmStatus();
         const result = await window.api.agentTestConnection();
-        alert(result?.ok ? 'Konstancia отвечает локально' : (result?.message || 'Ошибка'));
+        alert(result?.ok ? 'Konstancia отвечает' : (result?.message || 'Ошибка'));
         return;
       }
       const creds = {
@@ -614,7 +613,9 @@
       const cfg = vts();
       const em = emotions();
       if ($('set-vts-enabled')) $('set-vts-enabled').checked = cfg.enabled === true;
-      if ($('set-vts-live2d-path')) $('set-vts-live2d-path').value = cfg.live2dModelPath || '';
+      if ($('set-vts-live2d-path')) {
+        $('set-vts-live2d-path').value = cfg.live2dModelPath || 'Встроенная модель Konstancia';
+      }
       if ($('set-vts-costume')) {
         $('set-vts-costume').value = cfg.live2dCostume || 'costume_v0000.exp3.json';
       }
@@ -744,10 +745,6 @@
     bindToggle('set-make-submit', 'figma.makeAutoSubmit');
     bindToggle('set-make-focus', 'figma.makeAutoFocus');
     bindToggle('set-make-desktop', 'figma.preferDesktopApp');
-
-    bindToggle('set-make-suggestions', 'make.showSuggestions');
-    bindToggle('set-make-clear', 'make.clearInputAfterSend');
-    bindToggle('set-make-history', 'make.keepChatHistory');
     bindSelect('set-speech-lang', 'make.speechLanguage');
     await refreshSpeechLangSelect();
     $('set-speech-lang')?.addEventListener('change', refreshSpeechLangSelect);
@@ -876,9 +873,6 @@
     'set-make-submit': 'figma',
     'set-make-focus': 'window',
     'set-make-desktop': 'figma',
-    'set-make-suggestions': 'spark',
-    'set-make-clear': 'chat',
-    'set-make-history': 'chat',
     'set-speech-lang': 'mic',
     'set-agent-credentials': 'key',
     'set-agent-model': 'brain',

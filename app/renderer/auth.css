@@ -1,4 +1,4 @@
-/* ===== Auth gate — SHKF brand background ===== */
+/* ===== Auth gate — SHKF login with Live2D background ===== */
 .auth-gate {
   position: fixed;
   inset: 0;
@@ -6,9 +6,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 32px 24px;
+  padding: 0;
   overflow: hidden;
-  background: #000;
+  background: #fafafa;
 }
 
 .auth-gate.hidden { display: none; }
@@ -18,20 +18,91 @@
   inset: 0;
   pointer-events: none;
   overflow: hidden;
-  background-color: #000;
-  background-image: url('assets/brand/auth-bg.png');
-  background-repeat: no-repeat;
-  background-position: center bottom;
-  background-size: cover;
+  background:
+    radial-gradient(circle at 82% 8%, #ede8f8 0%, transparent 34%),
+    radial-gradient(circle at 12% 92%, #dce8f8 0%, transparent 30%),
+    linear-gradient(180deg, #fafafa 0%, #f5f7fb 52%, #f0f4ff 100%);
+}
+
+.auth-bg-glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(48px);
+  opacity: 0.72;
+}
+
+.auth-bg-glow--lavender {
+  width: min(52vw, 520px);
+  height: min(52vw, 520px);
+  top: 8%;
+  right: 10%;
+  background: rgba(155, 142, 196, 0.34);
+}
+
+.auth-bg-glow--blue {
+  width: min(44vw, 440px);
+  height: min(44vw, 440px);
+  bottom: 6%;
+  right: 22%;
+  background: rgba(59, 130, 246, 0.18);
+}
+
+.auth-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(320px, 460px) minmax(360px, 1fr);
+  align-items: stretch;
+  gap: 24px;
+  width: min(1180px, 100%);
+  height: min(640px, calc(100vh - 80px));
+  padding: 40px clamp(24px, 5vw, 64px);
+  box-sizing: border-box;
+}
+
+.auth-card,
+.auth-live2d-host {
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.auth-live2d-host {
+  position: relative;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 255, 255, 0.72) 0%, transparent 58%),
+    linear-gradient(180deg, rgba(237, 232, 248, 0.42) 0%, rgba(220, 232, 248, 0.28) 100%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.auth-live2d-host--fallback::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 62%, rgba(155, 142, 196, 0.16) 0%, transparent 52%),
+    url('assets/brand/auth-bg.png') center bottom / cover no-repeat;
+  opacity: 0.35;
+}
+
+.auth-live2d-canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .auth-card {
   position: relative;
-  width: min(420px, 100%);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   background: #fff;
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45), 0 8px 24px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 24px 64px rgba(21, 18, 38, 0.08), 0 8px 24px rgba(0, 0, 0, 0.04);
   padding: 40px 36px 32px;
   color: #0a0a0a;
   animation: authCardIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -72,12 +143,13 @@
 .auth-logo {
   width: 48px;
   height: 48px;
-  border-radius: 12px;
+  border-radius: 10px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: transparent;
-  box-shadow: 0 8px 24px rgba(192, 0, 0, 0.16);
+  box-shadow: 0 8px 24px rgba(21, 18, 38, 0.18);
+  overflow: hidden;
 }
 
 .auth-logo .brand-logo {
@@ -142,8 +214,8 @@
 .auth-field input::placeholder { color: rgba(10, 10, 10, 0.35); }
 
 .auth-field input:focus {
-  border-color: rgba(59, 130, 246, 0.55);
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  border-color: rgba(155, 142, 196, 0.65);
+  box-shadow: 0 0 0 4px rgba(155, 142, 196, 0.16);
 }
 
 .auth-input { position: relative; display: block; }
@@ -191,8 +263,8 @@
   margin-top: 4px;
   border: none;
   border-radius: 10px;
-  background: #0a0a0a;
-  color: #fff;
+  background: #151226;
+  color: #f0ecf6;
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -212,9 +284,9 @@
 }
 
 .auth-submit:hover:not(:disabled) {
-  background: #262626;
+  background: #1e1a32;
   transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 8px 24px rgba(21, 18, 38, 0.14);
 }
 
 .auth-submit:hover:not(:disabled)::after {
@@ -244,6 +316,19 @@
   line-height: 1.5;
   color: rgba(10, 10, 10, 0.42);
   text-align: center;
+}
+
+@media (max-width: 900px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(280px, 38vh) minmax(420px, 1fr);
+    height: min(920px, calc(100vh - 40px));
+    padding: 24px 20px 28px;
+  }
+
+  .auth-live2d-host {
+    order: -1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

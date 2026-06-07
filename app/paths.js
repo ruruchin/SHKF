@@ -56,6 +56,19 @@ export function getNanobananaGalleryPath(appDir) {
   return path.join(base, 'nanobanana-gallery.json');
 }
 
+const BUNDLED_LIVE2D_MODEL_FILE = 'ulvm2_0001.model3.json';
+
+export function getBundledLive2dModelDir(appDir) {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'live2d-model');
+  }
+  return path.join(appDir, '..', 'site', 'public', 'live2d-model');
+}
+
+export function getBundledLive2dModelPath(appDir) {
+  return path.join(getBundledLive2dModelDir(appDir), BUNDLED_LIVE2D_MODEL_FILE);
+}
+
 export function getBannerMockupsConfigPath(appDir) {
   if (app.isPackaged) {
     const userPath = path.join(app.getPath('userData'), 'banner-mockups.json');

@@ -8,10 +8,9 @@
   let activeTypeFilter = 'all';
 
   const PAGE_RESULT_LIMIT = 50;
-  const GROUP_ORDER = ['make', 'template', 'notes', 'action', 'figma', 'settings'];
+  const GROUP_ORDER = ['template', 'notes', 'action', 'figma', 'settings'];
 
   const SECTION_LABELS = {
-    make: 'Make it',
     template: 'Templates',
     figma: 'Figma',
     settings: 'Настройки',
@@ -21,7 +20,6 @@
 
   const FILTER_CHIPS = [
     { id: 'all', label: 'Все' },
-    { id: 'make', label: 'Make it' },
     { id: 'template', label: 'Templates' },
     { id: 'notes', label: 'Записи' },
     { id: 'action', label: 'Действия' },
@@ -30,10 +28,10 @@
 
   const STATIC_ENTRIES = [
     { id: 'page-pikfolder', type: 'template', title: 'PIK-FOLDER', subtitle: 'Галерея референсов · Mobbin · Pinterest', keywords: 'pik folder savee референсы mobbin pinterest галерея дизайн', page: 'pikfolder' },
-    { id: 'page-makeit', type: 'make', title: 'Make it', subtitle: 'Создать прототип через Figma Make', keywords: 'make ai промпт генерация', page: 'makeit' },
     { id: 'page-templates', type: 'template', title: 'Templates', subtitle: 'Готовые UI-компоненты в Figma', keywords: 'templates шаблоны компоненты ui button card', page: 'templates' },
     { id: 'page-metask', type: 'settings', title: 'Канбан', subtitle: 'Redmine · задачи и доска Kanban', keywords: 'kanban канбан metask задачи redmine rm api ключ', page: 'metask' },
-    { id: 'page-agent', type: 'settings', title: 'Konstancia', subtitle: 'Mobbin · Figma · GigaChat', keywords: 'Konstancia ai agent ии агент gigachat gpt задача баннер промпт mobbin', page: 'agent' },
+    { id: 'page-agent', type: 'settings', title: 'Konstancia', subtitle: 'Mobbin · Figma Make · GigaChat', keywords: 'Konstancia ai agent ии агент gigachat gpt задача баннер промпт figma make макет', page: 'agent' },
+    { id: 'page-teamchat', type: 'settings', title: 'Команда', subtitle: 'Чат сотрудников · задачи · медиа', keywords: 'команда чат team chat коллеги сообщения slack telegram', page: 'teamchat' },
     { id: 'page-nanobanana', type: 'settings', title: 'NanoBanana', subtitle: 'Генерация изображений · nananobanana.com', keywords: 'nanobanana nano banana изображение картинка генерация ai art промпт', page: 'nanobanana' },
     { id: 'page-magnific', type: 'settings', title: 'Magnific MCP', subtitle: 'Генерация изображений и видео · апскейл', keywords: 'magnific mcp upscale svg видео изображение генерация', page: 'magnific' },
     { id: 'page-bannermockup', type: 'settings', title: 'Мокап баннеров', subtitle: 'Превью баннеров с NanoBanana', keywords: 'banner mockup баннер мокап превью', page: 'bannermockup' },
@@ -47,7 +45,7 @@
     { id: 'setting-cdp', type: 'settings', title: 'Порт CDP', subtitle: 'Порт отладки Figma', keywords: 'cdp port 9222 connection', page: 'settings', settingPage: 'setup' },
     { id: 'setting-plugin-port', type: 'settings', title: 'Порт плагина', subtitle: 'WebSocket мост с Figma', keywords: 'plugin port 3847 websocket', page: 'settings', settingPage: 'setup' },
     { id: 'setting-hotkeys', type: 'settings', title: 'Сервер хоткеев', subtitle: 'Вкл / выкл в настройках', keywords: 'toggle сервер hotkeys server', page: 'settings' },
-    { id: 'setting-make', type: 'settings', title: 'Figma Make', subtitle: 'Авто-submit, desktop app', keywords: 'make figma auto submit desktop', page: 'settings', settingPage: 'makeit' },
+    { id: 'setting-make', type: 'settings', title: 'Figma Make', subtitle: 'Авто-submit, desktop app', keywords: 'make figma auto submit desktop', page: 'settings', settingPage: 'settings' },
     { id: 'setting-templates', type: 'settings', title: 'Templates', subtitle: 'Уведомления при копировании', keywords: 'templates toast copy буфер', page: 'settings', settingPage: 'templates' },
     { id: 'setting-window', type: 'settings', title: 'Окно и запуск', subtitle: 'Размер, splash, tray', keywords: 'window splash tray minimized', page: 'settings' },
     { id: 'setting-export', type: 'settings', title: 'Экспорт config', subtitle: 'Сохранить настройки в файл', keywords: 'export import backup config json', page: 'settings' },
@@ -65,19 +63,6 @@
 
   function getQuickAccessEntries() {
     return filterByRole(STATIC_ENTRIES.filter((e) => e.id.startsWith('page-')));
-  }
-
-  const MAKE_EXAMPLES = [
-    { title: 'Onboarding', promptKey: 'onboard' },
-    { title: 'Dashboard', promptKey: 'dash' },
-    { title: 'Landing', promptKey: 'land' },
-    { title: 'Modal', promptKey: 'modal' },
-  ];
-
-  function resolveMakePrompt(ex) {
-    const lib = window.MAKE_STARTER_PROMPTS;
-    if (ex.promptKey && lib?.[ex.promptKey]) return lib[ex.promptKey];
-    return ex.prompt || '';
   }
 
   function tokenize(str) {
@@ -155,10 +140,6 @@
   }
 
   const PAGE_VISUALS = {
-    'page-makeit': {
-      tone: 'orange',
-      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l1.8 5.4L19 10l-5.2 1.6L12 17l-1.8-5.4L5 10l5.2-1.6L12 3z"/><circle cx="18" cy="18" r="2" fill="currentColor" stroke="none"/></svg>',
-    },
     'page-templates': {
       tone: 'sky',
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>',
@@ -170,6 +151,10 @@
     'page-agent': {
       tone: 'orange',
       icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>',
+    },
+    'page-teamchat': {
+      tone: 'mint',
+      icon: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 15a4 4 0 01-4 4H8l-5 3V7a4 4 0 014-4h10a4 4 0 014 4z"/></svg>',
     },
     'page-mail': {
       tone: 'violet',
@@ -232,21 +217,6 @@
       }
     }
 
-    if (window.RoleNav?.isPageAllowed?.('makeit')) {
-      for (const ex of MAKE_EXAMPLES) {
-        const prompt = resolveMakePrompt(ex);
-        items.push({
-          id: 'make-' + ex.title,
-          type: 'make',
-          title: ex.title,
-          subtitle: prompt.slice(0, 55) + '…',
-          keywords: prompt,
-          page: 'makeit',
-          makePrompt: prompt,
-        });
-      }
-    }
-
     searchIndex = items;
     renderCurrentView();
   };
@@ -294,13 +264,6 @@
       setTimeout(() => window.openNotesEntry?.(entry), 50);
     } else if (entry.hotkeyId && window.openHotkeyDetail) {
       setTimeout(() => window.openHotkeyDetail(entry.hotkeyId), 50);
-    } else if (entry.makePrompt) {
-      const ta = document.getElementById('make-prompt');
-      if (ta) {
-        ta.value = entry.makePrompt;
-        ta.dispatchEvent(new Event('input'));
-        ta.focus();
-      }
     } else if (entry.templateId && window.api?.copyTemplate) {
       setTimeout(async () => {
         try {

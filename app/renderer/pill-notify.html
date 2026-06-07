@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SHKF Notifications</title>
+  <link rel="stylesheet" href="pill-notify.css" />
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="pill-notify-stack pill-notify-stack--overlay" id="pill-notify-overlay-stack" aria-live="polite"></div>
+  <script src="pill-notify-ui.js"></script>
+  <script>
+    const stack = document.getElementById('pill-notify-overlay-stack');
+
+    window.pillNotifyOverlayResize = (height) => {
+      if (window.pillNotify?.resize) window.pillNotify.resize(height);
+    };
+
+    window.pillNotifyOverlayHide = () => {
+      if (window.pillNotify?.hide) window.pillNotify.hide();
+    };
+
+    if (window.pillNotify?.onPush) {
+      window.pillNotify.onPush((payload) => {
+        PillNotifyUI.showPill(stack, {
+          ...payload,
+          onClick: (pill) => {
+            const actionRaw = pill.dataset.pillAction;
+            if (actionRaw && window.pillNotify?.click) {
+              try { window.pillNotify.click(JSON.parse(actionRaw)); } catch { /* ignore */ }
+            }
+            PillNotifyUI.removePill(pill);
+          },
+        });
+      });
+    }
+  </script>
+</body>
+</html>

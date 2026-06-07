@@ -10,6 +10,7 @@ const FEEDBACK = path.join(ROOT, 'config', 'konstancia-chat-feedback.jsonl');
 const REASONING = path.join(ROOT, 'ml', 'data', 'konstancia-reasoning.jsonl');
 const KNOWLEDGE_SEED = path.join(ROOT, 'ml', 'data', 'konstancia-knowledge-seed.jsonl');
 const KNOWLEDGE_QA = path.join(ROOT, 'ml', 'data', 'konstancia-knowledge-qa.jsonl');
+const TOUCAN_SFT = path.join(ROOT, 'ml', 'data', 'konstancia-toucan-sft.jsonl');
 const OUT = path.join(ROOT, 'ml', 'data', 'konstancia-chat.merged.jsonl');
 
 function readJsonl(file) {
@@ -27,6 +28,7 @@ const rows = [
   ...readJsonl(REASONING),
   ...readJsonl(KNOWLEDGE_SEED),
   ...readJsonl(KNOWLEDGE_QA),
+  ...readJsonl(TOUCAN_SFT),
 ];
 const seen = new Set();
 const unique = [];
