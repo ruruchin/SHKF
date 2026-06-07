@@ -1,6 +1,6 @@
 {
   "name": "shkf",
-  "version": "1.2.18",
+  "version": "1.2.19",
   "description": "SHKF — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",
@@ -11,6 +11,7 @@
   },
   "scripts": {
     "start": "electron .",
+    "linux": "bash scripts/linux-start.sh",
     "build": "node scripts/electron-build.js nsis",
     "build:portable": "node scripts/electron-build.js portable",
     "build:all": "node scripts/electron-build.js all",
@@ -20,6 +21,7 @@
     "site:preview": "npm --prefix site run preview",
     "seed:supabase": "node supabase/seed-users.mjs",
     "seed:employees": "node supabase/seed-employees.mjs",
+    "seed:app-users": "node supabase/seed-app-users.mjs",
     "seed:test-user": "node supabase/seed-test-user.mjs",
     "pik-folder:build-mobbin": "node scripts/build-pik-folder-mobbin-catalog.mjs",
     "ml:export-dataset": "node scripts/export-agent-training-dataset.mjs",

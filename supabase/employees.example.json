@@ -1,23 +1,14 @@
 [
   {
-    "username": "k.zorenko",
-    "full_name": "Константин Зоренко",
-    "position": "Дизайнер",
-    "role": "designer",
-    "password": "ChangeMe123!"
+    "username": "o.karavaev",
+    "full_name": "Олег Караваев",
+    "position": "Сотрудник",
+    "role": "designer"
   },
   {
-    "username": "i.ivanov",
-    "full_name": "Иван Иванов",
-    "position": "Frontend-разработчик",
-    "role": "frontend",
-    "password": "ChangeMe123!"
-  },
-  {
-    "username": "test",
-    "full_name": "test",
-    "position": "Тестовый аккаунт",
-    "role": "designer",
-    "password": "TestChat123!"
+    "username": "t.eng",
+    "full_name": "T. Eng",
+    "position": "Сотрудник",
+    "role": "designer"
   }
 ]
