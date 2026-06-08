@@ -4629,3 +4629,84 @@ html[data-no-anim] .agent-followups--animate {
     height: 42%;
   }
 }
+
+/* Large / 2K displays — wider chat column, same layout */
+@media (min-width: 1600px) {
+  .agent-shell,
+  .agent-chat--gemini .agent-shell,
+  .agent-chat--gemini.agent-chat--sidebar-collapsed .agent-shell,
+  .agent-chat--gemini.agent-vtuber-composer .agent-shell,
+  .agent-chat--gemini.agent-vtuber-composer.agent-chat--sidebar-collapsed .agent-shell {
+    max-width: min(1040px, calc(100% - 48px));
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .agent-chat--gemini .agent-msg-assistant {
+    max-width: min(100%, 920px);
+  }
+
+  .agent-chat--gemini .agent-msg-user {
+    max-width: min(92%, 720px);
+  }
+
+  .agent-welcome {
+    max-width: 760px;
+    padding-top: 56px;
+  }
+
+  .agent-welcome-title {
+    font-size: 32px;
+  }
+
+  .agent-welcome-sub {
+    max-width: 560px;
+    font-size: 16px;
+  }
+
+  .agent-composer-input {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .agent-shell,
+  .agent-chat--gemini .agent-shell,
+  .agent-chat--gemini.agent-chat--sidebar-collapsed .agent-shell,
+  .agent-chat--gemini.agent-vtuber-composer .agent-shell,
+  .agent-chat--gemini.agent-vtuber-composer.agent-chat--sidebar-collapsed .agent-shell {
+    max-width: min(1180px, calc(100% - 64px));
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+
+  .agent-chat--gemini .agent-msg-assistant {
+    max-width: min(100%, 1000px);
+  }
+
+  .agent-chat--gemini .agent-msg-user {
+    max-width: min(92%, 800px);
+  }
+
+  .agent-welcome {
+    max-width: 860px;
+  }
+
+  .agent-welcome-title {
+    font-size: 36px;
+  }
+
+  .agent-welcome-sub {
+    max-width: 620px;
+    font-size: 17px;
+  }
+
+  .agent-composer {
+    padding: 18px 18px 14px;
+  }
+
+  .agent-composer-input {
+    font-size: 17px;
+    min-height: 28px;
+  }
+}

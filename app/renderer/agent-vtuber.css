@@ -706,3 +706,49 @@ html[data-no-anim] .agent-vtuber-video {
     display: none;
   }
 }
+
+@media (min-width: 1600px) {
+  .agent-chat.agent-vtuber-composer.agent-vtuber-active {
+    --agent-vtuber-gutter: min(220px, 20vw);
+  }
+
+  .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-msg-assistant,
+  .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-msg-user {
+    max-width: min(100%, calc(880px - var(--agent-vtuber-gutter)));
+  }
+
+  .agent-welcome-icon--live2d,
+  .agent-chat.agent-vtuber-active .agent-welcome-icon,
+  .agent-chat.agent-vtuber-active.agent-vtuber-hero #agent-vtuber-hero-anchor,
+  .agent-chat.agent-vtuber-has-live2d.agent-vtuber-hero #agent-vtuber-hero-anchor {
+    width: min(640px, 72vw);
+    height: min(620px, 62vh);
+    min-height: 420px;
+  }
+}
+
+@media (min-width: 1920px) {
+  .agent-chat.agent-vtuber-composer.agent-vtuber-active {
+    --agent-vtuber-gutter: min(240px, 18vw);
+  }
+
+  .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-presence {
+    width: min(210px, 16vw);
+    height: min(400px, 48vh);
+    min-height: 320px;
+  }
+
+  .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-msg-assistant,
+  .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-msg-user {
+    max-width: min(100%, calc(980px - var(--agent-vtuber-gutter)));
+  }
+
+  .agent-welcome-icon--live2d,
+  .agent-chat.agent-vtuber-active .agent-welcome-icon,
+  .agent-chat.agent-vtuber-active.agent-vtuber-hero #agent-vtuber-hero-anchor,
+  .agent-chat.agent-vtuber-has-live2d.agent-vtuber-hero #agent-vtuber-hero-anchor {
+    width: min(720px, 68vw);
+    height: min(680px, 64vh);
+    min-height: 460px;
+  }
+}
