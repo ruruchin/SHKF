@@ -1,6 +1,6 @@
 {
   "name": "shkf",
-  "version": "1.2.24",
+  "version": "1.2.25",
   "description": "SHKF — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",
@@ -157,10 +157,12 @@
       "synopsis": "SHKF — hotkeys, Make and templates for Figma",
       "description": "SHKF desktop app with Konstancia agent, Kanban, and Figma tools.",
       "desktop": {
-        "Name": "SHKF",
-        "Comment": "SHKF — hotkeys, Make and templates for Figma",
-        "Categories": "Utility;Development;",
-        "StartupWMClass": "SHKF"
+        "entry": {
+          "Name": "SHKF",
+          "Comment": "SHKF — hotkeys, Make and templates for Figma",
+          "Categories": "Utility;Development;",
+          "StartupWMClass": "SHKF"
+        }
       }
     },
     "deb": {
