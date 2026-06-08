@@ -93,13 +93,22 @@
     badge.setAttribute('aria-label', count > 0 ? `Непрочитанных: ${count}` : '');
   }
 
-  function ensureKonstanciaNavIcon() {
+  const KONSTANCIA_AVATAR_SRC = 'assets/agent/agent-avatar.png';
+
+  function ensureKonstanciaNavIcon(live2dSrc) {
     const img = document.querySelector('.nav-item[data-page="agent"] [data-sidebar-static="1"]');
     if (!img) return;
-    const fallback = 'assets/brand/logo.png';
-    if (!img.getAttribute('src')) img.setAttribute('src', fallback);
-    img.removeAttribute('data-live2d');
-    img.closest('.agent-brand-avatar')?.classList.remove('agent-brand-avatar--live2d');
+    const live2d = live2dSrc || window.AgentLive2d?.getBrandAvatarSrc?.() || '';
+    const next = live2d || KONSTANCIA_AVATAR_SRC;
+    img.src = next;
+    const slot = img.closest('.agent-brand-avatar');
+    if (next.startsWith('data:image/')) {
+      img.dataset.live2d = '1';
+      slot?.classList.add('agent-brand-avatar--live2d');
+    } else {
+      img.removeAttribute('data-live2d');
+      slot?.classList.remove('agent-brand-avatar--live2d');
+    }
   }
 
   normalizeNavItems();
@@ -128,7 +137,9 @@
     });
   }
 
-  window.addEventListener('agent-brand-avatar-updated', ensureKonstanciaNavIcon);
+  window.addEventListener('agent-brand-avatar-updated', (event) => {
+    ensureKonstanciaNavIcon(event?.detail?.src);
+  });
 
   window.SidebarRail = {
     setExpanded,

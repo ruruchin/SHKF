@@ -358,9 +358,10 @@
 
 .sidebar-rail .nav-item[data-page="agent"] .agent-brand-avatar--sidebar .agent-brand-avatar-img {
   opacity: 1 !important;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center top;
   transform: none;
-  padding: 2px;
+  padding: 0;
 }
 
 .sidebar-rail .nav-item[data-page="agent"].active .agent-brand-avatar--sidebar {

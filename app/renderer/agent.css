@@ -621,11 +621,6 @@
   flex-direction: column;
   min-height: 0;
   width: 100%;
-  margin-left: 272px;
-  transition: margin-left 0.22s ease;
-}
-
-.agent-chat--sidebar-collapsed .agent-main {
   margin-left: 0;
 }
 
@@ -635,9 +630,10 @@
   flex: 1;
   min-height: 0;
   height: 100%;
-  max-width: 1120px;
+  max-width: min(900px, calc(100% - 32px));
   width: 100%;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
   padding: 20px 28px 24px;
   box-sizing: border-box;
 }
@@ -3260,14 +3256,6 @@ body.agent-settings-open #agent-settings-menu {
     border-bottom: none;
   }
 
-  .agent-main {
-    margin-left: min(280px, 88vw);
-  }
-
-  .agent-chat--sidebar-collapsed .agent-main {
-    margin-left: 0;
-  }
-
   .agent-session-list {
     flex-direction: row;
     flex-wrap: nowrap;
@@ -4057,15 +4045,15 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini .agent-shell {
-  max-width: min(1180px, calc(100% - 32px));
+  max-width: min(900px, calc(100% - 32px));
   width: 100%;
-  padding: 12px 24px 20px;
+  padding: 12px 20px 20px;
   margin-left: auto;
   margin-right: auto;
 }
 
 .agent-chat--gemini.agent-chat--sidebar-collapsed .agent-shell {
-  max-width: min(1240px, calc(100% - 40px));
+  max-width: min(900px, calc(100% - 32px));
   margin-left: auto;
   margin-right: auto;
 }
@@ -4558,12 +4546,12 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini.agent-vtuber-composer .agent-shell {
-  max-width: min(1180px, calc(100% - 32px));
+  max-width: min(900px, calc(100% - 32px));
   width: 100%;
   margin-left: auto;
   margin-right: auto;
-  padding-left: 24px;
-  padding-right: 24px;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 .agent-chat--gemini.agent-vtuber-composer .agent-header-card,
@@ -4574,7 +4562,7 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini.agent-vtuber-composer.agent-chat--sidebar-collapsed .agent-shell {
-  max-width: min(1240px, calc(100% - 40px));
+  max-width: min(900px, calc(100% - 32px));
   margin-left: auto;
   margin-right: auto;
 }

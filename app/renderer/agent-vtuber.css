@@ -74,20 +74,17 @@
 
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-presence {
   position: absolute;
-  left: auto;
-  right: 0;
+  left: 0;
   bottom: 0;
-  width: var(--agent-vtuber-rail, min(220px, 24vw));
-  height: min(380px, 46vh);
-  min-height: 300px;
+  width: min(184px, 22vw);
+  height: min(360px, 44vh);
+  min-height: 288px;
   margin: 0;
   padding: 0;
   z-index: 4;
   justify-content: flex-end;
   overflow: hidden;
   pointer-events: none;
-  border-radius: 20px 20px 0 0;
-  background: linear-gradient(180deg, rgba(240, 244, 249, 0) 0%, rgba(233, 238, 246, 0.72) 38%, rgba(233, 238, 246, 0.95) 100%);
 }
 
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main {
@@ -111,8 +108,7 @@
   z-index: 1;
   width: 100%;
   min-width: 0;
-  padding-left: 0;
-  padding-right: max(8px, var(--agent-vtuber-rail, min(220px, 24vw)));
+  padding-left: max(8px, min(168px, 20.5vw));
 }
 
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main .agent-suggestions {
@@ -126,8 +122,7 @@
   z-index: 1;
   width: 100%;
   min-width: 0;
-  padding-left: 0;
-  padding-right: max(12px, var(--agent-vtuber-rail, min(220px, 24vw)));
+  padding-left: max(16px, min(176px, 21.5vw));
 }
 
 .agent-chat.agent-vtuber-composer .agent-dock-bottom {
@@ -593,20 +588,19 @@
   position: relative;
 }
 
-/* Live2D bust sits in the right rail — chat uses full width on the left */
+/* Live2D bust sits left above the composer — chat column stays centered */
 .agent-chat.agent-vtuber-composer.agent-vtuber-active {
-  --agent-vtuber-rail: min(220px, 24vw);
+  --agent-vtuber-gutter: min(196px, 23.5vw);
 }
 
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-messages:not(.agent-messages--idle) {
-  padding-left: 0;
-  padding-right: max(12px, var(--agent-vtuber-rail));
+  padding-left: max(12px, var(--agent-vtuber-gutter));
   padding-bottom: max(20px, min(56px, 10vh));
 }
 
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-msg-assistant,
 .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-msg-user {
-  max-width: min(100%, 880px);
+  max-width: min(100%, calc(760px - var(--agent-vtuber-gutter)));
 }
 
 .agent-live2d-host {
@@ -644,7 +638,7 @@
   bottom: 12px;
   z-index: 2;
   margin-top: 8px;
-  max-width: min(100%, 880px);
+  max-width: min(100%, calc(760px - var(--agent-vtuber-gutter, 0px)));
 }
 
 .agent-chat.agent-vtuber-active.agent-vtuber-composer .agent-thinking .agent-msg-body {
@@ -665,21 +659,21 @@ html[data-no-anim] .agent-vtuber-video {
 
 @media (max-width: 900px) {
   .agent-chat.agent-vtuber-composer.agent-vtuber-active {
-    --agent-vtuber-rail: min(168px, 30vw);
+    --agent-vtuber-gutter: min(164px, 28vw);
   }
 
   .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-presence {
-    width: var(--agent-vtuber-rail, min(168px, 30vw));
+    width: min(156px, 28vw);
     height: min(300px, 38vh);
     min-height: 240px;
   }
 
   .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main .agent-suggestions {
-    padding-right: max(6px, var(--agent-vtuber-rail, min(168px, 30vw)));
+    padding-left: max(6px, min(140px, 26vw));
   }
 
   .agent-chat.agent-vtuber-composer.agent-vtuber-active .agent-dock-main .agent-composer {
-    padding-right: max(12px, var(--agent-vtuber-rail, min(168px, 30vw)));
+    padding-left: max(12px, min(148px, 27vw));
   }
 
   #agent-vtuber-composer-slot .agent-vtuber-float,

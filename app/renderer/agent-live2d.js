@@ -666,8 +666,8 @@
   function applyBrandAvatars(src, { forceClear = false } = {}) {
     const effective = src || (!forceClear && brandAvatarSrc) || '';
     document.querySelectorAll('[data-agent-brand-avatar]').forEach((img) => {
-      if (img.dataset.sidebarStatic === '1') return;
       const slot = img.closest('.agent-brand-avatar, .agent-chat-avatar, .nav-item-avatar');
+      const isSidebar = img.dataset.sidebarStatic === '1';
       if (effective) {
         img.src = effective;
         if (effective.startsWith('data:image/')) {
@@ -679,7 +679,12 @@
         }
       } else if (forceClear) {
         img.removeAttribute('data-live2d');
-        img.removeAttribute('src');
+        if (isSidebar) img.src = AGENT_AVATAR_FALLBACK;
+        else img.removeAttribute('src');
+        slot?.classList.remove('agent-brand-avatar--live2d');
+      } else if (isSidebar) {
+        img.src = AGENT_AVATAR_FALLBACK;
+        img.removeAttribute('data-live2d');
         slot?.classList.remove('agent-brand-avatar--live2d');
       }
     });
