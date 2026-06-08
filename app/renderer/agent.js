@@ -3354,16 +3354,16 @@
   function syncStageState() {
     const hasChat = chatHistory.length > 0 || !!messagesEl?.querySelector('.agent-msg');
     const drafting = Boolean(promptEl?.value?.trim()) || pendingAgentImages.length > 0;
-    const active = hasChat || drafting;
 
     if (!hasChat && !drafting && !messagesEl?.querySelector('.agent-welcome')) {
       showEmptyState();
       return;
     }
 
-    messagesEl?.classList.toggle('agent-messages--idle', !active);
+    // Центр и hero-модель — пока нет сообщений; composer только после первого отправленного.
+    messagesEl?.classList.toggle('agent-messages--idle', !hasChat);
     if (window.AgentVtuber) {
-      if (active) window.AgentVtuber.onChatActive?.();
+      if (hasChat) window.AgentVtuber.onChatActive?.();
       else window.AgentVtuber.onChatIdle?.();
     }
   }
@@ -3371,12 +3371,6 @@
   function clearWelcomePanel() {
     messagesEl?.querySelector('.agent-welcome')?.remove();
     messagesEl?.classList.remove('agent-messages--idle');
-  }
-
-  function hideWelcomeIfDrafting() {
-    if (!promptEl?.value?.trim() && !pendingAgentImages.length) return;
-    clearWelcomePanel();
-    syncStageState();
   }
 
   function buildFeedbackHtml(learnedChunkIds) {
@@ -5735,7 +5729,7 @@
     promptEl?.addEventListener('input', () => {
       autoResize();
       updateSendState();
-      hideWelcomeIfDrafting();
+      syncStageState();
     });
     promptEl?.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' && !event.shiftKey && agentChatSettings.enterSend !== false) {

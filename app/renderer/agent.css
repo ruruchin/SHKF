@@ -4528,13 +4528,13 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini.agent-vtuber-composer .agent-shell {
-  --agent-shell-half: min(580px, 50%);
-  max-width: min(calc(100% - 20px), 1200px);
+  --agent-shell-half: min(450px, 50%);
+  max-width: 900px;
   width: 100%;
-  margin-left: 0;
-  margin-right: 0;
-  padding-left: 16px;
-  padding-right: 16px;
+  margin-left: max(16px, calc(50% - var(--agent-shell-half) - var(--agent-sidebar-optical)));
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 .agent-chat--gemini.agent-vtuber-composer .agent-header-card,
@@ -4545,7 +4545,8 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini.agent-vtuber-composer.agent-chat--sidebar-collapsed .agent-shell {
-  max-width: min(calc(100% - 32px), 1120px);
+  --agent-sidebar-optical: 0px;
+  max-width: 900px;
   margin-left: auto;
   margin-right: auto;
 }
