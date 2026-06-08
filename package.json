@@ -1,6 +1,6 @@
 {
   "name": "shkf",
-  "version": "1.2.32",
+  "version": "1.2.33",
   "description": "SHKF — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",
@@ -12,12 +12,13 @@
   "scripts": {
     "start": "electron .",
     "linux": "bash scripts/linux-start.sh",
-    "build": "node scripts/electron-build.js nsis",
-    "build:portable": "node scripts/electron-build.js portable",
-    "build:all": "node scripts/electron-build.js all",
+    "build": "node scripts/write-org-secrets.mjs && node scripts/electron-build.js nsis",
+    "build:portable": "node scripts/write-org-secrets.mjs && node scripts/electron-build.js portable",
+    "build:all": "node scripts/write-org-secrets.mjs && node scripts/electron-build.js all",
     "build:linux": "bash scripts/linux-build.sh",
     "build:linux:appimage": "bash scripts/linux-build.sh appimage",
     "build:linux:deb": "bash scripts/linux-build.sh deb",
+    "secrets:org": "node scripts/write-org-secrets.mjs",
     "build:linux:docker": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/linux-build-docker.ps1",
     "server": "node server/index.js",
     "site:dev": "npm --prefix site run dev",
@@ -64,6 +65,7 @@
       "server/**/*",
       "shared/**/*",
       "config/**/*",
+      "!config/org-secrets.json",
       "supabase/migrations/**/*",
       "scripts/**/*",
       "ml/**/*",
@@ -106,6 +108,10 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "config/org-secrets.json",
+        "to": "."
       }
     ],
     "win": {

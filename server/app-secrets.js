@@ -1,5 +1,6 @@
 /**
  * Server-side secrets only (main process). Never expose values to renderer or hotkeys.json.
+ * Load order: project .env → bundled org-secrets.json (release) → userData/.env override.
  */
 
 function env(name) {

@@ -88,6 +88,7 @@ import {
   resolveMobbinApiKey,
   resolveNanobananaApiKey,
 } from '../server/app-secrets.js';
+import { applyOrgSecrets } from '../server/load-org-secrets.js';
 import {
   buildUserIntegrationPatch,
   emptyUserIntegrations,
@@ -178,7 +179,17 @@ if (!existsSync(shkfUserData) && existsSync(legacyFiruruUserData)) {
 }
 app.setPath('userData', shkfUserData);
 
+function orgSecretPaths() {
+  const paths = [];
+  if (app.isPackaged) {
+    paths.push(path.join(process.resourcesPath, 'org-secrets.json'));
+  }
+  paths.push(path.join(__dirname, '../config/org-secrets.json'));
+  return paths;
+}
+
 dotenv.config();
+applyOrgSecrets({ paths: orgSecretPaths(), override: false });
 const userEnvPath = path.join(shkfUserData, '.env');
 if (existsSync(userEnvPath)) {
   dotenv.config({ path: userEnvPath, override: true });

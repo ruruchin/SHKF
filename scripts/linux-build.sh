@@ -53,6 +53,9 @@ npm ci --ignore-scripts
 log "electron-builder install-app-deps"
 npx electron-builder install-app-deps
 
+log "bundle org secrets"
+node scripts/write-org-secrets.mjs
+
 pick_target() {
   case "$TARGET" in
     appimage) echo "AppImage" ;;

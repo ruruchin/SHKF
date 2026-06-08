@@ -42,6 +42,17 @@ jobs:
           sudo apt-get install -y libarchive-tools rpm fakeroot dpkg \
             libgtk-3-0t64 libasound2t64 libatspi2.0-0t64 libnotify4t64 libxss1t64 libxtst6t64
 
+      - name: Bundle org secrets for all users
+        run: node scripts/write-org-secrets.mjs
+        env:
+          KONSTANCIA_YANDEX_API_KEY: ${{ secrets.KONSTANCIA_YANDEX_API_KEY }}
+          KONSTANCIA_YANDEX_FOLDER_ID: ${{ secrets.KONSTANCIA_YANDEX_FOLDER_ID }}
+          KONSTANCIA_CLOUD_URL: ${{ secrets.KONSTANCIA_CLOUD_URL }}
+          KONSTANCIA_CLOUD_API_KEY: ${{ secrets.KONSTANCIA_CLOUD_API_KEY }}
+          CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
+          MOBBIN_API_KEY: ${{ secrets.MOBBIN_API_KEY }}
+          NANOBANANA_API_KEY: ${{ secrets.NANOBANANA_API_KEY }}
+
       - name: Cache electron-builder binaries
         uses: actions/cache@v4
         with:

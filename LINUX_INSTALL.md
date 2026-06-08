@@ -81,24 +81,36 @@ sudo apt remove shkf
 
 ---
 
-## Konstancia (Yandex Cloud)
+## Konstancia (Yandex Cloud) — один ключ на всю команду
 
-Агент работает через **Yandex Cloud API** (не локальная модель на Linux). API-ключ **не вводится в настройках приложения** — только в серверном `.env` (Linux и Windows):
+Konstancia работает через **Yandex Cloud API**. Ключ **не показывается в настройках приложения** и **не лежит в git**.
 
-**Linux:** `~/.config/SHKF/.env`  
-**Windows:** `%APPDATA%\SHKF\.env`
+### Обычные пользователи
 
-```env
-KONSTANCIA_YANDEX_API_KEY=AQVNxxxxxxxx
-# необязательно — folder подставится сам:
-# KONSTANCIA_YANDEX_FOLDER_ID=b1g...
+Скачайте **официальный релиз** с GitHub (v1.2.33+). Ключ Konstancia **уже встроен в установщик** — ничего настраивать на каждом ПК не нужно.
+
+### Администратор / сборка релиза
+
+1. GitHub → репозиторий **SHKF** → **Settings → Secrets and variables → Actions**
+2. Добавьте секреты (минимум для Konstancia):
+   - `KONSTANCIA_YANDEX_API_KEY` — ключ Yandex Cloud (Api-Key)
+   - `KONSTANCIA_YANDEX_FOLDER_ID` — необязательно (folder подставится сам)
+3. Запушьте тег `v*.*.*` — CI соберёт установщик с ключом внутри (`org-secrets.json`, только main process).
+
+Локальная сборка с тем же ключом:
+
+```bash
+export KONSTANCIA_YANDEX_API_KEY=AQVNxxxxxxxx
+npm run secrets:org
+npm run build          # Windows
+# или ./scripts/linux-build.sh
 ```
 
-Файл `.env` должен существовать в этой папке — без него Konstancia всегда «недоступна», даже если ключ раньше вводили в настройках.
+### Override на одном ПК (редко)
 
-После сохранения **полностью перезапустите** SHKF (закройте из трея и откройте снова).
+Файл `%APPDATA%\SHKF\.env` (Windows) или `~/.config/SHKF/.env` (Linux) **перекрывает** встроенный ключ — только для отладки администратора.
 
-Проверка из терминала (в каталоге с исходниками):
+Проверка API из исходников:
 
 ```bash
 node scripts/probe-yandex-deepseek.mjs
