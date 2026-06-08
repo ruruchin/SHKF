@@ -32,7 +32,7 @@ import {
   resolveModelEntryPath,
   toLive2dProtocolUrl,
 } from '../server/live2d-model-service.js';
-import { stopAllLive2dStaticServers } from '../server/live2d-static-server.js';
+import { resolveLive2dServeUrl, stopAllLive2dStaticServers } from '../server/live2d-static-server.js';
 import { isRedmineFileSearch, wantsLearnedExperience, wantsProcessInsights, wantsRedmineKnowledge, wantsFileSearch, wantsReindexTasks, isLearnedExperienceQuery } from '../shared/task-learning-intent.js';
 import {
   buildTaskOptionalPrompt,
@@ -517,22 +517,26 @@ function live2dMimeType(filePath = '') {
 }
 
 function registerLive2dProtocol() {
-  protocol.handle('kostin-live2d', (request) => {
+  protocol.handle('kostin-live2d', async (request) => {
     const filePath = fromLive2dProtocolUrl(request.url);
     if (!filePath || !existsSync(filePath)) {
       return new Response('Not found', { status: 404 });
     }
     try {
-      const data = readFileSync(filePath);
-      return new Response(data, {
-        headers: {
-          'Content-Type': live2dMimeType(filePath),
-          'Content-Length': String(data.byteLength),
-          'Access-Control-Allow-Origin': '*',
-        },
-      });
+      return await net.fetch(pathToFileURL(filePath).href);
     } catch {
-      return new Response('Read error', { status: 500 });
+      try {
+        const data = readFileSync(filePath);
+        return new Response(data, {
+          headers: {
+            'Content-Type': live2dMimeType(filePath),
+            'Content-Length': String(data.byteLength),
+            'Access-Control-Allow-Origin': '*',
+          },
+        });
+      } catch {
+        return new Response('Read error', { status: 500 });
+      }
     }
   });
 }
@@ -552,14 +556,12 @@ function registerLive2dIpcHandlers() {
     }
     const meta = readLive2dMeta(entryPath);
     if (!meta.ok) return meta;
-    const modelUrl = toLive2dProtocolUrl(meta.settingsPath);
-    if (!modelUrl) {
-      return { ok: false, message: 'Не удалось сформировать URL модели Live2D' };
-    }
+    const served = await resolveLive2dServeUrl(meta.settingsPath);
+    if (!served.ok) return served;
     const usesBundled = !userPath || !resolveModelEntryPath(userPath);
     return {
       ...meta,
-      modelUrl,
+      modelUrl: served.modelUrl,
       emotions: cfg.emotions || {},
       costume: String(cfg.live2dCostume || '').trim(),
       bundled: usesBundled,
@@ -609,10 +611,8 @@ function registerLive2dIpcHandlers() {
     if (!meta.ok) {
       return { ok: false, message: meta.message || 'Не найден model3.json в выбранном месте' };
     }
-    const modelUrl = toLive2dProtocolUrl(meta.settingsPath);
-    if (!modelUrl) {
-      return { ok: false, message: 'Не удалось сформировать URL модели Live2D' };
-    }
+    const served = await resolveLive2dServeUrl(meta.settingsPath);
+    if (!served.ok) return served;
     const config = service.updateAppSettings({
       vtubeStudio: {
         ...service.config.settings?.vtubeStudio,
@@ -623,7 +623,7 @@ function registerLive2dIpcHandlers() {
       ok: true,
       entryPath,
       settingsPath: meta.settingsPath,
-      modelUrl,
+      modelUrl: served.modelUrl,
       modelName: meta.modelName,
       config,
     };

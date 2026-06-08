@@ -1,6 +1,8 @@
 import http from 'http';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
+import process from 'process';
+import { toLive2dProtocolUrl } from './live2d-model-service.js';
 
 const MIME = {
   '.json': 'application/json;charset=utf-8',
@@ -107,4 +109,31 @@ export function stopAllLive2dStaticServers() {
     try { entry.server.close(); } catch { /* */ }
   }
   roots.clear();
+}
+
+/**
+ * PIXI Live2D on Linux reliably loads assets via localhost HTTP, not custom protocols.
+ */
+export async function resolveLive2dServeUrl(settingsPath = '') {
+  const settings = normalizeRoot(settingsPath);
+  if (!settings || !existsSync(settings)) {
+    return { ok: false, message: 'model3.json не найден' };
+  }
+
+  if (process.platform === 'linux') {
+    const served = await getLive2dModelHttpUrl(settings);
+    if (served.ok) return served;
+  }
+
+  const modelUrl = toLive2dProtocolUrl(settings);
+  if (!modelUrl) {
+    return { ok: false, message: 'Не удалось сформировать URL модели Live2D' };
+  }
+
+  return {
+    ok: true,
+    modelDir: normalizeRoot(path.dirname(settings)),
+    settingsPath: settings,
+    modelUrl,
+  };
 }

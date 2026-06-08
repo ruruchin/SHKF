@@ -194,8 +194,8 @@
 
   function fitModel() {
     if (!app || !model || !hostEl) return;
-    const width = hostEl.clientWidth || 480;
-    const height = hostEl.clientHeight || 640;
+    const width = Math.max(1, hostEl.clientWidth || 480);
+    const height = Math.max(1, hostEl.clientHeight || 640);
     try {
       app.renderer.resize(width, height);
     } catch {
@@ -203,14 +203,14 @@
     }
 
     const bounds = model.getLocalBounds();
-    let bw = bounds.width || 800;
-    let bh = bounds.height || 1000;
+    let bw = Math.max(1, bounds.width || 0);
+    let bh = Math.max(1, bounds.height || 0);
     if (bw <= 1 || bh <= 1) {
-      bw = model.width || model.internalModel?.width || 800;
-      bh = model.height || model.internalModel?.height || 1000;
+      bw = Math.max(1, model.width || model.internalModel?.width || 800);
+      bh = Math.max(1, model.height || model.internalModel?.height || 1000);
     }
 
-    const scale = (width / bw) * 2.45;
+    const scale = Math.min((width / bw) * 2.45, (height / bh) * 2.8);
     model.scale.set(scale);
     const scaledH = bh * scale;
     const anchorY = 0.58;
@@ -222,6 +222,14 @@
     if (headTop < headMargin) targetModelY += headMargin - headTop;
     model.y = targetModelY;
     app.render();
+  }
+
+  function scheduleFitModel() {
+    fitModel();
+    window.requestAnimationFrame(() => {
+      fitModel();
+      window.requestAnimationFrame(fitModel);
+    });
   }
 
   function playIdle() {
@@ -333,11 +341,11 @@
       model.autoUpdate = true;
       bindModelUpdate();
       bindCursorTracking();
-      fitModel();
+      scheduleFitModel();
       playIdle();
       app.render();
 
-      resizeObserver = new ResizeObserver(() => fitModel());
+      resizeObserver = new ResizeObserver(() => scheduleFitModel());
       resizeObserver.observe(host);
 
       host.classList.add('auth-live2d-host--ready');
@@ -375,8 +383,7 @@
   function ensureVisible() {
     if (!isGateOpen()) return;
     if (isMountedReady()) {
-      fitModel();
-      app?.render?.();
+      scheduleFitModel();
       return;
     }
     scheduleMount();
