@@ -64,12 +64,19 @@
 
 .agent-sidebar-head {
   display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 14px 14px 0;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--agent-line);
+}
+
+.agent-sidebar-head-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 14px 14px 10px;
-  flex-shrink: 0;
-  border-bottom: 1px solid var(--agent-line);
+  padding-bottom: 10px;
 }
 
 .agent-sidebar-head-actions {
@@ -181,9 +188,33 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 8px 14px 10px;
-  border-bottom: 1px solid var(--agent-line);
+  padding: 8px 0 10px;
   flex-shrink: 0;
+}
+
+.agent-session-bulk-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.agent-session-bulk-all {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--agent-line);
+  background: var(--agent-surface);
+  color: var(--agent-ink);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.agent-session-bulk-all:hover {
+  border-color: var(--agent-accent);
+  color: var(--agent-accent);
+  background: var(--agent-accent-soft);
 }
 
 .agent-session-bulk-count {
@@ -4026,16 +4057,15 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini .agent-shell {
-  --agent-shell-half: min(450px, 50%);
-  --agent-sidebar-optical: 136px; /* половина ширины колонки чатов — центр ближе к экрану */
-  max-width: 900px;
-  padding: 12px 20px 20px;
-  margin-left: max(16px, calc(50% - var(--agent-shell-half) - var(--agent-sidebar-optical)));
+  max-width: min(1180px, calc(100% - 32px));
+  width: 100%;
+  padding: 12px 24px 20px;
+  margin-left: auto;
   margin-right: auto;
 }
 
 .agent-chat--gemini.agent-chat--sidebar-collapsed .agent-shell {
-  --agent-sidebar-optical: 0px;
+  max-width: min(1240px, calc(100% - 40px));
   margin-left: auto;
   margin-right: auto;
 }
@@ -4158,7 +4188,7 @@ html[data-no-anim] .agent-followups--animate {
 
 .agent-chat--gemini .agent-msg-assistant {
   width: fit-content;
-  max-width: min(100%, 760px);
+  max-width: min(100%, 880px);
   align-self: flex-start;
   gap: 8px;
 }
@@ -4171,7 +4201,7 @@ html[data-no-anim] .agent-followups--animate {
 .agent-chat--gemini .agent-msg-user {
   display: inline-flex;
   width: fit-content;
-  max-width: min(92%, 560px);
+  max-width: min(92%, 640px);
   align-self: flex-end;
   margin-left: auto;
   margin-right: 0;
@@ -4179,7 +4209,7 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini .agent-msg-user:has(.agent-user-image) {
-  max-width: min(92%, 380px);
+  max-width: min(92%, 440px);
 }
 
 .agent-chat--gemini .agent-msg-user .agent-msg-body {
@@ -4528,13 +4558,12 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini.agent-vtuber-composer .agent-shell {
-  --agent-shell-half: min(450px, 50%);
-  max-width: 900px;
+  max-width: min(1180px, calc(100% - 32px));
   width: 100%;
-  margin-left: max(16px, calc(50% - var(--agent-shell-half) - var(--agent-sidebar-optical)));
+  margin-left: auto;
   margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
+  padding-left: 24px;
+  padding-right: 24px;
 }
 
 .agent-chat--gemini.agent-vtuber-composer .agent-header-card,
@@ -4545,8 +4574,7 @@ html[data-no-anim] .agent-followups--animate {
 }
 
 .agent-chat--gemini.agent-vtuber-composer.agent-chat--sidebar-collapsed .agent-shell {
-  --agent-sidebar-optical: 0px;
-  max-width: 900px;
+  max-width: min(1240px, calc(100% - 40px));
   margin-left: auto;
   margin-right: auto;
 }

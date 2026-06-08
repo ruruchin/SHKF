@@ -371,7 +371,7 @@ export class AgentService {
       if (!isKonstanciaBackendReady() && !this.isKonstanciaCloudConfigured()) {
         return {
           ok: false,
-          message: 'Konstancia сейчас недоступна. Попробуйте позже или перезапустите приложение.',
+          message: 'Konstancia сейчас недоступна. Обратитесь к администратору SHKF.',
         };
       }
 

@@ -154,7 +154,7 @@ export async function runCursorFigmaBuild({
 }) {
   const key = String(apiKey || '').trim();
   if (!key) {
-    return { ok: false, message: 'Укажите Cursor API key: Настройки → Konstancia → Cursor (Figma MCP)' };
+    return { ok: false, message: 'Cursor не настроен. Обратитесь к администратору SHKF.' };
   }
 
   let enrichedBrief = brief;

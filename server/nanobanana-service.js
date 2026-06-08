@@ -219,7 +219,7 @@ export class NanobananaService {
 
   getHeaders() {
     const key = String(this.settings.apiKey || '').trim();
-    if (!key) throw new Error('Укажите API-ключ NanoBanana в настройках');
+    if (!key) throw new Error('NanoBanana не настроен. Обратитесь к администратору SHKF.');
     return {
       Authorization: `Bearer ${key}`,
       Accept: 'application/json',

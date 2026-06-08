@@ -1,6 +1,6 @@
 {
   "name": "shkf",
-  "version": "1.2.29",
+  "version": "1.2.30",
   "description": "SHKF — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",

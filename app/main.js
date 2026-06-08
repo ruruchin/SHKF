@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { app, BrowserWindow, BrowserView, ipcMain, Tray, Menu, nativeImage, shell, dialog, session, Notification, clipboard, protocol, net } from 'electron';
 import electronUpdater from 'electron-updater';
 import path from 'path';
@@ -80,7 +80,14 @@ import {
   listInstalledSpeechLanguages,
 } from '../server/speech-input.js';
 import { ACTIONS, checkConflict, formatKeys, generateId, ACTION_META } from '../shared/keys.js';
-import { patchSettings } from '../shared/app-settings.js';
+import { patchSettings, sanitizeConfigForClient, sanitizeMetaskForClient } from '../shared/app-settings.js';
+import {
+  resolveKonstanciaYandexCredentials,
+  resolveKonstanciaCloudCredentials,
+  resolveCursorApiKey,
+  resolveMobbinApiKey,
+  resolveNanobananaApiKey,
+} from '../server/app-secrets.js';
 import {
   buildUserIntegrationPatch,
   emptyUserIntegrations,
@@ -170,6 +177,13 @@ if (!existsSync(shkfUserData) && existsSync(legacyFiruruUserData)) {
   } catch { /* first launch on new path */ }
 }
 app.setPath('userData', shkfUserData);
+
+dotenv.config();
+const userEnvPath = path.join(shkfUserData, '.env');
+if (existsSync(userEnvPath)) {
+  dotenv.config({ path: userEnvPath, override: true });
+}
+
 if (process.platform === 'win32') {
   app.setAppUserModelId('com.shkf.app');
 }
@@ -422,6 +436,10 @@ const processAnalyticsService = new ProcessAnalyticsService({
   taskLinker: taskLinkerService,
 });
 
+function clientConfig() {
+  return sanitizeConfigForClient(service.config);
+}
+
 function configureTaskLearning() {
   taskKnowledgeService.configure(service.config.settings?.taskLearning || {});
 }
@@ -431,7 +449,7 @@ function configureAgentIntegrations() {
   if (
     isKonstanciaLlmTrained()
     && agentSettings.provider !== 'konstancia'
-    && !agentSettings.konstanciaCloudUrl
+    && !resolveKonstanciaCloudCredentials(agentSettings).url
   ) {
     agentSettings = {
       ...agentSettings,
@@ -440,17 +458,24 @@ function configureAgentIntegrations() {
     };
     service.updateAppSettings({ agent: agentSettings });
   }
-  configureKonstanciaYandex({
-    apiKey: process.env.KONSTANCIA_YANDEX_API_KEY || '',
-    folderId: process.env.KONSTANCIA_YANDEX_FOLDER_ID || '',
+  const yandex = resolveKonstanciaYandexCredentials(agentSettings);
+  const cloud = resolveKonstanciaCloudCredentials(agentSettings);
+  configureKonstanciaYandex(yandex);
+  configureKonstanciaCloud(cloud);
+  agentService.configure({
+    ...agentSettings,
+    cursorApiKey: resolveCursorApiKey(agentSettings),
+    mobbinApiKey: resolveMobbinApiKey(agentSettings),
   });
-  configureKonstanciaCloud({
-    url: process.env.KONSTANCIA_CLOUD_URL || agentSettings.konstanciaCloudUrl || '',
-    apiKey: process.env.KONSTANCIA_CLOUD_API_KEY || agentSettings.konstanciaCloudApiKey || '',
+  mobbinService.configure({
+    ...agentSettings,
+    mobbinApiKey: resolveMobbinApiKey(agentSettings),
   });
-  agentService.configure(agentSettings);
-  mobbinService.configure(agentSettings);
   siteBuilderService.configure(agentSettings);
+  nanobananaService.configure({
+    ...(service.config.settings?.nanobanana || {}),
+    apiKey: resolveNanobananaApiKey(service.config.settings?.nanobanana),
+  });
   knowledgeIngestService.configure({
     enabled: agentSettings.knowledgeLearningEnabled !== false,
     autoIngestOnStart: agentSettings.knowledgeAutoIngest === true,
@@ -1024,7 +1049,7 @@ async function activateAuthenticatedUserContext(profile) {
   await pullCloudSettingsIntoConfig();
   await pullUserIntegrationsIntoConfig();
   await switchIntegrationSessionsForUser(profile.id);
-  broadcast('config', service.config);
+  broadcast('config', clientConfig());
   return service.config;
 }
 
@@ -1034,7 +1059,7 @@ async function deactivateAuthenticatedUserContext() {
   await clearMetaskSession();
   await clearZimbraSession();
   resetRuntimeIntegrations();
-  broadcast('config', service.config);
+  broadcast('config', clientConfig());
 }
 
 async function pullCloudSettingsIntoConfig() {
@@ -1087,6 +1112,17 @@ function initPillNotifyService() {
           mainWindow.focus();
         }
         broadcast('konstancia-open-share', { shareId: action.shareId });
+        return;
+      }
+      if (type === 'teamchat-open-room') {
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          if (!mainWindow.isVisible()) mainWindow.show();
+          mainWindow.focus();
+        }
+        broadcast('teamchat-open-room', {
+          roomId: action.roomId,
+          colleagueId: action.colleagueId || null,
+        });
       }
     },
   });
@@ -1246,7 +1282,7 @@ service.on('status', (s) => broadcast('status', s));
 service.on('log', (msg) => broadcast('log', msg));
 service.on('action-fired', (a) => broadcast('action-fired', a));
 service.on('config-changed', (c) => {
-  broadcast('config', c);
+  broadcast('config', sanitizeConfigForClient(c));
   scheduleMetaskPolling();
   configureAgentIntegrations();
   nanobananaService.configure(c.settings?.nanobanana || {});
@@ -1504,13 +1540,13 @@ app.whenReady().then(() => {
       } else {
         resetRuntimeIntegrations();
       }
-      return { ...result, config: service.config };
+      return { ...result, config: clientConfig() };
     } catch (err) {
       if (authService.session) {
         const offline = authService.buildOfflineSessionResponse?.();
         if (offline) {
           if (offline.profile) applyAuthProfileToConfig(offline.profile);
-          return { ...offline, config: service.config };
+          return { ...offline, config: clientConfig() };
         }
       }
       return {
@@ -1520,7 +1556,7 @@ app.whenReady().then(() => {
         user: null,
         profile: null,
         message: err?.message || 'Ошибка инициализации авторизации',
-        config: service.config,
+        config: clientConfig(),
       };
     }
   });
@@ -1531,9 +1567,9 @@ app.whenReady().then(() => {
         await activateAuthenticatedUserContext(result.profile);
         broadcast('auth-changed', { profile: result.profile, user: result.user });
       }
-      return { ...result, config: service.config };
+      return { ...result, config: clientConfig() };
     } catch (err) {
-      return { ok: false, message: err?.message || 'Ошибка входа', config: service.config };
+      return { ok: false, message: err?.message || 'Ошибка входа', config: clientConfig() };
     }
   });
   ipcMain.handle('auth-logout', async () => {
@@ -1546,7 +1582,7 @@ app.whenReady().then(() => {
     try {
       const profile = await authService.fetchProfile();
       if (profile) applyAuthProfileToConfig(profile);
-      return { ok: true, profile, config: service.config };
+      return { ok: true, profile, config: clientConfig() };
     } catch (err) {
       return { ok: false, message: err.message || String(err), profile: null };
     }
@@ -1561,7 +1597,7 @@ app.whenReady().then(() => {
       if (result.ok && result.profile) {
         broadcast('auth-changed', { profile: result.profile, user: { id: result.profile.id, email: result.profile.email } });
       }
-      return { ...result, config: service.config };
+      return { ...result, config: clientConfig() };
     } catch (err) {
       return { ok: false, message: err?.message || 'Не удалось сменить пароль' };
     }
@@ -1573,7 +1609,7 @@ app.whenReady().then(() => {
         applyAuthProfileToConfig(result.profile);
         broadcast('auth-changed', { profile: result.profile, user: { id: result.profile.id, email: result.profile.email } });
       }
-      return { ...result, config: service.config };
+      return { ...result, config: clientConfig() };
     } catch (err) {
       return { ok: false, message: err?.message || 'Не удалось обновить профиль' };
     }
@@ -1602,14 +1638,14 @@ app.whenReady().then(() => {
     return { ok: true };
   });
 
-  ipcMain.handle('get-config', () => service.config);
+  ipcMain.handle('get-config', () => sanitizeConfigForClient(service.config));
   ipcMain.handle('get-status', () => service.getStatus());
   ipcMain.handle('get-actions', () => ACTIONS);
   ipcMain.handle('get-action-meta', () => ACTION_META);
   ipcMain.handle('save-config', (_e, config) => {
     service.saveConfig(config);
     pushCloudSettingsFromConfig();
-    return service.config;
+    return sanitizeConfigForClient(service.config);
   });
   ipcMain.handle('save-hotkey', (_e, hotkey) => {
     const config = { ...service.config, hotkeys: [...service.config.hotkeys] };
@@ -1862,13 +1898,14 @@ app.whenReady().then(() => {
   ipcMain.handle('metask-get-info', () => ({
     partition: metaskService.getSessionPartition(),
     boardUrl: metaskService.getBoardUrl(),
-    settings: service.config.settings?.metask || {},
+    settings: sanitizeMetaskForClient(service.config.settings?.metask || {}),
   }));
   ipcMain.handle('metask-save-credentials', async (_e, creds) => {
     const prev = service.config.settings?.metask || {};
     const mergedCreds = {
       ...prev,
       ...creds,
+      apiKey: creds?.apiKey ? creds.apiKey : (prev.apiKey || ''),
       password: creds?.password ? creds.password : (prev.password || ''),
     };
     const config = service.updateAppSettings({
@@ -1885,7 +1922,7 @@ app.whenReady().then(() => {
       await clearMetaskSession();
       await reloadMetaskBoard();
     }
-    return next;
+    return sanitizeMetaskForClient(next);
   });
   ipcMain.handle('metask-get-login-script', (_e, creds) => {
     const base = service.config.settings?.metask || {};
@@ -2004,7 +2041,15 @@ app.whenReady().then(() => {
     }
   });
 
-  ipcMain.handle('agent-get-status', () => agentService.getStatus());
+  ipcMain.handle('agent-get-status', () => {
+    const agentSettings = service.config.settings?.agent || {};
+    const status = agentService.getStatus();
+    return {
+      ...status,
+      cursorConfigured: !!resolveCursorApiKey(agentSettings),
+      mobbinConfigured: !!resolveMobbinApiKey(agentSettings),
+    };
+  });
   ipcMain.handle('agent-get-ml-status', () => getMlStatus());
   ipcMain.handle('agent-get-konstancia-llm-status', () => getKonstanciaLlmStatus());
 
@@ -2882,7 +2927,7 @@ app.whenReady().then(() => {
         try {
           cursorResult = await runCursorFigmaBuild({
             brief,
-            apiKey: agentSettings.cursorApiKey || process.env.CURSOR_API_KEY,
+            apiKey: resolveCursorApiKey(agentSettings),
             model: agentSettings.cursorModel || 'composer-2.5',
             cwd: path.join(__dirname, '..'),
             userDataDir: app.getPath('userData'),
@@ -3476,14 +3521,15 @@ app.whenReady().then(() => {
     return agentService.testConnection();
   });
   ipcMain.handle('agent-save-credentials', (_e, creds) => {
+    const { credentials, mobbinApiKey, cursorApiKey, konstanciaYandexApiKey, konstanciaYandexFolderId, konstanciaCloudApiKey, konstanciaCloudUrl, ...safe } = creds || {};
     const config = service.updateAppSettings({
       agent: {
         ...service.config.settings?.agent,
-        ...creds,
+        ...safe,
       },
     });
     configureAgentIntegrations();
-    return config.settings?.agent;
+    return sanitizeConfigForClient(config).settings?.agent;
   });
   ipcMain.handle('agent-open-gigachat-docs', () => {
     shell.openExternal('https://developers.sber.ru/studio/workspaces/my-space/get/gigachat-api');
@@ -3491,6 +3537,11 @@ app.whenReady().then(() => {
   });
 
   nanobananaService.configure(service.config.settings?.nanobanana || {});
+
+  ipcMain.handle('nanobanana-is-configured', () => ({
+    ok: true,
+    configured: !!resolveNanobananaApiKey(service.config.settings?.nanobanana),
+  }));
 
   ipcMain.handle('nanobanana-get-models', async () => {
     nanobananaService.configure(service.config.settings?.nanobanana || {});
@@ -3547,14 +3598,15 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('nanobanana-save-credentials', (_e, creds) => {
+    const { apiKey, ...safe } = creds || {};
     const config = service.updateAppSettings({
       nanobanana: {
         ...service.config.settings?.nanobanana,
-        ...creds,
+        ...safe,
       },
     });
-    nanobananaService.configure(config.settings?.nanobanana || {});
-    return config.settings?.nanobanana;
+    configureAgentIntegrations();
+    return sanitizeConfigForClient(config).settings?.nanobanana;
   });
 
   ipcMain.handle('nanobanana-open-docs', () => {
@@ -3757,14 +3809,24 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('update-app-settings', (_e, updates) => {
-    const config = service.updateAppSettings(updates);
+    const scrubbed = { ...updates };
+    if (scrubbed.agent) {
+      const { credentials, mobbinApiKey, cursorApiKey, konstanciaYandexApiKey, konstanciaYandexFolderId, konstanciaCloudApiKey, konstanciaCloudUrl, ...safe } = scrubbed.agent;
+      scrubbed.agent = safe;
+    }
+    if (scrubbed.nanobanana) {
+      const { apiKey, ...safe } = scrubbed.nanobanana;
+      scrubbed.nanobanana = safe;
+    }
+    const config = service.updateAppSettings(scrubbed);
+    configureAgentIntegrations();
     pushCloudSettingsFromConfig();
-    return config;
+    return sanitizeConfigForClient(config);
   });
   ipcMain.handle('reset-app-settings', () => {
     const config = service.resetAppSettings();
     pushCloudSettingsFromConfig();
-    return config;
+    return sanitizeConfigForClient(config);
   });
   ipcMain.handle('reset-onboarding', () => {
     const config = { ...service.config, onboardingCompleted: false };
@@ -3784,7 +3846,7 @@ app.whenReady().then(() => {
       filters: [{ name: 'JSON', extensions: ['json'] }],
     });
     if (canceled || !filePath) return { ok: false };
-    writeFileSync(filePath, JSON.stringify(service.config, null, 2), 'utf-8');
+    writeFileSync(filePath, JSON.stringify(sanitizeConfigForClient(service.config), null, 2), 'utf-8');
     return { ok: true, path: filePath };
   });
   ipcMain.handle('import-config', async () => {
@@ -3797,7 +3859,7 @@ app.whenReady().then(() => {
     try {
       const raw = readFileSync(filePaths[0], 'utf-8');
       service.saveConfig(JSON.parse(raw));
-      return { ok: true, config: service.config };
+      return { ok: true, config: sanitizeConfigForClient(service.config) };
     } catch (err) {
       return { ok: false, message: err.message };
     }
@@ -3820,7 +3882,7 @@ app.whenReady().then(() => {
     if (canceled || !filePaths?.[0]) return { ok: false };
     try {
       const result = service.copyCustomThemeMedia(themeId, filePaths[0], role || 'sidebar');
-      return { ok: true, ...result, config: service.config };
+      return { ok: true, ...result, config: clientConfig() };
     } catch (err) {
       return { ok: false, message: err.message };
     }

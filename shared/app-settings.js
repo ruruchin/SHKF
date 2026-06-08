@@ -52,6 +52,8 @@ export const DEFAULT_APP_SETTINGS = {
     knowledgeAutoIngest: false,
     konstanciaCloudUrl: '',
     konstanciaCloudApiKey: '',
+    konstanciaYandexApiKey: '',
+    konstanciaYandexFolderId: '',
     desktopAgentEnabled: true,
   },
   vtubeStudio: {
@@ -130,6 +132,55 @@ export const DEFAULT_APP_SETTINGS = {
   },
 };
 
+const AGENT_SECRET_FIELDS = [
+  'credentials',
+  'mobbinApiKey',
+  'cursorApiKey',
+  'konstanciaCloudUrl',
+  'konstanciaCloudApiKey',
+  'konstanciaYandexApiKey',
+  'konstanciaYandexFolderId',
+];
+
+export function purgeAgentSecrets(agent = {}) {
+  const next = { ...(agent && typeof agent === 'object' ? agent : {}) };
+  for (const key of AGENT_SECRET_FIELDS) delete next[key];
+  return next;
+}
+
+export function purgeSecretsFromSettings(settings = {}) {
+  const src = settings && typeof settings === 'object' ? settings : {};
+  const next = JSON.parse(JSON.stringify(src));
+  if (next.agent) next.agent = purgeAgentSecrets(next.agent);
+  if (next.nanobanana) delete next.nanobanana.apiKey;
+  if (next.metask) {
+    delete next.metask.apiKey;
+    delete next.metask.password;
+  }
+  if (next.zimbra) delete next.zimbra.password;
+  return next;
+}
+
+export function sanitizeMetaskForClient(metask = {}) {
+  const src = metask && typeof metask === 'object' ? metask : {};
+  const { apiKey, password, ...safe } = src;
+  return {
+    ...safe,
+    apiKeyConfigured: !!String(apiKey || '').trim(),
+    passwordConfigured: !!String(password || '').trim(),
+  };
+}
+
+export function sanitizeConfigForClient(config = {}) {
+  const next = { ...(config && typeof config === 'object' ? config : {}) };
+  if (next.settings) {
+    const settings = purgeSecretsFromSettings(next.settings);
+    if (settings.metask) settings.metask = sanitizeMetaskForClient(settings.metask);
+    next.settings = settings;
+  }
+  return next;
+}
+
 function normalizeAgentSettings(raw = {}) {
   const src = raw && typeof raw === 'object' ? raw : {};
   return {
@@ -137,6 +188,13 @@ function normalizeAgentSettings(raw = {}) {
     provider: 'konstancia',
     model: 'Konstancia',
   };
+}
+
+export function prepareSettingsForDisk(settings = {}) {
+  const next = JSON.parse(JSON.stringify(settings && typeof settings === 'object' ? settings : {}));
+  if (next.agent) next.agent = purgeAgentSecrets(next.agent);
+  if (next.nanobanana) next.nanobanana.apiKey = '';
+  return next;
 }
 
 function normalizeLive2dSettings(raw = {}) {

@@ -11,7 +11,7 @@ import { copyTemplateToClipboard, copyUserTemplateToClipboard } from './template
 import { UserLibrary } from './user-library.js';
 import { CustomThemeStore } from './custom-theme-store.js';
 import { NotesStore } from './notes-store.js';
-import { normalizeConfig, patchSettings, DEFAULT_APP_SETTINGS } from '../shared/app-settings.js';
+import { normalizeConfig, patchSettings, DEFAULT_APP_SETTINGS, prepareSettingsForDisk } from '../shared/app-settings.js';
 import { normalizeCustomTheme, isCustomThemeId } from '../shared/custom-themes.js';
 import { mergeBannerMockupConfig, buildPresetsWithTemplates } from '../shared/banner-mockups.js';
 
@@ -153,7 +153,11 @@ export class HotkeyService extends EventEmitter {
 
   saveConfig(config) {
     this.config = normalizeConfig(config);
-    writeFileSync(this.configPath, JSON.stringify(this.config, null, 2), 'utf-8');
+    const diskConfig = {
+      ...this.config,
+      settings: prepareSettingsForDisk(this.config.settings),
+    };
+    writeFileSync(this.configPath, JSON.stringify(diskConfig, null, 2), 'utf-8');
     if (this.figma.port !== (config.figmaCdpPort || 9222)) {
       this.figma.disconnect();
       this.figma = new FigmaCDP(config.figmaCdpPort || 9222);

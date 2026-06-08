@@ -57,10 +57,6 @@ export async function getKonstanciaYandexFolderId() {
   return resolveFolderId();
 }
 
-export function getKonstanciaYandexApiKey() {
-  return config.apiKey;
-}
-
 async function resolveModelUri() {
   const folderId = await resolveFolderId();
   return `gpt://${folderId}/${DEEPSEEK_MODEL}/latest`;

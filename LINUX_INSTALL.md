@@ -81,6 +81,29 @@ sudo apt remove shkf
 
 ---
 
+## Konstancia (Yandex Cloud)
+
+Агент работает через **Yandex Cloud API** (не локальная модель на Linux). API-ключ **не вводится в настройках приложения** — только в серверном `.env` (Linux и Windows):
+
+**Linux:** `~/.config/SHKF/.env`  
+**Windows:** `%APPDATA%\SHKF\.env`
+
+```env
+KONSTANCIA_YANDEX_API_KEY=AQVNxxxxxxxx
+# необязательно — folder подставится сам:
+# KONSTANCIA_YANDEX_FOLDER_ID=b1g...
+```
+
+После сохранения перезапустите SHKF, если статус остаётся «недоступна».
+
+Проверка из терминала (в каталоге с исходниками):
+
+```bash
+node scripts/probe-yandex-deepseek.mjs
+```
+
+---
+
 ## Ограничения на Linux
 
 | Функция | Статус |

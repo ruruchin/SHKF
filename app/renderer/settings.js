@@ -246,7 +246,6 @@
   function bindKanbanSettings() {
     const url = $('set-kanban-url');
     const boardPath = $('set-kanban-board-path');
-    const apiKey = $('set-kanban-api-key');
     const username = $('set-kanban-username');
     const password = $('set-kanban-password');
     const saveBtn = $('set-kanban-save');
@@ -255,7 +254,6 @@
       const m = s('metask') || {};
       if (url) url.value = m.baseUrl || '';
       if (boardPath) boardPath.value = m.boardPath || '/kanban/board';
-      if (apiKey && m.apiKey) apiKey.value = m.apiKey;
       if (username && m.username) username.value = m.username;
       if (password && m.password) password.value = m.password;
     }
@@ -266,12 +264,11 @@
       const creds = {
         baseUrl: url?.value?.trim() || '',
         boardPath: boardPath?.value?.trim() || '/kanban/board',
-        apiKey: apiKey?.value?.trim() || '',
         username: username?.value?.trim() || '',
         password: password?.value || '',
       };
-      if (!creds.baseUrl || !creds.apiKey) {
-        alert('Укажите URL Redmine и API-ключ');
+      if (!creds.baseUrl) {
+        alert('Укажите URL Redmine');
         return;
       }
       const saved = await window.api.metaskSaveCredentials(creds);
@@ -430,16 +427,11 @@
       const knowledgeAuto = $('set-knowledge-auto-ingest');
       if (knowledgeAuto) knowledgeAuto.checked = a.knowledgeAutoIngest === true;
       refreshKnowledgeLearningStats();
-      if (credentials && a.credentials) credentials.value = a.credentials;
       if (model) model.value = 'Konstancia';
-      const mobbinKey = $('set-mobbin-api-key');
-      if (mobbinKey) mobbinKey.value = a.mobbinApiKey || '';
       const mobbinEnabled = $('set-mobbin-enabled');
       if (mobbinEnabled) mobbinEnabled.checked = a.mobbinEnabled !== false;
       const siteBuilder = $('set-site-builder-enabled');
       if (siteBuilder) siteBuilder.checked = a.siteBuilderEnabled !== false;
-      const cursorKey = $('set-cursor-api-key');
-      if (cursorKey) cursorKey.value = a.cursorApiKey || '';
       const cursorModel = $('set-cursor-model');
       if (cursorModel) cursorModel.value = a.cursorModel || 'composer-2.5';
       const cursorBuild = $('set-cursor-figma-build');
@@ -483,15 +475,6 @@
       event.preventDefault();
       window.api.agentOpenGigaChatDocs?.();
     });
-    $('set-mobbin-docs-link')?.addEventListener('click', (event) => {
-      event.preventDefault();
-      window.api.metaskOpenExternal?.('https://docs.mobbin.com/');
-    });
-    $('set-cursor-docs-link')?.addEventListener('click', (event) => {
-      event.preventDefault();
-      window.api.metaskOpenExternal?.('https://cursor.com/dashboard');
-    });
-
     saveBtn?.addEventListener('click', async () => {
       const agentProvider = provider?.value || 'konstancia';
       const creds = {
@@ -500,10 +483,8 @@
         provider: agentProvider,
         scope: 'GIGACHAT_API_PERS',
         ignoreTls: true,
-        mobbinApiKey: $('set-mobbin-api-key')?.value?.trim() || '',
         mobbinEnabled: $('set-mobbin-enabled')?.checked !== false,
         siteBuilderEnabled: $('set-site-builder-enabled')?.checked !== false,
-        cursorApiKey: $('set-cursor-api-key')?.value?.trim() || '',
         cursorModel: $('set-cursor-model')?.value || 'composer-2.5',
         cursorFigmaBuildEnabled: $('set-cursor-figma-build')?.checked === true,
         knowledgeLearningEnabled: $('set-knowledge-learning-enabled')?.checked !== false,
@@ -558,20 +539,17 @@
     bindToggle('set-mobbin-enabled', 'agent.mobbinEnabled');
     bindToggle('set-site-builder-enabled', 'agent.siteBuilderEnabled');
     bindToggle('set-cursor-figma-build', 'agent.cursorFigmaBuildEnabled');
-    const cursorKeyInput = $('set-cursor-api-key');
     const cursorModelSelect = $('set-cursor-model');
     const persistCursorSettings = async () => {
       await window.api.updateAppSettings?.({
         agent: {
           ...s('agent'),
-          cursorApiKey: cursorKeyInput?.value?.trim() || '',
           cursorModel: cursorModelSelect?.value || 'composer-2.5',
           cursorFigmaBuildEnabled: $('set-cursor-figma-build')?.checked === true,
         },
       });
       config = await window.api.getConfig();
     };
-    cursorKeyInput?.addEventListener('change', persistCursorSettings);
     cursorModelSelect?.addEventListener('change', persistCursorSettings);
 
     $('set-cursor-mcp-check')?.addEventListener('click', async () => {
@@ -587,22 +565,6 @@
         btn.textContent = 'Figma MCP';
       }
     });
-    const mobbinKeyInput = $('set-mobbin-api-key');
-    mobbinKeyInput?.addEventListener('change', async () => {
-      await window.api.updateAppSettings?.({
-        agent: {
-          ...s('agent'),
-          mobbinApiKey: mobbinKeyInput.value?.trim() || '',
-        },
-      });
-      config = await window.api.getConfig();
-    });
-  }
-
-  function fillNanobananaFromConfig() {
-    const nb = s('nanobanana') || {};
-    const apiKey = $('set-nb-api-key');
-    if (apiKey) apiKey.value = nb.apiKey || '';
   }
 
   function bindVtubeStudioSettings() {
@@ -689,32 +651,7 @@
   }
 
   function bindNanobananaSettings() {
-    const apiKey = $('set-nb-api-key');
-    const saveBtn = $('set-nb-save');
-
-    fillNanobananaFromConfig();
-
-    $('set-nb-docs-link')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.api.metaskOpenExternal?.('https://www.nananobanana.com');
-    });
-    $('set-nb-api-docs')?.addEventListener('click', (e) => {
-      e.preventDefault();
-      window.api.nanobananaOpenDocs?.();
-    });
-
-    saveBtn?.addEventListener('click', async () => {
-      const key = apiKey?.value?.trim() || '';
-      if (!key) {
-        alert('Вставьте API-ключ (nb_…)');
-        return;
-      }
-      await window.api.nanobananaSaveCredentials({ apiKey: key });
-      config = await window.api.getConfig();
-      fillNanobananaFromConfig();
-      saveBtn.textContent = 'Сохранено';
-      setTimeout(() => { saveBtn.textContent = 'Сохранить'; }, 1800);
-    });
+    /* NanoBanana credentials are server-side only */
   }
 
   async function initSettings() {
@@ -853,9 +790,9 @@
     'Make it — чат': { desc: 'Подсказки, история и голосовой ввод', icon: 'chat', tone: 'orange' },
     'Konstancia · нейросеть': { desc: 'Локальная модель Konstancia, Mobbin, Cursor', icon: 'brain', tone: 'teal', image: 'assets/agent/agent-avatar.png' },
     'Konstancia · Live2D': { desc: 'Анимированная Live2D-модель и motions эмоций', icon: 'spark', tone: 'violet' },
-    'NanoBanana': { desc: 'API-ключ для генерации изображений', icon: 'image', tone: 'yellow', image: 'assets/icons/nanobanana.png' },
+    'NanoBanana': { desc: 'Генерация изображений (подключение SHKF)', icon: 'image', tone: 'yellow', image: 'assets/icons/nanobanana.png' },
     Templates: { desc: 'Уведомления при копировании шаблонов', icon: 'copy', tone: 'pink' },
-    'Канбан (Redmine)': { desc: 'URL, API-ключ и опрос задач с доски', icon: 'kanban', tone: 'red', image: 'assets/icons/redmine.png' },
+    'Канбан (Redmine)': { desc: 'URL и опрос задач с доски', icon: 'kanban', tone: 'red', image: 'assets/icons/redmine.png' },
     'Konstancia · обучение из Redmine': { desc: 'Индекс уроков и локальная память агента', icon: 'brain', tone: 'teal' },
     'Окно и запуск': { desc: 'Трей, splash и размер окна', icon: 'window', tone: 'slate' },
     Поиск: { desc: 'Глобальный поиск по разделам и настройкам', icon: 'search', tone: 'blue' },
@@ -874,16 +811,12 @@
     'set-make-focus': 'window',
     'set-make-desktop': 'figma',
     'set-speech-lang': 'mic',
-    'set-agent-credentials': 'key',
     'set-agent-model': 'brain',
     'set-agent-task-context': 'kanban',
     'set-agent-history': 'chat',
     'set-agent-clear': 'chat',
-    'set-mobbin-api-key': 'key',
     'set-mobbin-enabled': 'search',
     'set-site-builder-enabled': 'code',
-    'set-cursor-api-key': 'key',
-    'set-nb-api-key': 'image',
     'set-template-toast': 'bell',
     'set-kanban-url': 'kanban',
     'set-kanban-notify': 'bell',

@@ -305,7 +305,7 @@
 
   function isConfigured(settings) {
     const s = settings || readCredentialsFromForm();
-    return !!(normalizeBaseUrl(s.baseUrl) && (s.apiKey || '').trim());
+    return !!(normalizeBaseUrl(s.baseUrl) && ((s.apiKey || '').trim() || s.apiKeyConfigured));
   }
 
   function isAuthPanelVisible() {
@@ -345,7 +345,12 @@
     if (path) path.value = settings?.boardPath || '/kanban/board';
     if (user && settings?.username) user.value = settings.username;
     if (pass && settings?.password) pass.value = settings.password;
-    if (key && settings?.apiKey) key.value = settings.apiKey;
+    if (key) {
+      key.value = '';
+      key.placeholder = settings?.apiKeyConfigured
+        ? 'Ключ сохранён — введите новый только для замены'
+        : 'Из «Моя учётная запись» в Redmine';
+    }
     updateAuthVisibility(settings);
   }
 

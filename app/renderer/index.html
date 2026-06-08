@@ -261,8 +261,8 @@
             Канбан
           </button>
           <button class="nav-item" data-page="agent">
-            <span class="nav-item-avatar agent-brand-avatar" aria-hidden="true">
-              <img class="agent-brand-avatar-img" data-agent-brand-avatar alt="" width="18" height="18" />
+            <span class="nav-item-avatar agent-brand-avatar agent-brand-avatar--sidebar" aria-hidden="true">
+              <img class="agent-brand-avatar-img" data-sidebar-static="1" src="assets/brand/logo.png" alt="" width="18" height="18" decoding="async" />
             </span>
             Konstancia
           </button>
@@ -1160,25 +1160,30 @@
               </div>
               <aside class="agent-sidebar" aria-label="Список чатов">
                 <div class="agent-sidebar-head">
-                  <div class="agent-sidebar-brand">
-                    <span class="webtab-icon agent-sidebar-icon" aria-hidden="true">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                    </span>
-                    <h3 class="agent-sidebar-title">Чаты</h3>
+                  <div class="agent-sidebar-head-row">
+                    <div class="agent-sidebar-brand">
+                      <span class="webtab-icon agent-sidebar-icon" aria-hidden="true">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                      </span>
+                      <h3 class="agent-sidebar-title">Чаты</h3>
+                    </div>
+                    <div class="agent-sidebar-head-actions">
+                      <button type="button" class="agent-sidebar-select-btn" id="agent-session-select-mode" title="Выбрать несколько" aria-pressed="false" aria-label="Выбрать несколько">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12l2 2 4-4"/></svg>
+                      </button>
+                      <button type="button" class="agent-sidebar-new" id="agent-session-new" title="Новый чат">+ Новый</button>
+                      <button type="button" class="agent-sidebar-hide" id="agent-sidebar-hide" title="Скрыть чаты" aria-label="Скрыть чаты" aria-expanded="true">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+                      </button>
+                    </div>
                   </div>
-                  <div class="agent-sidebar-head-actions">
-                    <button type="button" class="agent-sidebar-select-btn" id="agent-session-select-mode" title="Выбрать несколько" aria-pressed="false" aria-label="Выбрать несколько">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 12l2 2 4-4"/></svg>
-                    </button>
-                    <button type="button" class="agent-sidebar-new" id="agent-session-new" title="Новый чат">+ Новый</button>
-                    <button type="button" class="agent-sidebar-hide" id="agent-sidebar-hide" title="Скрыть чаты" aria-label="Скрыть чаты" aria-expanded="true">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
-                    </button>
+                  <div class="agent-session-bulk hidden" id="agent-session-bulk">
+                    <span class="agent-session-bulk-count" id="agent-session-bulk-count">Отметьте чаты</span>
+                    <div class="agent-session-bulk-actions">
+                      <button type="button" class="agent-session-bulk-all" id="agent-session-select-all">Все</button>
+                      <button type="button" class="agent-session-bulk-delete" id="agent-session-bulk-delete" disabled>Удалить</button>
+                    </div>
                   </div>
-                </div>
-                <div class="agent-session-bulk hidden" id="agent-session-bulk">
-                  <span class="agent-session-bulk-count" id="agent-session-bulk-count">0 выбрано</span>
-                  <button type="button" class="agent-session-bulk-delete" id="agent-session-bulk-delete" disabled>Удалить</button>
                 </div>
                 <div class="agent-share-inbox hidden" id="agent-share-inbox" aria-live="polite"></div>
                 <div class="agent-session-list" id="agent-session-list"></div>
@@ -1946,7 +1951,7 @@
                   <div class="settings-item settings-item--stack" id="set-agent-konstancia-panel">
                     <div class="settings-item-info">
                       <div class="settings-label">Статус Konstancia</div>
-                      <div class="settings-hint" id="set-konstancia-llm-hint">Встроенный движок агента — без ручной настройки</div>
+                      <div class="settings-hint" id="set-konstancia-llm-hint">Облачный движок Konstancia (Yandex Cloud). Подключение настраивается администратором SHKF.</div>
                     </div>
                     <div class="settings-control settings-inline">
                       <span class="settings-badge" id="set-konstancia-llm-status">…</span>
@@ -2016,15 +2021,6 @@
                     </div>
                     <label class="toggle settings-control"><input type="checkbox" id="set-agent-clear" checked /><span class="toggle-slider"></span></label>
                   </div>
-                  <div class="settings-item settings-item--stack">
-                    <div class="settings-item-info">
-                      <div class="settings-label">Mobbin API key (live-референсы)</div>
-                      <div class="settings-hint">API key опционален. Без ключа: локальная библиотека референсов + превью со страниц Mobbin + сборка макета в Figma. С ключом — live-поиск по теме. <a href="#" id="set-mobbin-docs-link">docs.mobbin.com</a></div>
-                    </div>
-                    <div class="settings-control settings-stack">
-                      <input type="password" id="set-mobbin-api-key" class="w-full" placeholder="Bearer token" autocomplete="off" />
-                    </div>
-                  </div>
                   <div class="settings-item">
                     <div class="settings-item-info">
                       <div class="settings-label">Mobbin в агенте</div>
@@ -2042,10 +2038,9 @@
                   <div class="settings-item settings-item--stack">
                     <div class="settings-item-info">
                       <div class="settings-label">Cursor → Figma (качество макета)</div>
-                      <div class="settings-hint"><strong>Mobbin → Cursor → Figma</strong> (как в чате с агентом Cursor): Konstancia передаёт референс, Cursor верстает в открытый файл — IDE не нужна. Нужны: API key + Figma MCP (Dev Mode :3845 или Connect в Cursor). Если Cursor не сработал — запасной GigaChat + «Применить». <code>/vision</code> — только GigaChat. Ключ: <a href="#" id="set-cursor-docs-link">cursor.com/dashboard</a></div>
+                      <div class="settings-hint"><strong>Mobbin → Cursor → Figma</strong>: Konstancia передаёт референс, Cursor верстает в открытый файл — IDE не нужна. Нужен Figma MCP (Dev Mode :3845 или Connect в Cursor). Подключение Cursor настраивается администратором SHKF.</div>
                     </div>
                     <div class="settings-control settings-stack">
-                      <input type="password" id="set-cursor-api-key" class="w-full" placeholder="CURSOR_API_KEY" autocomplete="off" />
                       <div class="settings-inline">
                         <select id="set-cursor-model" class="settings-select">
                           <option value="composer-2.5">composer-2.5</option>
@@ -2112,17 +2107,13 @@
                 </div>
               </div>
 
-              <div class="settings-section" id="settings-nanobanana">
+              <div class="settings-section hidden" id="settings-nanobanana" aria-hidden="true">
                 <div class="settings-section-title">NanoBanana</div>
                 <div class="settings-list">
-                  <div class="settings-item settings-item--stack">
+                  <div class="settings-item">
                     <div class="settings-item-info">
-                      <div class="settings-label">API-ключ</div>
-                      <div class="settings-hint">Создайте на <a href="#" id="set-nb-docs-link">nananobanana.com</a> → Настройки → API Keys. <a href="#" id="set-nb-api-docs">Документация API</a></div>
-                    </div>
-                    <div class="settings-row">
-                      <input type="password" id="set-nb-api-key" class="settings-input settings-input--wide" placeholder="nb_…" autocomplete="off" />
-                      <button type="button" class="btn-play btn-sm" id="set-nb-save">Сохранить</button>
+                      <div class="settings-label">Генерация изображений</div>
+                      <div class="settings-hint">Подключение NanoBanana настраивается администратором SHKF.</div>
                     </div>
                   </div>
                 </div>
@@ -2147,7 +2138,7 @@
                   <div class="settings-item settings-item--stack">
                     <div class="settings-item-info">
                       <div class="settings-label">Подключение</div>
-                      <div class="settings-hint">URL сервера, API-ключ и доступ к доске Kanban — те же поля, что на странице «Канбан»</div>
+                      <div class="settings-hint">URL сервера и доступ к доске Kanban — те же поля, что на странице «Канбан»</div>
                     </div>
                     <div class="metask-settings-fields">
                       <label class="metask-settings-field metask-settings-field--wide">
@@ -2157,10 +2148,6 @@
                       <label class="metask-settings-field">
                         <span>Путь к доске</span>
                         <input type="text" id="set-kanban-board-path" placeholder="/kanban/board" autocomplete="off" />
-                      </label>
-                      <label class="metask-settings-field metask-settings-field--wide">
-                        <span>API-ключ</span>
-                        <input type="password" id="set-kanban-api-key" placeholder="Redmine → Моя учётная запись" autocomplete="off" />
                       </label>
                       <label class="metask-settings-field">
                         <span>Логин (доска)</span>
@@ -2688,6 +2675,7 @@
   <script src="templates.js"></script>
   <script src="pill-notify-ui.js"></script>
   <script src="kanban-notify.js"></script>
+  <script src="team-chat-notify.js"></script>
   <script src="metask.js"></script>
   <script src="mail.js"></script>
   <script src="team-chat.js"></script>

@@ -352,6 +352,22 @@
   overflow: hidden;
 }
 
+.sidebar-rail .nav-item[data-page="agent"] .agent-brand-avatar--sidebar {
+  background: #fff;
+}
+
+.sidebar-rail .nav-item[data-page="agent"] .agent-brand-avatar--sidebar .agent-brand-avatar-img {
+  opacity: 1 !important;
+  object-fit: contain;
+  transform: none;
+  padding: 2px;
+}
+
+.sidebar-rail .nav-item[data-page="agent"].active .agent-brand-avatar--sidebar {
+  background: #fff;
+  box-shadow: none;
+}
+
 .sidebar-rail.is-expanded .nav-item .nav-item-avatar,
 .sidebar-rail.is-expanded .nav-item .agent-brand-avatar {
   width: calc(var(--sidebar-rail-icon) - 10px) !important;
@@ -439,6 +455,39 @@
 
 .sidebar-rail .nav-item-badge:not(.hidden) {
   display: block;
+}
+
+.sidebar-rail .nav-item-badge.has-count {
+  top: 0;
+  right: 0;
+  min-width: 16px;
+  width: auto;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+  color: #fff;
+  text-align: center;
+}
+
+.sidebar-rail .nav-item[data-page="teamchat"].has-teamchat-unread:not(.active) .nav-item-badge:not(.hidden) {
+  animation: teamchat-badge-pulse 2s ease-in-out infinite;
+}
+
+.sidebar-rail .nav-item.has-teamchat-alert .nav-item-badge:not(.hidden),
+.sidebar-rail .nav-item.has-teamchat-alert:not(.active) {
+  animation: teamchat-nav-flash 0.45s ease-in-out 2;
+}
+
+@keyframes teamchat-badge-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.15); opacity: 0.85; }
+}
+
+@keyframes teamchat-nav-flash {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 3px color-mix(in srgb, #3b82f6 35%, transparent); }
 }
 
 .sidebar-rail .sidebar-character {

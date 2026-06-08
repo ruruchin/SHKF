@@ -25,6 +25,7 @@ export class TeamChatService {
     this._directoryCache = new Map();
     this._messagesInflight = new Map();
     this._dmRoomCache = new Map();
+    this._signedUrlCache = new Map();
   }
 
   _directoryCacheKey(me, previews) {
@@ -164,15 +165,39 @@ export class TeamChatService {
 
   async signAttachment(item = {}) {
     const path = String(item?.path || '').trim();
-    if (!path) return String(item?.url || '').trim();
+    const directUrl = String(item?.url || '').trim();
+    if (!path) return directUrl;
+
+    const cached = this._signedUrlCache.get(path);
+    if (cached?.url) return cached.url;
+
+    const { data: publicData } = this.authService.client.storage
+      .from('team-chat')
+      .getPublicUrl(path);
+    const publicUrl = String(publicData?.publicUrl || '').trim();
+    if (publicUrl) {
+      this._signedUrlCache.set(path, {
+        url: publicUrl,
+        expiresAt: Date.now() + 365 * 24 * 60 * 60 * 1000,
+      });
+      return publicUrl;
+    }
+
     try {
       const { data, error } = await this.authService.client.storage
         .from('team-chat')
         .createSignedUrl(path, SIGNED_URL_TTL);
       if (error) throw error;
-      return data?.signedUrl || '';
+      const signedUrl = data?.signedUrl || '';
+      if (signedUrl) {
+        this._signedUrlCache.set(path, {
+          url: signedUrl,
+          expiresAt: Date.now() + SIGNED_URL_TTL * 1000,
+        });
+      }
+      return signedUrl || directUrl;
     } catch {
-      return '';
+      return cached?.url || directUrl;
     }
   }
 

@@ -666,6 +666,7 @@
   function applyBrandAvatars(src, { forceClear = false } = {}) {
     const effective = src || (!forceClear && brandAvatarSrc) || '';
     document.querySelectorAll('[data-agent-brand-avatar]').forEach((img) => {
+      if (img.dataset.sidebarStatic === '1') return;
       const slot = img.closest('.agent-brand-avatar, .agent-chat-avatar, .nav-item-avatar');
       if (effective) {
         img.src = effective;

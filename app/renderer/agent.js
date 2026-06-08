@@ -1,5 +1,6 @@
 (function () {
   let agentInited = false;
+  let agentStatusCache = null;
   const QUICK = {
     analyze: 'Прочитай описание задачи целиком. Только из текста задачи: что просят, объём, риски, 3–5 вопросов заказчику со ссылкой на описание, с чего начать. Не выдумывай референсы (Mobbin, Airtime и т.п.), если их нет в задаче.',
     banner: 'Исходя из текста задачи, предложи 3 разных промпта для генерации баннера (размер, стиль, CTA). Каждый — готовый текст, опирайся на формулировки из описания.',
@@ -2429,6 +2430,11 @@
     promptEl?.focus();
   }
 
+  function ensureActiveSession() {
+    if (getActiveSession()) return getActiveSession();
+    return createNewSession();
+  }
+
   function createNewSession() {
     persistCurrentSession();
     const session = {
@@ -2446,6 +2452,7 @@
     applySessionToUi(session);
     renderSessionList();
     promptEl?.focus();
+    return session;
   }
 
   function deleteSession(sessionId) {
@@ -2464,8 +2471,11 @@
     ids.forEach((id) => selectedSessionIds.delete(id));
 
     if (!agentSessions.length) {
+      activeSessionId = null;
+      saveSessionsStore();
       setSessionSelectMode(false);
-      createNewSession();
+      applySessionToUi(null);
+      renderSessionList();
       return;
     }
 
@@ -2481,11 +2491,12 @@
   }
 
   function deleteSelectedSessions() {
-    if (!selectedSessionIds.size) return;
-    const count = selectedSessionIds.size;
+    const ids = [...selectedSessionIds];
+    if (!ids.length) return;
+    const count = ids.length;
     const label = count === 1 ? 'этот чат' : `${count} чатов`;
     if (!window.confirm(`Удалить ${label}? История сообщений будет потеряна.`)) return;
-    deleteSessionsByIds([...selectedSessionIds]);
+    deleteSessionsByIds(ids);
     setSessionSelectMode(false);
   }
 
@@ -2493,8 +2504,10 @@
     const bulkBar = $('agent-session-bulk');
     const bulkBtn = $('agent-session-bulk-delete');
     const bulkCount = $('agent-session-bulk-count');
+    const selectAllBtn = $('agent-session-select-all');
     const selectBtn = $('agent-session-select-mode');
     const count = selectedSessionIds.size;
+    const total = agentSessions.length;
     bulkBar?.classList.toggle('hidden', !sessionSelectMode);
     if (bulkBtn) bulkBtn.disabled = count === 0;
     if (bulkCount) {
@@ -2503,6 +2516,12 @@
         : count === 1
           ? '1 чат выбран'
           : `${count} чатов выбрано`;
+    }
+    if (selectAllBtn) {
+      const allSelected = total > 0 && count === total;
+      selectAllBtn.textContent = allSelected ? 'Снять' : 'Все';
+      selectAllBtn.disabled = total === 0;
+      selectAllBtn.title = allSelected ? 'Снять выделение' : 'Выбрать все чаты';
     }
     if (selectBtn) {
       selectBtn.classList.toggle('is-active', sessionSelectMode);
@@ -2522,19 +2541,43 @@
     if (!sessionSelectMode) promptEl?.focus();
   }
 
-  function toggleSessionSelection(sessionId) {
+  function setSessionSelected(sessionId, selected) {
     if (!sessionId) return;
-    if (selectedSessionIds.has(sessionId)) selectedSessionIds.delete(sessionId);
-    else selectedSessionIds.add(sessionId);
+    if (selected) selectedSessionIds.add(sessionId);
+    else selectedSessionIds.delete(sessionId);
     updateSessionBulkUi();
     const row = sessionListEl?.querySelector(`.agent-session-item[data-session-id="${sessionId}"]`);
     if (row) {
-      const selected = selectedSessionIds.has(sessionId);
       row.classList.toggle('is-selected', selected);
       row.setAttribute('aria-selected', selected ? 'true' : 'false');
       const check = row.querySelector('.agent-session-check');
       if (check) check.checked = selected;
     }
+  }
+
+  function toggleSessionSelection(sessionId) {
+    if (!sessionId) return;
+    setSessionSelected(sessionId, !selectedSessionIds.has(sessionId));
+  }
+
+  function toggleSelectAllSessions() {
+    if (!agentSessions.length) return;
+    const allSelected = selectedSessionIds.size === agentSessions.length;
+    if (allSelected) {
+      selectedSessionIds.clear();
+    } else {
+      agentSessions.forEach((session) => selectedSessionIds.add(session.id));
+    }
+    updateSessionBulkUi();
+    sessionListEl?.querySelectorAll('.agent-session-item').forEach((row) => {
+      const session = agentSessions.find((s) => s.id === row.dataset.sessionId);
+      if (!session) return;
+      const selected = selectedSessionIds.has(session.id);
+      row.classList.toggle('is-selected', selected);
+      row.setAttribute('aria-selected', selected ? 'true' : 'false');
+      const check = row.querySelector('.agent-session-check');
+      if (check) check.checked = selected;
+    });
   }
 
   function syncSessionRowSelectUi(row, session) {
@@ -2547,8 +2590,10 @@
         check = document.createElement('input');
         check.type = 'checkbox';
         check.className = 'agent-session-check';
-        check.addEventListener('click', (event) => event.stopPropagation());
-        check.addEventListener('change', () => toggleSessionSelection(session?.id));
+        const stopRowToggle = (event) => event.stopPropagation();
+        check.addEventListener('click', stopRowToggle);
+        check.addEventListener('mousedown', stopRowToggle);
+        check.addEventListener('change', () => setSessionSelected(session?.id, check.checked));
         row.prepend(check);
       }
       check.checked = selectedSessionIds.has(session?.id);
@@ -2690,6 +2735,7 @@
     $('agent-sidebar-toggle')?.addEventListener('click', () => setSidebarCollapsed(false));
     $('agent-session-select-mode')?.addEventListener('click', () => setSessionSelectMode(!sessionSelectMode));
     $('agent-session-bulk-delete')?.addEventListener('click', deleteSelectedSessions);
+    $('agent-session-select-all')?.addEventListener('click', toggleSelectAllSessions);
 
     setSidebarCollapsed(loadSidebarCollapsed());
     updateSessionBulkUi();
@@ -2704,6 +2750,7 @@
       const item = event.target.closest('.agent-session-item');
       if (!item?.dataset.sessionId) return;
       if (sessionSelectMode) {
+        if (event.target.closest('.agent-session-check')) return;
         event.preventDefault();
         toggleSessionSelection(item.dataset.sessionId);
         return;
@@ -3844,15 +3891,17 @@
   async function refreshAgentStatus() {
     try {
       const status = await window.api.agentGetStatus?.();
+      agentStatusCache = status || null;
       const configured = status?.configured;
       if (statusBanner) {
         statusBanner.classList.toggle('hidden', !!configured);
         if (!configured) {
           const hint = isKonstanciaProvider()
-            ? 'Konstancia сейчас недоступна. '
+            ? 'Konstancia сейчас недоступна. Обратитесь к администратору SHKF.'
             : 'Подключите GigaChat: ';
-          statusBanner.innerHTML = hint
-            + '<a href="#" data-agent-open-settings>Настройки → Konstancia</a>';
+          statusBanner.innerHTML = isKonstanciaProvider()
+            ? hint
+            : hint + '<a href="#" data-agent-open-settings>Настройки → Konstancia</a>';
         }
       }
     } catch { /* ignore */ }
@@ -4907,7 +4956,7 @@
     const useCursorFigma = selectedScreen
       && !/\/vision\b/i.test(text)
       && window.appSettings?.agent?.cursorFigmaBuildEnabled === true
-      && !!(window.appSettings?.agent?.cursorApiKey || '').trim();
+      && agentStatusCache?.cursorConfigured === true;
     const selectedStyle = options.selectedStyle || null;
     const thinking = addThinking(useTaskContext ? task : null, useCursorFigma ? [
       'Собираю бриф (Mobbin + стиль)…',
@@ -5152,6 +5201,8 @@
       ? pendingAgentImages.map((img) => ({ dataUrl: img.dataUrl, filename: img.filename }))
       : [];
     if ((!text && !images.length) || sending) return;
+
+    ensureActiveSession();
 
     if (text && isBannerNanobananaIntent(text)) {
       return sendBannerToNanobanana(textOverride);

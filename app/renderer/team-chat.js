@@ -1,7 +1,7 @@
 (function initTeamChat() {
   const GENERAL_ROOM_ID = '00000000-0000-4000-8000-000000000001';
   const MESSAGES_POLL_MS = 4000;
-  const DIRECTORY_POLL_MS = 45000;
+  const DIRECTORY_POLL_MS = 8000;
   const DIRECTORY_CACHE_KEY = 'shkf-teamchat-directory-v2';
   const MESSAGES_CACHE_KEY = 'shkf-teamchat-messages-v1';
   const MESSAGES_FETCH_TIMEOUT_MS = 30000;
@@ -33,7 +33,91 @@
   const messageCache = new Map();
   const roomStates = new Map();
   const messagesInflight = new Map();
+  const attachmentDisplayUrl = new Map();
   const TEAMCHAT_BRAND_LOGO = 'assets/brand/logo.png';
+
+  function isImageAttachment(file = {}) {
+    const mime = String(file.mime || '');
+    if (/^image\//i.test(mime)) return true;
+    const name = String(file.name || file.path || '').toLowerCase();
+    return /\.(png|jpe?g|gif|webp|avif|bmp|svg)$/i.test(name);
+  }
+
+  function rememberAttachmentUrls(attachments = []) {
+    for (const file of attachments) {
+      const path = String(file?.path || '').trim();
+      const url = String(file?.url || '').trim();
+      if (path && url) attachmentDisplayUrl.set(path, url);
+    }
+  }
+
+  function resolveAttachmentDisplayUrl(file = {}) {
+    const path = String(file.path || '').trim();
+    const url = String(file.url || '').trim();
+    if (path && url) attachmentDisplayUrl.set(path, url);
+    if (path && attachmentDisplayUrl.has(path)) return attachmentDisplayUrl.get(path);
+    return url;
+  }
+
+  function attachmentFingerprint(attachments = []) {
+    return (Array.isArray(attachments) ? attachments : [])
+      .map((file) => String(file.path || file.name || '').trim())
+      .filter(Boolean)
+      .join(',');
+  }
+
+  function mergeAttachmentLists(serverList = [], localList = []) {
+    const localByPath = new Map();
+    for (const file of localList) {
+      const path = String(file?.path || '').trim();
+      if (path) localByPath.set(path, file);
+    }
+    return (Array.isArray(serverList) ? serverList : []).map((file) => {
+      const path = String(file?.path || '').trim();
+      const local = path ? localByPath.get(path) : null;
+      const url = resolveAttachmentDisplayUrl(file)
+        || resolveAttachmentDisplayUrl(local || {})
+        || String(file?.url || local?.url || '').trim();
+      return { ...file, url };
+    });
+  }
+
+  function enrichMessageAttachments(message = {}) {
+    const attachments = mergeAttachmentLists(message.attachments, message.attachments);
+    rememberAttachmentUrls(attachments);
+    return { ...message, attachments };
+  }
+
+  function buildMessagesRenderKey(items = []) {
+    return items.map((message) => {
+      const attachments = (message.attachments || [])
+        .map((file) => {
+          const path = file.path || '';
+          const ready = resolveAttachmentDisplayUrl(file) ? '1' : '0';
+          return `${path}:${file.name || ''}:${file.mime || ''}:${ready}`;
+        })
+        .join(',');
+      return [
+        message.id,
+        message.pending ? 'p' : '',
+        message.pinned ? 'pin' : '',
+        message.body || '',
+        attachments,
+      ].join('|');
+    }).join(';;');
+  }
+
+  function patchMessageAttachmentImages() {
+    const list = $('teamchat-messages');
+    if (!list) return;
+    list.querySelectorAll('.teamchat-attachment img[data-attach-path]').forEach((img) => {
+      const path = String(img.getAttribute('data-attach-path') || '').trim();
+      const nextUrl = path ? attachmentDisplayUrl.get(path) : '';
+      if (nextUrl && img.getAttribute('src') !== nextUrl) {
+        img.setAttribute('src', nextUrl);
+      }
+    });
+  }
 
   function invalidateMessagesLoads() {
     messagesLoadSeq += 1;
@@ -265,6 +349,7 @@
       const matched = server.some((row) => (
         row.author_id === item.author_id
         && row.body === item.body
+        && attachmentFingerprint(row.attachments) === attachmentFingerprint(item.attachments)
         && Math.abs(new Date(row.created_at).getTime() - new Date(item.created_at).getTime()) < 20000
       ));
       return !matched;
@@ -272,21 +357,42 @@
 
     const mergedById = new Map();
     if (replace) {
-      for (const item of server) mergedById.set(item.id, item);
+      for (const item of server) {
+        const pendingMatch = localPending.find((row) => (
+          row.author_id === item.author_id
+          && row.body === item.body
+          && attachmentFingerprint(row.attachments) === attachmentFingerprint(item.attachments)
+          && Math.abs(new Date(row.created_at).getTime() - new Date(item.created_at).getTime()) < 20000
+        ));
+        const merged = pendingMatch
+          ? enrichMessageAttachments({
+            ...item,
+            attachments: mergeAttachmentLists(item.attachments, pendingMatch.attachments),
+          })
+          : enrichMessageAttachments(item);
+        mergedById.set(item.id, merged);
+      }
     } else {
       for (const item of local) {
         if (item.pending || String(item.id).startsWith('temp-')) continue;
         mergedById.set(item.id, item);
       }
-      for (const item of server) mergedById.set(item.id, item);
+      for (const item of server) mergedById.set(item.id, enrichMessageAttachments(item));
     }
     for (const item of localPending) {
-      if (!mergedById.has(item.id)) mergedById.set(item.id, item);
+      if (!mergedById.has(item.id)) mergedById.set(item.id, enrichMessageAttachments(item));
     }
 
     const merged = [...mergedById.values()];
     merged.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
     return merged;
+  }
+
+  function messagePreviewText(message = null) {
+    if (!message) return 'Нет сообщений';
+    const body = String(message.body || '').trim();
+    if (body) return body.slice(0, 72);
+    return 'Вложение';
   }
 
   async function loadMeProfile() {
@@ -340,6 +446,7 @@
     meId = result.meId || meId;
     syncColleagueDmRooms();
     window.SidebarRail?.updateTeamChatBadge?.(result.unreadTeam || 0);
+    window.onTeamChatDirectorySnapshot?.(result);
     if (!currentRoomId) {
       const general = rooms.find((room) => room.kind === 'general');
       currentRoomId = general?.id || GENERAL_ROOM_ID;
@@ -787,7 +894,8 @@
 
     list.innerHTML = channelRooms.map((room) => {
       const activeCls = room.id === currentRoomId ? ' active' : '';
-      const preview = String(room.lastMessage?.body || 'Нет сообщений').slice(0, 72);
+      const unreadCls = room.unread > 0 ? ' has-unread' : '';
+      const preview = messagePreviewText(room.lastMessage);
       const badge = room.unread > 0 ? '<span class="teamchat-room-badge" aria-label="Непрочитано"></span>' : '';
       const pin = room.pinned ? '<span class="teamchat-room-pin" aria-hidden="true">📌</span>' : '';
       const isGeneral = room.kind === 'general';
@@ -800,7 +908,7 @@
         avatarInner = contactAvatarInner({});
       }
       const avatar = renderContactAvatar(avatarInner, { channel: true });
-      return `<button type="button" class="teamchat-room-btn${activeCls}" data-room-id="${room.id}">
+      return `<button type="button" class="teamchat-room-btn${activeCls}${unreadCls}" data-room-id="${room.id}">
         ${avatar}
         <span class="teamchat-room-body">
           <span class="teamchat-room-title">${pin}${escapeHtml(roomTitle(room))}</span>
@@ -840,13 +948,14 @@
     list.innerHTML = filtered.map((profile) => {
       const avatarInner = contactAvatarInner(profile);
       const avatar = renderContactAvatar(avatarInner);
-      const preview = profile.lastMessage?.body
-        ? String(profile.lastMessage.body).slice(0, 56)
+      const preview = profile.lastMessage
+        ? messagePreviewText(profile.lastMessage).slice(0, 56)
         : 'Написать сообщение';
       const isActive = profile.dmRoomId && profile.dmRoomId === currentRoomId;
+      const unreadCls = profile.unread > 0 ? ' has-unread' : '';
       const badge = profile.unread > 0 ? '<span class="teamchat-room-badge" aria-label="Непрочитано"></span>' : '';
       const pin = profile.pinned ? '<span class="teamchat-room-pin" aria-hidden="true">📌</span>' : '';
-      return `<button type="button" class="teamchat-colleague-btn${isActive ? ' active' : ''}" data-colleague-id="${profile.id}" data-dm-room="${profile.dmRoomId || ''}">
+      return `<button type="button" class="teamchat-colleague-btn${isActive ? ' active' : ''}${unreadCls}" data-colleague-id="${profile.id}" data-dm-room="${profile.dmRoomId || ''}">
         ${avatar}
         <span class="teamchat-colleague-body">
           <span class="teamchat-colleague-name">${pin}${escapeHtml(colleagueShortName(profile))}</span>
@@ -965,8 +1074,17 @@
     const visibleMessages = messagesForRoom(messages, currentRoomId);
     if (!visibleMessages.length) {
       list.innerHTML = '<div class="teamchat-empty">Пока нет сообщений — напишите первым</div>';
+      list.dataset.renderKey = '';
       return;
     }
+
+    const renderKey = buildMessagesRenderKey(visibleMessages);
+    const wasNearBottom = list.scrollHeight - list.scrollTop - list.clientHeight < 96;
+    if (list.dataset.renderKey === renderKey) {
+      patchMessageAttachmentImages();
+      return;
+    }
+    list.dataset.renderKey = renderKey;
 
     list.innerHTML = visibleMessages.map((message) => {
       const mine = message.author_id === meId;
@@ -983,11 +1101,13 @@
       const attachments = Array.isArray(message.attachments) ? message.attachments : [];
       const attachmentsHtml = attachments.length
         ? `<div class="teamchat-msg-attachments">${attachments.map((file) => {
-          const mime = String(file.mime || '');
-          if (/^image\//i.test(mime) && file.url) {
-            return `<a class="teamchat-attachment" href="${escapeHtml(file.url)}" target="_blank" rel="noopener"><img src="${escapeHtml(file.url)}" alt="${escapeHtml(file.name || 'image')}" /></a>`;
+          const displayUrl = resolveAttachmentDisplayUrl(file);
+          if (isImageAttachment(file) && displayUrl) {
+            const path = String(file.path || '').trim();
+            const pathAttr = path ? ` data-attach-path="${escapeHtml(path)}"` : '';
+            return `<a class="teamchat-attachment" href="${escapeHtml(displayUrl)}" target="_blank" rel="noopener"><img src="${escapeHtml(displayUrl)}" alt="${escapeHtml(file.name || 'image')}" loading="lazy" decoding="async"${pathAttr} /></a>`;
           }
-          return `<a class="teamchat-attachment teamchat-attachment-file" href="${escapeHtml(file.url || '#')}" target="_blank" rel="noopener">${escapeHtml(file.name || 'Файл')}</a>`;
+          return `<a class="teamchat-attachment teamchat-attachment-file" href="${escapeHtml(displayUrl || '#')}" target="_blank" rel="noopener">${escapeHtml(file.name || 'Файл')}</a>`;
         }).join('')}</div>`
         : '';
 
@@ -1025,7 +1145,8 @@
       });
     });
 
-    list.scrollTop = list.scrollHeight;
+    if (wasNearBottom) list.scrollTop = list.scrollHeight;
+    patchMessageAttachmentImages();
   }
 
   async function togglePinMessage(messageId, forceUnpin = false) {
@@ -1185,6 +1306,8 @@
     renderHeader();
 
     syncCurrentView();
+    const list = $('teamchat-messages');
+    if (list) list.dataset.renderKey = '';
     const cachedCount = getRoomState(nextRoomId).messages.length;
     if (silentMessages && cachedCount > 0) {
       messagesLoadingRoomId = null;
@@ -1258,6 +1381,7 @@
         roomId: currentRoomId,
       });
       if (uploaded?.ok && uploaded.attachment) {
+        rememberAttachmentUrls([uploaded.attachment]);
         pendingAttachments.push(uploaded.attachment);
       } else {
         setStatus(uploaded?.message || 'Не удалось загрузить файл');
@@ -1341,7 +1465,12 @@
         setStatus(result?.message || 'Не удалось отправить');
         return;
       }
-      const saved = { ...result.message, room_id: result.message.room_id || targetRoomId, pending: false };
+      const saved = enrichMessageAttachments({
+        ...result.message,
+        room_id: result.message.room_id || targetRoomId,
+        pending: false,
+        attachments: mergeAttachmentLists(result.message?.attachments, attachments),
+      });
       const withoutTemp = getRoomState(targetRoomId).messages.filter((message) => message.id !== tempId);
       const merged = mergeMessagesFromServer(targetRoomId, [saved], withoutTemp, { replace: false });
       setRoomState(targetRoomId, merged, getRoomState(targetRoomId).pinned);
@@ -1575,8 +1704,23 @@
     stopPolling();
   }
 
+  async function openTeamChatRoom(roomId, { colleagueId = null } = {}) {
+    document.querySelector('.nav-item[data-page="teamchat"]')?.click();
+    if (!active) await activateTeamChatPage();
+    const id = String(roomId || '').trim();
+    if (id) {
+      await selectRoom(id, { silentMessages: true });
+      return;
+    }
+    const peerId = String(colleagueId || '').trim();
+    if (peerId) await openDm(peerId);
+  }
+
   window.activateTeamChatPage = activateTeamChatPage;
   window.deactivateTeamChatPage = deactivateTeamChatPage;
   window.openTeamChatTaskRoom = openTask;
+  window.openTeamChatRoom = openTeamChatRoom;
+  window.getCurrentTeamChatRoomId = () => currentRoomId;
+  window.isTeamChatPageActive = () => active;
   window.prefetchTeamChatDirectory = prefetchTeamChatDirectory;
 })();

@@ -33,10 +33,17 @@ function initPillNotifyInApp() {
     if (action.type === 'konstancia-open-share') {
       window.openKonstanciaShare?.(action.shareId);
     }
+    if (action.type === 'teamchat-open-room') {
+      window.openTeamChatRoom?.(action.roomId, { colleagueId: action.colleagueId || null });
+    }
   };
 
   window.api.onKonstanciaOpenShare?.((payload) => {
     window.openKonstanciaShare?.(payload?.shareId);
+  });
+
+  window.api.onTeamchatOpenRoom?.((payload) => {
+    window.openTeamChatRoom?.(payload?.roomId, { colleagueId: payload?.colleagueId || null });
   });
 
   window.api.onPillNotifyInApp?.((item) => {
@@ -76,6 +83,7 @@ async function init() {
   await window.initRoleNav?.(config, { requirePicker: !auth?.profile });
   updateStatus(await window.api.getStatus());
   initKanbanNotify({ getConfig: () => config });
+  window.initTeamChatNotify?.();
   renderHotkeys();
   populateActionSelect();
   setupCustomCursor();

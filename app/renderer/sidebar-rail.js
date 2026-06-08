@@ -83,11 +83,27 @@
 
   function updateTeamChatBadge(unread = 0) {
     const badge = document.getElementById('nav-teamchat-badge');
+    const nav = document.querySelector('.nav-item[data-page="teamchat"]');
+    const count = Math.max(0, Number(unread) || 0);
+    nav?.classList.toggle('has-teamchat-unread', count > 0);
     if (!badge) return;
-    badge.classList.toggle('hidden', !(Number(unread) > 0));
+    badge.classList.toggle('hidden', count <= 0);
+    badge.classList.toggle('has-count', count > 1);
+    badge.textContent = count > 1 ? (count > 9 ? '9+' : String(count)) : '';
+    badge.setAttribute('aria-label', count > 0 ? `Непрочитанных: ${count}` : '');
+  }
+
+  function ensureKonstanciaNavIcon() {
+    const img = document.querySelector('.nav-item[data-page="agent"] [data-sidebar-static="1"]');
+    if (!img) return;
+    const fallback = 'assets/brand/logo.png';
+    if (!img.getAttribute('src')) img.setAttribute('src', fallback);
+    img.removeAttribute('data-live2d');
+    img.closest('.agent-brand-avatar')?.classList.remove('agent-brand-avatar--live2d');
   }
 
   normalizeNavItems();
+  ensureKonstanciaNavIcon();
   setExpanded(readExpandedPreference(), { persist: false });
   syncUserTooltip();
 
@@ -112,9 +128,12 @@
     });
   }
 
+  window.addEventListener('agent-brand-avatar-updated', ensureKonstanciaNavIcon);
+
   window.SidebarRail = {
     setExpanded,
     isExpanded: () => sidebar.classList.contains('is-expanded'),
     updateTeamChatBadge,
+    ensureKonstanciaNavIcon,
   };
 })();

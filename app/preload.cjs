@@ -177,6 +177,7 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('pill-notify-in-app', fn);
     return () => ipcRenderer.removeListener('pill-notify-in-app', fn);
   },
+  nanobananaIsConfigured: () => ipcRenderer.invoke('nanobanana-is-configured'),
   nanobananaGetModels: () => ipcRenderer.invoke('nanobanana-get-models'),
   nanobananaGetCredits: () => ipcRenderer.invoke('nanobanana-get-credits'),
   nanobananaGenerate: (payload) => ipcRenderer.invoke('nanobanana-generate', payload),
@@ -222,6 +223,7 @@ contextBridge.exposeInMainWorld('api', {
   onMetaskCommentUpdates: (cb) => ipcRenderer.on('metask-comment-updates', (_e, d) => cb(d)),
   onMetaskOpenTask: (cb) => ipcRenderer.on('metask-open-task', (_e, d) => cb(d)),
   onKonstanciaOpenShare: (cb) => ipcRenderer.on('konstancia-open-share', (_e, d) => cb(d)),
+  onTeamchatOpenRoom: (cb) => ipcRenderer.on('teamchat-open-room', (_e, d) => cb(d)),
   onTeamchatKonstanciaShareSent: (cb) => ipcRenderer.on('teamchat-konstancia-share-sent', (_e, d) => cb(d)),
   onTeamchatSharePingFailed: (cb) => ipcRenderer.on('teamchat-konstancia-share-ping-failed', (_e, d) => cb(d)),
   onMetaskIssueActive: (cb) => ipcRenderer.on('metask-issue-active', (_e, d) => cb(d)),

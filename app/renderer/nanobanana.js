@@ -37,8 +37,19 @@
     return window.appSettings?.nanobanana || {};
   }
 
+  let nanobananaConfigured = false;
+
+  async function refreshConfiguredState() {
+    try {
+      const res = await window.api.nanobananaIsConfigured?.();
+      nanobananaConfigured = !!res?.configured;
+    } catch {
+      nanobananaConfigured = false;
+    }
+  }
+
   function hasApiKey() {
-    return !!String(getSettings().apiKey || '').trim();
+    return nanobananaConfigured;
   }
 
   function resolveModelId(familyId, res) {
@@ -924,6 +935,7 @@
   };
 
   window.activateNanobananaPage = async function activateNanobananaPage() {
+    await refreshConfiguredState();
     window.detachMetaskBoard?.();
     window.detachMailView?.();
     applySettingsToUi();
@@ -933,6 +945,7 @@
 
   function initNanobanana() {
     if (!$('page-nanobanana')) return;
+    void refreshConfiguredState();
     applySettingsToUi();
     renderRefGrid();
     bindEvents();
