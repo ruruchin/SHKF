@@ -15,7 +15,7 @@
   --sidebar-rail-divider: rgba(15, 23, 42, 0.06);
   --sidebar-rail-circle-bg: #f0f0f2;
   --sidebar-rail-circle-hover: #e8e8ec;
-  --sidebar-rail-circle-active-bg: #18181b;
+  --sidebar-rail-circle-active-bg: var(--brand-accent, var(--accent, #f97316));
   --sidebar-rail-circle-active-fg: #ffffff;
   --sidebar-rail-hover: var(--sidebar-rail-circle-hover);
   --sidebar-rail-active-bg: var(--sidebar-rail-circle-active-bg);
@@ -331,6 +331,15 @@
 .sidebar-rail .nav-item .nav-icon {
   object-fit: contain;
   border-radius: 4px;
+}
+
+.sidebar-rail .nav-item .nav-icon--brand {
+  width: calc(var(--sidebar-rail-icon-glyph) + 2px);
+  height: calc(var(--sidebar-rail-icon-glyph) + 2px);
+}
+
+.sidebar-rail .nav-item.active .nav-icon--brand {
+  opacity: 1;
 }
 
 .sidebar-rail .nav-item .nav-item-avatar,

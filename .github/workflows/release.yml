@@ -72,7 +72,8 @@ jobs:
       - name: Install Linux packaging tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y libarchive-tools rpm fakeroot dpkg
+          sudo apt-get install -y libarchive-tools rpm fakeroot dpkg \
+            libgtk-3-0t64 libasound2t64 libatspi2.0-0t64 libnotify4t64 libxss1t64 libxtst6t64
 
       - name: Cache electron-builder binaries
         uses: actions/cache@v4

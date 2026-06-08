@@ -30,7 +30,10 @@ install_build_deps() {
   sudo apt-get update -qq
   sudo apt-get install -y \
     libarchive-tools rpm fakeroot dpkg \
-    libgtk-3-0 libnss3 libxss1 libasound2
+    libgtk-3-0t64 libnss3 libxss1t64 libasound2t64 libatspi2.0-0t64 libnotify4t64 libxtst6t64 \
+    || sudo apt-get install -y \
+    libarchive-tools rpm fakeroot dpkg \
+    libgtk-3-0 libnss3 libxss1 libasound2 libatspi2.0-0 libnotify4 libxtst6
 }
 
 need_cmd node
