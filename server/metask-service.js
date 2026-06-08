@@ -230,7 +230,8 @@ function normalizeUpdatedOn(iso) {
 
 export class MetaskService {
   constructor() {
-    this.partition = 'persist:metask';
+    this.sessionUserId = '';
+    this.partition = 'persist:metask-guest';
     this._sess = null;
     this.settings = {
       baseUrl: '',
@@ -250,10 +251,25 @@ export class MetaskService {
   }
 
   get sess() {
-    if (!this._sess) {
+    if (!this._sess || this._sessPartition !== this.partition) {
       this._sess = session.fromPartition(this.partition);
+      this._sessPartition = this.partition;
     }
     return this._sess;
+  }
+
+  setSessionUser(userId = '') {
+    const nextId = String(userId || '').trim();
+    const nextPartition = nextId ? `persist:metask-${nextId}` : 'persist:metask-guest';
+    if (this.sessionUserId === nextId && this.partition === nextPartition) return;
+    this.sessionUserId = nextId;
+    this.partition = nextPartition;
+    this._sess = null;
+    this._sessPartition = null;
+    this.loggedIn = false;
+    this.lastError = null;
+    this.userName = null;
+    this.userId = null;
   }
 
   configure(settings = {}) {

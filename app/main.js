@@ -82,6 +82,11 @@ import {
 import { ACTIONS, checkConflict, formatKeys, generateId, ACTION_META } from '../shared/keys.js';
 import { patchSettings } from '../shared/app-settings.js';
 import {
+  buildUserIntegrationPatch,
+  emptyUserIntegrations,
+  extractUserIntegrations,
+} from '../shared/user-scoped-settings.js';
+import {
   getConfigPath,
   getPluginPath,
   getBundledLive2dModelPath,
@@ -642,7 +647,7 @@ function getMetaskBrowserView() {
 
   metaskBrowserView = new BrowserView({
     webPreferences: {
-      partition: 'persist:metask',
+      partition: metaskService.getSessionPartition(),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -705,14 +710,6 @@ async function tryMetaskAutoLogin() {
   } finally {
     setTimeout(() => { metaskLoginBusy = false; }, 2500);
   }
-}
-
-async function clearMetaskSession() {
-  const ses = session.fromPartition('persist:metask');
-  await ses.clearStorageData();
-  await ses.clearCache();
-  metaskBoardLoaded = false;
-  metaskPendingLogin = false;
 }
 
 async function reloadMetaskBoard() {
@@ -915,18 +912,125 @@ function normalizeUpdatedOn(iso) {
 }
 
 function applyAuthProfileToConfig(profile) {
-  if (!profile?.role) return service.config;
-  const currentRole = service.config.settings?.user?.role;
-  if (currentRole === profile.role) return service.config;
-  return service.updateAppSettings({
-    user: {
-      role: profile.role,
-      roleSelectedAt: new Date().toISOString(),
-      id: profile.id,
-      email: profile.email,
-      fullName: profile.full_name || '',
-    },
+  if (!profile?.id) return service.config;
+  const prev = service.config.settings?.user || {};
+  const nextUser = {
+    ...prev,
+    role: profile.role || prev.role || null,
+    roleSelectedAt: prev.role === profile.role ? prev.roleSelectedAt : new Date().toISOString(),
+    id: profile.id,
+    email: profile.email || '',
+    username: profile.username || '',
+    fullName: profile.full_name || '',
+  };
+  if (
+    prev.id === nextUser.id
+    && prev.role === nextUser.role
+    && prev.email === nextUser.email
+    && prev.username === nextUser.username
+    && prev.fullName === nextUser.fullName
+  ) {
+    return service.config;
+  }
+  return service.updateAppSettings({ user: nextUser });
+}
+
+function applyUserIntegrationsToRuntime(integrations = emptyUserIntegrations()) {
+  const next = extractUserIntegrations(integrations);
+  const config = service.updateAppSettings({
+    metask: next.metask,
+    zimbra: next.zimbra,
   });
+  metaskService.configure(config.settings?.metask || {});
+  zimbraService.configure(config.settings?.zimbra || {});
+  return config;
+}
+
+function resetRuntimeIntegrations() {
+  metaskService.setSessionUser('');
+  zimbraService.setSessionUser('');
+  return applyUserIntegrationsToRuntime(emptyUserIntegrations());
+}
+
+async function pullUserIntegrationsIntoConfig() {
+  if (!authService.session) return service.config;
+  try {
+    const data = await authService.fetchUserSettings();
+    return applyUserIntegrationsToRuntime(data?.settings || {});
+  } catch {
+    return applyUserIntegrationsToRuntime(emptyUserIntegrations());
+  }
+}
+
+async function pushUserIntegrationsFromConfig() {
+  if (!authService.session) return { ok: false, skipped: true };
+  try {
+    const existing = await authService.fetchUserSettings();
+    return authService.updateUserSettings({
+      ...(existing?.settings || {}),
+      ...buildUserIntegrationPatch(service.config.settings || {}),
+    });
+  } catch {
+    return { ok: false };
+  }
+}
+
+function destroyMetaskBrowserView() {
+  if (!metaskBrowserView) return;
+  try {
+    detachMetaskBoard();
+    if (!metaskBrowserView.webContents.isDestroyed()) {
+      metaskBrowserView.webContents.destroy();
+    }
+  } catch {
+    /* ignore */
+  }
+  metaskBrowserView = null;
+  metaskBoardLoaded = false;
+  metaskPendingLogin = false;
+}
+
+async function clearMetaskSession() {
+  const ses = session.fromPartition(metaskService.getSessionPartition());
+  await ses.clearStorageData();
+  await ses.clearCache();
+  metaskBoardLoaded = false;
+  metaskPendingLogin = false;
+}
+
+async function clearZimbraSession() {
+  const ses = session.fromPartition(zimbraService.getSessionPartition());
+  await ses.clearStorageData();
+  await ses.clearCache();
+}
+
+async function switchIntegrationSessionsForUser(userId = '') {
+  destroyMetaskBrowserView();
+  metaskService.setSessionUser(userId);
+  zimbraService.setSessionUser(userId);
+  metaskService.configure(service.config.settings?.metask || {});
+  zimbraService.configure(service.config.settings?.zimbra || {});
+  await clearMetaskSession();
+  await clearZimbraSession();
+}
+
+async function activateAuthenticatedUserContext(profile) {
+  if (!profile?.id) return service.config;
+  applyAuthProfileToConfig(profile);
+  await pullCloudSettingsIntoConfig();
+  await pullUserIntegrationsIntoConfig();
+  await switchIntegrationSessionsForUser(profile.id);
+  broadcast('config', service.config);
+  return service.config;
+}
+
+async function deactivateAuthenticatedUserContext() {
+  await pushUserIntegrationsFromConfig();
+  destroyMetaskBrowserView();
+  await clearMetaskSession();
+  await clearZimbraSession();
+  resetRuntimeIntegrations();
+  broadcast('config', service.config);
 }
 
 async function pullCloudSettingsIntoConfig() {
@@ -1338,14 +1442,18 @@ app.whenReady().then(() => {
   setupAutoUpdater();
   startUpdaterPolling();
   scheduleMetaskPolling();
-  zimbraService.configure(service.config.settings?.zimbra || {});
+  if (authService.session) {
+    zimbraService.configure(service.config.settings?.zimbra || {});
+  } else {
+    resetRuntimeIntegrations();
+  }
   configureAgentIntegrations();
   maybeAutoIngestKnowledge();
 
-  const metaskSession = session.fromPartition('persist:metask');
+  const metaskSession = session.fromPartition(metaskService.getSessionPartition());
   metaskSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
 
-  const zimbraSession = session.fromPartition('persist:zimbra');
+  const zimbraSession = session.fromPartition(zimbraService.getSessionPartition());
   zimbraSession.setPermissionRequestHandler((_wc, _permission, callback) => callback(true));
 
   session.defaultSession.setPermissionRequestHandler((_wc, permission, callback) => {
@@ -1388,8 +1496,9 @@ app.whenReady().then(() => {
     try {
       const result = await authService.getSession();
       if (result.profile) {
-        applyAuthProfileToConfig(result.profile);
-        await pullCloudSettingsIntoConfig();
+        await activateAuthenticatedUserContext(result.profile);
+      } else {
+        resetRuntimeIntegrations();
       }
       return { ...result, config: service.config };
     } catch (err) {
@@ -1415,11 +1524,8 @@ app.whenReady().then(() => {
     try {
       const result = await authService.signIn(payload?.login ?? payload?.email ?? '', payload?.password || '');
       if (result.ok && result.profile) {
-        applyAuthProfileToConfig(result.profile);
-        await pullCloudSettingsIntoConfig();
-        await pushCloudSettingsFromConfig();
+        await activateAuthenticatedUserContext(result.profile);
         broadcast('auth-changed', { profile: result.profile, user: result.user });
-        broadcast('config', service.config);
       }
       return { ...result, config: service.config };
     } catch (err) {
@@ -1427,6 +1533,7 @@ app.whenReady().then(() => {
     }
   });
   ipcMain.handle('auth-logout', async () => {
+    await deactivateAuthenticatedUserContext();
     const result = await authService.signOut();
     broadcast('auth-changed', { profile: null, user: null });
     return result;
@@ -1764,6 +1871,7 @@ app.whenReady().then(() => {
       metask: mergedCreds,
     });
     metaskService.configure(config.settings?.metask || {});
+    await pushUserIntegrationsFromConfig();
     const next = config.settings?.metask || {};
     const baseChanged = (prev.baseUrl || '') !== (next.baseUrl || '');
     const boardChanged = (prev.boardPath || '') !== (next.boardPath || '');
@@ -1856,12 +1964,10 @@ app.whenReady().then(() => {
     );
   });
   ipcMain.handle('mail-clear-session', async () => {
-    const ses = session.fromPartition('persist:zimbra');
-    await ses.clearStorageData();
-    await ses.clearCache();
+    await clearZimbraSession();
     return { ok: true };
   });
-  ipcMain.handle('mail-save-credentials', (_e, creds) => {
+  ipcMain.handle('mail-save-credentials', async (_e, creds) => {
     const prev = service.config.settings?.zimbra || {};
     const config = service.updateAppSettings({
       zimbra: {
@@ -1871,6 +1977,7 @@ app.whenReady().then(() => {
       },
     });
     zimbraService.configure(config.settings?.zimbra || {});
+    await pushUserIntegrationsFromConfig();
     return config.settings?.zimbra;
   });
   ipcMain.handle('mail-open-external', (_e, url) => {

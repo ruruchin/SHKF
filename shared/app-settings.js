@@ -55,7 +55,7 @@ export const DEFAULT_APP_SETTINGS = {
     desktopAgentEnabled: true,
   },
   vtubeStudio: {
-    enabled: false,
+    enabled: true,
     live2dModelPath: '',
     live2dCostume: 'costume_v0052.exp3.json',
     showDock: true,
@@ -133,7 +133,7 @@ export const DEFAULT_APP_SETTINGS = {
 function normalizeLive2dSettings(raw = {}) {
   const src = raw && typeof raw === 'object' ? raw : {};
   return {
-    enabled: src.enabled === true,
+    enabled: src.enabled !== false,
     live2dModelPath: String(src.live2dModelPath || '').trim(),
     live2dCostume: String(src.live2dCostume || 'costume_v0052.exp3.json').trim() || 'costume_v0052.exp3.json',
     showDock: src.showDock !== false,

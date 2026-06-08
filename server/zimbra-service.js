@@ -15,12 +15,21 @@ export function normalizeZimbraBaseUrl(url) {
 
 export class ZimbraService {
   constructor() {
-    this.partition = 'persist:zimbra';
+    this.sessionUserId = '';
+    this.partition = 'persist:zimbra-guest';
     this.settings = {
       baseUrl: '',
       username: '',
       password: '',
     };
+  }
+
+  setSessionUser(userId = '') {
+    const nextId = String(userId || '').trim();
+    const nextPartition = nextId ? `persist:zimbra-${nextId}` : 'persist:zimbra-guest';
+    if (this.sessionUserId === nextId && this.partition === nextPartition) return;
+    this.sessionUserId = nextId;
+    this.partition = nextPartition;
   }
 
   configure(settings = {}) {

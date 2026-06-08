@@ -505,11 +505,21 @@ export class AuthService {
   async updateUserSettings(settings, appState = undefined) {
     this.ensureConfigured();
     if (!this.session?.user?.id) return { ok: false, message: 'Не выполнен вход' };
+    const existing = await this.fetchUserSettings();
+    const mergedSettings = {
+      ...(existing?.settings && typeof existing.settings === 'object' ? existing.settings : {}),
+      ...(settings && typeof settings === 'object' ? settings : {}),
+    };
     const payload = {
       user_id: this.session.user.id,
-      settings: settings || {},
+      settings: mergedSettings,
     };
-    if (appState !== undefined) payload.app_state = appState || {};
+    if (appState !== undefined) {
+      payload.app_state = {
+        ...(existing?.app_state && typeof existing.app_state === 'object' ? existing.app_state : {}),
+        ...(appState && typeof appState === 'object' ? appState : {}),
+      };
+    }
     const { data, error } = await this.client
       .from('user_settings')
       .upsert(payload)

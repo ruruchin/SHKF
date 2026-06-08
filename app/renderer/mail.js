@@ -11,6 +11,38 @@
     return $('mail-webview');
   }
 
+  async function ensureMailPartition() {
+    const info = await window.api.mailGetInfo?.().catch(() => null);
+    const partition = info?.partition || 'persist:zimbra-guest';
+    const host = $('mail-host');
+    const wv = getWebview();
+    if (wv?.getAttribute('partition') === partition) return wv;
+
+    const next = document.createElement('webview');
+    next.id = 'mail-webview';
+    next.className = 'mail-webview';
+    next.setAttribute('partition', partition);
+    next.setAttribute('allowpopups', '');
+    next.src = 'about:blank';
+
+    if (wv) wv.replaceWith(next);
+    else host?.appendChild(next);
+
+    webviewReady = false;
+    loginBusy = false;
+    pendingLoginAfterReload = false;
+    delete next.dataset.bound;
+    bindWebview();
+    return next;
+  }
+
+  async function resetMailForUserSwitch() {
+    await ensureMailPartition();
+    await loadSavedCredentials();
+    $('mail-auth')?.classList.remove('hidden');
+    setStatus('Укажите URL, логин и пароль', false);
+  }
+
   function normalizeBaseUrl(url) {
     const raw = (url || '').trim();
     if (!raw) return '';
@@ -188,7 +220,7 @@
 
   window.activateMailPage = async function activateMailPage() {
     window.detachMetaskBoard?.();
-    bindWebview();
+    await ensureMailPartition();
     await loadSavedCredentials();
     const creds = readCredentials();
     if (!creds.baseUrl || !creds.username || !creds.password) {
@@ -228,6 +260,18 @@
     });
 
     loadSavedCredentials();
+
+    window.api.onAuthChanged?.(() => {
+      resetMailForUserSwitch().catch(() => {});
+    });
+
+    window.addEventListener('auth-ready', () => {
+      resetMailForUserSwitch().catch(() => {});
+    });
+
+    window.api.onConfig?.(() => {
+      loadSavedCredentials().catch(() => {});
+    });
   }
 
   window.initMail = initMail;

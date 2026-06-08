@@ -216,16 +216,17 @@
     return false;
   }
 
-  const HISTORY_KEY = 'shkf-agent-history-v1';
-  const SESSIONS_KEY = 'shkf-agent-sessions-v2';
-  const IMPORTED_SHARES_KEY = 'shkf-agent-imported-shares-v1';
-  const ACTIVE_SESSION_KEY = 'shkf-agent-active-session-v2';
-  const SIDEBAR_COLLAPSED_KEY = 'shkf-agent-sidebar-collapsed-v1';
-  const AGENT_CHAT_OPTS_KEY = 'shkf-agent-chat-opts-v1';
+  const HISTORY_KEY_BASE = 'shkf-agent-history-v1';
+  const SESSIONS_KEY_BASE = 'shkf-agent-sessions-v2';
+  const IMPORTED_SHARES_KEY_BASE = 'shkf-agent-imported-shares-v1';
+  const ACTIVE_SESSION_KEY_BASE = 'shkf-agent-active-session-v2';
+  const SIDEBAR_COLLAPSED_KEY_BASE = 'shkf-agent-sidebar-collapsed-v1';
+  const AGENT_CHAT_OPTS_KEY_BASE = 'shkf-agent-chat-opts-v1';
+  let agentStorageUserId = 'guest';
   const MAX_SESSIONS = 50;
   const MAX_MESSAGES_PER_SESSION = 80;
   const MAX_STORED_MESSAGE_CHARS = 24000;
-  const BRIEF_SHOWN_KEY = 'agent-brief-shown-date-v1';
+  const BRIEF_SHOWN_KEY_BASE = 'agent-brief-shown-date-v1';
   const BRIEF_LIST_LIMIT = 10;
   let lastBriefData = null;
   const briefExpandedSections = new Set();
@@ -1371,7 +1372,7 @@
 
       if (!auto) {
         try {
-          localStorage.setItem(BRIEF_SHOWN_KEY, new Date().toISOString().slice(0, 10));
+          localStorage.setItem(scopedAgentStorageKey(BRIEF_SHOWN_KEY_BASE), new Date().toISOString().slice(0, 10));
         } catch { /* ignore */ }
       }
     } catch (err) {
@@ -1384,8 +1385,8 @@
   function maybeShowMorningBriefOnActivate() {
     try {
       const today = new Date().toISOString().slice(0, 10);
-      if (localStorage.getItem(BRIEF_SHOWN_KEY) === today) return;
-      localStorage.setItem(BRIEF_SHOWN_KEY, today);
+      if (localStorage.getItem(scopedAgentStorageKey(BRIEF_SHOWN_KEY_BASE)) === today) return;
+      localStorage.setItem(scopedAgentStorageKey(BRIEF_SHOWN_KEY_BASE), today);
     } catch { /* ignore */ }
     loadMorningBrief({ auto: true });
   }
@@ -1833,7 +1834,7 @@
 
   function loadAgentChatSettings() {
     try {
-      const raw = localStorage.getItem(AGENT_CHAT_OPTS_KEY);
+      const raw = localStorage.getItem(scopedAgentStorageKey(AGENT_CHAT_OPTS_KEY_BASE));
       if (raw) agentChatSettings = { ...agentChatSettings, ...JSON.parse(raw) };
     } catch { /* ignore */ }
     document.body.classList.toggle('agent-chat-compact', !!agentChatSettings.compact);
@@ -1844,7 +1845,7 @@
   }
 
   function saveAgentChatSettings() {
-    localStorage.setItem(AGENT_CHAT_OPTS_KEY, JSON.stringify(agentChatSettings));
+    localStorage.setItem(scopedAgentStorageKey(AGENT_CHAT_OPTS_KEY_BASE), JSON.stringify(agentChatSettings));
   }
 
   function hostnameFromUrl(url) {
@@ -2178,6 +2179,18 @@
     return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   }
 
+  function resolveAgentStorageUserId(profile) {
+    return String(
+      profile?.id
+      || window.__APP_CONFIG__?.settings?.user?.id
+      || 'guest',
+    ).trim() || 'guest';
+  }
+
+  function scopedAgentStorageKey(baseKey) {
+    return `${baseKey}:${agentStorageUserId}`;
+  }
+
   function migrateStorageKey(newKey, legacyKeys) {
     try {
       if (localStorage.getItem(newKey)) return;
@@ -2191,12 +2204,25 @@
     } catch { /* ignore */ }
   }
 
+  function maybeMigrateLegacyGlobalSessions() {
+    const sessionsKey = scopedAgentStorageKey(SESSIONS_KEY_BASE);
+    if (localStorage.getItem(sessionsKey) || agentStorageUserId === 'guest') return;
+    const username = String(window.__APP_CONFIG__?.settings?.user?.username || '').trim().toLowerCase();
+    if (username !== 'k.zorenko') return;
+    migrateStorageKey(sessionsKey, [
+      SESSIONS_KEY_BASE,
+      'firuru-agent-sessions-v2',
+      'SHKF-agent-sessions-v2',
+    ]);
+    migrateStorageKey(scopedAgentStorageKey(ACTIVE_SESSION_KEY_BASE), [
+      ACTIVE_SESSION_KEY_BASE,
+      'firuru-agent-active-session-v2',
+      'SHKF-agent-active-session-v2',
+    ]);
+  }
+
   function migrateAgentStorageKeys() {
-    migrateStorageKey(HISTORY_KEY, ['firuru-agent-history-v1', 'SHKF-agent-history-v1']);
-    migrateStorageKey(SESSIONS_KEY, ['firuru-agent-sessions-v2', 'SHKF-agent-sessions-v2']);
-    migrateStorageKey(ACTIVE_SESSION_KEY, ['firuru-agent-active-session-v2', 'SHKF-agent-active-session-v2']);
-    migrateStorageKey(SIDEBAR_COLLAPSED_KEY, ['firuru-agent-sidebar-collapsed-v1', 'SHKF-agent-sidebar-collapsed-v1']);
-    migrateStorageKey(AGENT_CHAT_OPTS_KEY, ['firuru-agent-chat-opts-v1', 'SHKF-agent-chat-opts-v1']);
+    maybeMigrateLegacyGlobalSessions();
   }
 
   function sanitizeImagesForStorage(images) {
@@ -2244,9 +2270,10 @@
   }
 
   function writeSessionsToStorage(sessions) {
-    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
-    if (activeSessionId) localStorage.setItem(ACTIVE_SESSION_KEY, activeSessionId);
-    else localStorage.removeItem(ACTIVE_SESSION_KEY);
+    localStorage.setItem(scopedAgentStorageKey(SESSIONS_KEY_BASE), JSON.stringify(sessions));
+    const activeKey = scopedAgentStorageKey(ACTIVE_SESSION_KEY_BASE);
+    if (activeSessionId) localStorage.setItem(activeKey, activeSessionId);
+    else localStorage.removeItem(activeKey);
   }
 
   function saveSessionsStore() {
@@ -2290,7 +2317,7 @@
     agentSessions = [];
     activeSessionId = null;
     try {
-      const raw = localStorage.getItem(SESSIONS_KEY);
+      const raw = localStorage.getItem(scopedAgentStorageKey(SESSIONS_KEY_BASE));
       const parsed = raw ? JSON.parse(raw) : [];
       if (Array.isArray(parsed)) {
         agentSessions = parsed
@@ -2300,7 +2327,7 @@
             messages: sanitizeMessagesForStorage(session.messages),
           }));
       }
-      activeSessionId = localStorage.getItem(ACTIVE_SESSION_KEY) || null;
+      activeSessionId = localStorage.getItem(scopedAgentStorageKey(ACTIVE_SESSION_KEY_BASE)) || null;
     } catch {
       agentSessions = [];
       activeSessionId = null;
@@ -2334,7 +2361,7 @@
 
   function migrateLegacyHistory() {
     try {
-      const raw = sessionStorage.getItem(HISTORY_KEY);
+      const raw = sessionStorage.getItem(scopedAgentStorageKey(HISTORY_KEY_BASE));
       const messages = raw ? JSON.parse(raw) : [];
       if (!Array.isArray(messages) || !messages.length) return null;
       const now = new Date().toISOString();
@@ -2639,7 +2666,7 @@
 
   function loadSidebarCollapsed() {
     try {
-      return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+      return localStorage.getItem(scopedAgentStorageKey(SIDEBAR_COLLAPSED_KEY_BASE)) === '1';
     } catch {
       return false;
     }
@@ -2649,7 +2676,7 @@
     const root = document.querySelector('#page-agent .agent-chat');
     root?.classList.toggle('agent-chat--sidebar-collapsed', collapsed);
     try {
-      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+      localStorage.setItem(scopedAgentStorageKey(SIDEBAR_COLLAPSED_KEY_BASE), collapsed ? '1' : '0');
     } catch { /* ignore */ }
     $('agent-sidebar-toggle')?.classList.toggle('hidden', !collapsed);
     $('agent-sidebar-hide')?.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
@@ -2746,7 +2773,7 @@
 
   function readImportedShareIds() {
     try {
-      const raw = localStorage.getItem(IMPORTED_SHARES_KEY);
+      const raw = localStorage.getItem(scopedAgentStorageKey(IMPORTED_SHARES_KEY_BASE));
       const parsed = raw ? JSON.parse(raw) : [];
       return new Set(Array.isArray(parsed) ? parsed : []);
     } catch {
@@ -2760,7 +2787,7 @@
     const set = readImportedShareIds();
     set.add(id);
     try {
-      localStorage.setItem(IMPORTED_SHARES_KEY, JSON.stringify([...set].slice(-200)));
+      localStorage.setItem(scopedAgentStorageKey(IMPORTED_SHARES_KEY_BASE), JSON.stringify([...set].slice(-200)));
     } catch {
       /* ignore quota */
     }
@@ -3227,6 +3254,21 @@
     loadSessionsStore();
     applySessionToUi(getActiveSession());
     renderSessionList({ full: true });
+  }
+
+  function switchAgentUserContext(profile) {
+    const nextUserId = resolveAgentStorageUserId(profile);
+    if (nextUserId === agentStorageUserId && agentInited) {
+      refreshUserMessageAvatars();
+      return;
+    }
+    if (agentInited) persistCurrentSession();
+    agentStorageUserId = nextUserId;
+    if (!agentInited) return;
+    loadHistory();
+    refreshUserMessageAvatars();
+    refreshIncomingShares({ notify: false, autoImport: true });
+    loadKanbanTasks();
   }
 
   function renderHistory() {
@@ -5911,6 +5953,7 @@
   function initAgent() {
     if (agentInited) return;
     agentInited = true;
+    agentStorageUserId = resolveAgentStorageUserId(window.__APP_CONFIG__?.settings?.user);
     messagesEl = $('agent-messages');
     promptEl = $('agent-prompt');
     sendBtn = $('agent-send');
@@ -5969,17 +6012,16 @@
 
     window.addEventListener('role-changed', () => renderRoleSuggestions());
 
-    window.api.onAuthChanged?.(() => {
-      refreshUserMessageAvatars();
-      refreshIncomingShares({ notify: false, autoImport: true });
+    window.api.onAuthChanged?.((payload) => {
+      switchAgentUserContext(payload?.profile || null);
     });
 
     window.addEventListener('user-avatar-updated', () => {
       refreshUserMessageAvatars();
     });
 
-    window.addEventListener('auth-ready', () => {
-      refreshUserMessageAvatars();
+    window.addEventListener('auth-ready', (event) => {
+      switchAgentUserContext(event?.detail?.profile || null);
     });
 
     window.api.onConfig?.(() => {
