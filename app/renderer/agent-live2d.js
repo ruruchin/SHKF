@@ -326,9 +326,16 @@
     return !stageEl.querySelector('.agent-live2d-canvas');
   }
 
+  function isAuthGateOpen() {
+    const gate = document.getElementById('auth-gate');
+    return Boolean(gate && !gate.classList.contains('hidden'));
+  }
+
   function shouldAutoLoad() {
     const cfg = window.appSettings?.vtubeStudio;
-    return cfg?.enabled === true;
+    if (cfg?.enabled !== true) return false;
+    if (isAuthGateOpen()) return false;
+    return true;
   }
 
   let loadFlight = null;
@@ -1382,6 +1389,11 @@
   }
 
   async function load(force = false) {
+    if (!shouldAutoLoad()) {
+      setError('');
+      paintStageError('');
+      return false;
+    }
     if (!ready()) {
       setError('Библиотеки Live2D не загрузились — перезапустите приложение');
       paintStageError(lastError);
@@ -1561,6 +1573,17 @@
   }
   window.addEventListener('load', () => {
     scheduleLoad('window-load');
+  });
+  const authGate = document.getElementById('auth-gate');
+  if (authGate) {
+    new MutationObserver(() => {
+      if (!isAuthGateOpen()) {
+        window.setTimeout(() => scheduleLoad('auth-gate-closed'), 220);
+      }
+    }).observe(authGate, { attributes: true, attributeFilter: ['class'] });
+  }
+  window.addEventListener('auth-ready', () => {
+    window.setTimeout(() => scheduleLoad('auth-ready'), 280);
   });
   scheduleLoad('init');
 

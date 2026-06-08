@@ -3872,37 +3872,24 @@
   }
 
   function isKonstanciaProvider() {
-    return (window.appSettings?.agent?.provider || 'konstancia') === 'konstancia';
+    return true;
   }
 
   function getAgentModelLabel() {
-    if (isKonstanciaProvider()) return 'Konstancia';
-    const model = window.appSettings?.agent?.model
-      || modelSelect?.value
-      || 'GigaChat';
-    return model;
+    return 'Konstancia';
   }
 
   function syncAgentModelSelect() {
     const badge = $('agent-konstancia-badge');
-    const konstancia = isKonstanciaProvider();
-    if (badge) badge.classList.toggle('hidden', !konstancia);
-    if (modelSelect) modelSelect.classList.toggle('hidden', konstancia);
-    if (!modelSelect || konstancia) {
-      updateTaskSelectHint();
-      return;
-    }
-    const model = window.appSettings?.agent?.model || 'GigaChat';
-    if ([...modelSelect.options].some((opt) => opt.value === model)) {
-      modelSelect.value = model;
-    }
+    if (badge) badge.classList.remove('hidden');
+    if (modelSelect) modelSelect.classList.add('hidden');
     updateTaskSelectHint();
   }
 
   async function saveAgentModelFromPage() {
     if (!modelSelect || savingAgentModel) return;
-    const model = modelSelect.value || 'GigaChat';
-    const prev = window.appSettings?.agent?.model || 'GigaChat';
+    const model = modelSelect.value || 'Konstancia';
+    const prev = window.appSettings?.agent?.model || 'Konstancia';
     if (model === prev) return;
 
     savingAgentModel = true;
@@ -5520,7 +5507,7 @@
       const devRole = role === 'frontend' || role === 'backend';
       if (devRole) sub.textContent = 'Konstancia · Mobbin · Figma · Kanban';
       else if (role === 'pm') sub.textContent = 'Konstancia · Kanban · статусы и риски';
-      else sub.textContent = 'Konstancia · Mobbin · Figma · GigaChat';
+      else sub.textContent = 'Konstancia · Mobbin · Figma · Kanban';
     }
   }
 

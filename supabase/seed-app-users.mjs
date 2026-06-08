@@ -1,4 +1,4 @@
-// Базовые аккаунты приложения: o.karavaev и t.eng
+// Базовые аккаунты приложения: k.zorenko, o.karavaev, t.eng
 // Запуск: npm run seed:app-users
 // Пароль: DEFAULT_EMPLOYEE_PASSWORD в .env (или INITIAL_EMPLOYEE_PASSWORD)
 
@@ -13,7 +13,15 @@ const DEFAULT_PASSWORD = process.env.INITIAL_EMPLOYEE_PASSWORD
   || process.env.DEFAULT_EMPLOYEE_PASSWORD
   || '346123LLzSSaaqq';
 
+const ALLOWED_USERNAMES = new Set(['k.zorenko', 'o.karavaev', 't.eng']);
+
 const USERS = [
+  {
+    username: 'k.zorenko',
+    full_name: 'Константин Зоренко',
+    position: 'Сотрудник',
+    role: 'designer',
+  },
   {
     username: 'o.karavaev',
     full_name: 'Олег Караваев',
@@ -22,7 +30,7 @@ const USERS = [
   },
   {
     username: 't.eng',
-    full_name: 'T. Eng',
+    full_name: 'Тимур Егналычев',
     position: 'Сотрудник',
     role: 'designer',
   },
@@ -39,17 +47,22 @@ const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-async function findUserByEmail(email) {
+async function listAllUsers() {
+  const users = [];
   let page = 1;
   while (page < 100) {
     const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 100 });
     if (error) throw error;
-    const found = data.users.find((u) => u.email?.toLowerCase() === email.toLowerCase());
-    if (found) return found;
-    if (data.users.length < 100) return null;
+    users.push(...data.users);
+    if (data.users.length < 100) break;
     page += 1;
   }
-  return null;
+  return users;
+}
+
+async function findUserByEmail(email) {
+  const users = await listAllUsers();
+  return users.find((u) => u.email?.toLowerCase() === email.toLowerCase()) || null;
 }
 
 async function upsertUser(user) {
@@ -69,6 +82,7 @@ async function upsertUser(user) {
     const { data, error } = await admin.auth.admin.updateUserById(existing.id, {
       password: DEFAULT_PASSWORD,
       email_confirm: true,
+      ban_duration: 'none',
       user_metadata: metadata,
     });
     if (error) throw error;
@@ -106,9 +120,42 @@ async function upsertUser(user) {
   if (settingsError) throw settingsError;
 }
 
+async function deactivateOtherUsers() {
+  const authUsers = await listAllUsers();
+  let deactivated = 0;
+
+  for (const authUser of authUsers) {
+    const username = String(authUser.user_metadata?.username || authUser.email?.split('@')[0] || '')
+      .trim()
+      .toLowerCase();
+    if (!username || ALLOWED_USERNAMES.has(username)) continue;
+
+    const { error: banError } = await admin.auth.admin.updateUserById(authUser.id, {
+      ban_duration: '876000h',
+    });
+    if (banError) {
+      console.warn(`Skip ban ${username}:`, banError.message);
+      continue;
+    }
+
+    const { error: profileError } = await admin.from('profiles').update({ is_active: false }).eq('id', authUser.id);
+    if (profileError) {
+      console.warn(`Skip profile deactivate ${username}:`, profileError.message);
+      continue;
+    }
+
+    deactivated += 1;
+    console.log(`Deactivated ${username}`);
+  }
+
+  return deactivated;
+}
+
 for (const user of USERS) {
   await upsertUser(user);
 }
+
+const deactivated = await deactivateOtherUsers();
 
 console.log('');
 console.log('App users ready:');
@@ -116,4 +163,5 @@ for (const user of USERS) {
   console.log(`  ${user.username}@${EMAIL_DOMAIN}`);
 }
 console.log(`  Password: ${DEFAULT_PASSWORD}`);
+if (deactivated) console.log(`  Deactivated test/other accounts: ${deactivated}`);
 console.log('');

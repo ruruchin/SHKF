@@ -464,8 +464,21 @@
 }
 
 [data-theme="mobbin"] .sidebar.sidebar-rail {
+  width: var(--sidebar-rail-w);
+  min-width: var(--sidebar-rail-w);
+  max-width: var(--sidebar-rail-w);
+  flex-shrink: 0;
+  padding: 10px 6px 8px;
   border-right: none;
   border-radius: var(--sidebar-rail-radius);
+}
+
+[data-theme="mobbin"] .sidebar.sidebar-rail.is-expanded {
+  width: var(--sidebar-rail-expanded-w);
+  min-width: var(--sidebar-rail-expanded-w);
+  max-width: var(--sidebar-rail-expanded-w);
+  padding: 12px 8px 10px;
+  border-radius: var(--sidebar-rail-radius-expanded);
 }
 
 [data-theme="studio"] .sidebar.sidebar-rail {

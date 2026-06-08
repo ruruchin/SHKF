@@ -44,16 +44,17 @@
     return labels[role] || role || '—';
   }
 
-  function applyAuthState(auth) {
+  async function applyAuthState(auth) {
     currentAuth = auth || null;
     const profile = auth?.profile;
     document.documentElement.toggleAttribute('data-authenticated', !!profile);
+    if (profile) {
+      await window.AuthLive2d?.destroy?.();
+    }
     const gate = $('auth-gate');
     gate?.classList.toggle('hidden', !!profile);
-    if (profile) {
-      window.AuthLive2d?.destroy?.();
-    } else {
-      window.AuthLive2d?.scheduleMount?.() || window.AuthLive2d?.mount?.();
+    if (!profile) {
+      window.AuthLive2d?.scheduleMount?.();
     }
 
     const chip = $('settings-auth-chip');
@@ -96,7 +97,7 @@
     }
   }
 
-  function finishAuth(result) {
+  async function finishAuth(result) {
     if (result?.config) {
       window.__APP_CONFIG__ = result.config;
       window.applyTheme?.(result.config.theme || 'light');
@@ -105,7 +106,7 @@
     }
     pendingLogin = null;
     showStep('login');
-    applyAuthState(result);
+    await applyAuthState(result);
     if (result?.user?.id) window.prefetchTeamChatDirectory?.();
     window.dispatchEvent(new CustomEvent('auth-ready', { detail: result }));
   }
@@ -131,7 +132,7 @@
       }
       window.AuthLive2d?.reactSuccess?.();
       await window.AuthLive2d?.wait?.(900);
-      finishAuth(result);
+      await finishAuth(result);
     } catch (err) {
       setError('auth-error', err?.message || 'Ошибка связи с сервисом авторизации.');
       window.AuthLive2d?.reactError?.();
@@ -172,7 +173,7 @@
       };
       window.AuthLive2d?.reactSuccess?.();
       await window.AuthLive2d?.wait?.(900);
-      finishAuth(merged);
+      await finishAuth(merged);
     } catch (err) {
       setError('auth-cp-error', err?.message || 'Ошибка смены пароля.');
       window.AuthLive2d?.reactError?.();
@@ -222,7 +223,7 @@
     // При каждом запуске показываем экран входа — сессия не восстанавливается с диска.
     const result = await window.api.authGetSession?.();
     if (result?.config) window.__APP_CONFIG__ = result.config;
-    applyAuthState(result);
+    await applyAuthState(result);
     return result;
   }
 

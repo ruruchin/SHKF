@@ -130,6 +130,15 @@ export const DEFAULT_APP_SETTINGS = {
   },
 };
 
+function normalizeAgentSettings(raw = {}) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    ...src,
+    provider: 'konstancia',
+    model: 'Konstancia',
+  };
+}
+
 function normalizeLive2dSettings(raw = {}) {
   const src = raw && typeof raw === 'object' ? raw : {};
   return {
@@ -172,6 +181,7 @@ export function normalizeConfig(config) {
   }
 
   settings.vtubeStudio = normalizeLive2dSettings(settings.vtubeStudio);
+  settings.agent = normalizeAgentSettings(settings.agent);
 
   return {
     ...config,

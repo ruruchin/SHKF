@@ -431,7 +431,7 @@
       if (knowledgeAuto) knowledgeAuto.checked = a.knowledgeAutoIngest === true;
       refreshKnowledgeLearningStats();
       if (credentials && a.credentials) credentials.value = a.credentials;
-      if (model) model.value = a.model || 'GigaChat';
+      if (model) model.value = 'Konstancia';
       const mobbinKey = $('set-mobbin-api-key');
       if (mobbinKey) mobbinKey.value = a.mobbinApiKey || '';
       const mobbinEnabled = $('set-mobbin-enabled');

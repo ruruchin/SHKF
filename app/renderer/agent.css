@@ -755,6 +755,12 @@
   flex: 0 1 168px;
 }
 
+.agent-model-select.hidden,
+#agent-model-select[hidden] {
+  display: none !important;
+  pointer-events: none;
+}
+
 .agent-model-badge {
   display: inline-flex;
   align-items: center;

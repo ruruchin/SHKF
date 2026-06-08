@@ -1200,12 +1200,8 @@
                     </div>
                   </div>
                   <div class="agent-chat-actions">
-                    <select class="agent-model-select hidden" id="agent-model-select" title="Модель (только GigaChat)">
-                      <option value="GigaChat">GigaChat (Lite)</option>
-                      <option value="GigaChat-2-Lite">GigaChat-2-Lite</option>
-                      <option value="GigaChat-2">GigaChat-2</option>
-                      <option value="GigaChat-2-Pro">GigaChat-2-Pro</option>
-                      <option value="GigaChat-2-Max">GigaChat-2-Max</option>
+                    <select class="agent-model-select hidden" id="agent-model-select" title="Модель" hidden aria-hidden="true" tabindex="-1">
+                      <option value="Konstancia" selected>Konstancia</option>
                     </select>
                     <span class="agent-model-badge" id="agent-konstancia-badge" title="Локальная нейросеть Konstancia">Konstancia</span>
                     <div class="agent-task-picker" id="agent-task-picker">
@@ -1938,14 +1934,13 @@
               <div class="settings-section" id="settings-agent">
                 <div class="settings-section-title">Konstancia · нейросеть</div>
                 <div class="settings-list">
-                  <div class="settings-item">
+                  <div class="settings-item hidden" id="set-agent-provider-row" aria-hidden="true">
                     <div class="settings-item-info">
                       <div class="settings-label">Движок агента</div>
-                      <div class="settings-hint">По умолчанию — <strong>локальная Konstancia</strong>. GigaChat — только если явно переключите.</div>
+                      <div class="settings-hint">Локальная нейросеть <strong>Konstancia</strong>.</div>
                     </div>
-                    <select id="set-agent-provider" class="settings-control w-wide">
-                      <option value="konstancia">Konstancia (локальная нейросеть)</option>
-                      <option value="gigachat">GigaChat (облако Sber)</option>
+                    <select id="set-agent-provider" class="settings-control w-wide" hidden tabindex="-1">
+                      <option value="konstancia" selected>Konstancia (локальная нейросеть)</option>
                     </select>
                   </div>
                   <div class="settings-item settings-item--stack" id="set-agent-konstancia-panel">

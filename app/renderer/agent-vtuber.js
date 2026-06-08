@@ -38,8 +38,13 @@
     return cfg().enabled === true;
   }
 
+  function isAuthGateOpen() {
+    const gate = document.getElementById('auth-gate');
+    return Boolean(gate && !gate.classList.contains('hidden'));
+  }
+
   function canShowAvatar() {
-    return isEnabled() && hasLive2dModel();
+    return isEnabled() && hasLive2dModel() && !isAuthGateOpen();
   }
 
   function isHeroSlotReady() {

@@ -32,7 +32,7 @@ import {
   resolveModelEntryPath,
   toLive2dProtocolUrl,
 } from '../server/live2d-model-service.js';
-import { getLive2dModelHttpUrl, stopAllLive2dStaticServers } from '../server/live2d-static-server.js';
+import { stopAllLive2dStaticServers } from '../server/live2d-static-server.js';
 import { isRedmineFileSearch, wantsLearnedExperience, wantsProcessInsights, wantsRedmineKnowledge, wantsFileSearch, wantsReindexTasks, isLearnedExperienceQuery } from '../shared/task-learning-intent.js';
 import {
   buildTaskOptionalPrompt,
@@ -552,12 +552,14 @@ function registerLive2dIpcHandlers() {
     }
     const meta = readLive2dMeta(entryPath);
     if (!meta.ok) return meta;
-    const served = await getLive2dModelHttpUrl(meta.settingsPath);
-    if (!served.ok) return served;
+    const modelUrl = toLive2dProtocolUrl(meta.settingsPath);
+    if (!modelUrl) {
+      return { ok: false, message: 'Не удалось сформировать URL модели Live2D' };
+    }
     const usesBundled = !userPath || !resolveModelEntryPath(userPath);
     return {
       ...meta,
-      modelUrl: served.modelUrl,
+      modelUrl,
       emotions: cfg.emotions || {},
       costume: String(cfg.live2dCostume || '').trim(),
       bundled: usesBundled,
@@ -607,8 +609,10 @@ function registerLive2dIpcHandlers() {
     if (!meta.ok) {
       return { ok: false, message: meta.message || 'Не найден model3.json в выбранном месте' };
     }
-    const served = await getLive2dModelHttpUrl(meta.settingsPath);
-    if (!served.ok) return served;
+    const modelUrl = toLive2dProtocolUrl(meta.settingsPath);
+    if (!modelUrl) {
+      return { ok: false, message: 'Не удалось сформировать URL модели Live2D' };
+    }
     const config = service.updateAppSettings({
       vtubeStudio: {
         ...service.config.settings?.vtubeStudio,
@@ -619,7 +623,7 @@ function registerLive2dIpcHandlers() {
       ok: true,
       entryPath,
       settingsPath: meta.settingsPath,
-      modelUrl: served.modelUrl,
+      modelUrl,
       modelName: meta.modelName,
       config,
     };

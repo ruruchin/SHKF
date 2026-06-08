@@ -1,3 +1,4 @@
+// DEPRECATED — не использовать в проде. Актуальные аккаунты: npm run seed:app-users
 // Тестовый сотрудник @test для проверки командного чата.
 // Запуск: npm run seed:test-user
 // Логин в приложении: test  ·  пароль: TEST_USER_PASSWORD или DEFAULT_EMPLOYEE_PASSWORD из .env

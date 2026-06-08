@@ -5,6 +5,8 @@
   let canvas = null;
   let destroyed = true;
   let mountGen = 0;
+  let mountInFlight = null;
+  let scheduleTimer = 0;
   let resizeObserver = null;
   let mouseHandler = null;
   let emotionTimer = 0;
@@ -42,6 +44,26 @@
     return Boolean(window.Live2DCubismCore && Live2DModel && window.api?.live2dGetModel);
   }
 
+  function isGateOpen() {
+    const gate = document.getElementById('auth-gate');
+    return Boolean(gate && !gate.classList.contains('hidden'));
+  }
+
+  function isMountedReady() {
+    const host = document.getElementById('auth-live2d-host');
+    return Boolean(
+      app
+      && model
+      && hostEl === host
+      && host?.classList.contains('auth-live2d-host--ready')
+      && canvas?.isConnected,
+    );
+  }
+
+  async function wait(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
   async function waitForReady(maxAttempts = 30) {
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       if (ready()) return true;
@@ -50,12 +72,27 @@
     return false;
   }
 
-  async function waitForHostSize(host, maxAttempts = 40) {
+  async function waitForHostSize(host, maxAttempts = 60) {
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       if ((host.clientWidth || 0) > 40 && (host.clientHeight || 0) > 40) return true;
       await wait(50);
     }
     return (host.clientWidth || 0) > 0 && (host.clientHeight || 0) > 0;
+  }
+
+  async function waitForShellVisible(maxAttempts = 80) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (!isGateOpen()) return false;
+      if (document.visibilityState === 'visible') {
+        const host = document.getElementById('auth-live2d-host');
+        if (host) {
+          const rect = host.getBoundingClientRect();
+          if (rect.width > 40 && rect.height > 40) return true;
+        }
+      }
+      await wait(100);
+    }
+    return isGateOpen() && document.visibilityState === 'visible';
   }
 
   function clearEmotionTimer() {
@@ -223,19 +260,26 @@
     hostEl = null;
   }
 
-  async function mount(attempt = 0) {
+  async function doMount(attempt = 0) {
     const gate = document.getElementById('auth-gate');
     const host = document.getElementById('auth-live2d-host');
     if (!gate || gate.classList.contains('hidden') || !host) return;
-    if (app && hostEl === host && host.classList.contains('auth-live2d-host--ready')) return;
+    if (isMountedReady()) return;
 
     if (!(await waitForReady())) {
-      if (attempt < 2) {
+      if (attempt < 3) {
         await wait(250);
-        return mount(attempt + 1);
+        return doMount(attempt + 1);
       }
       host.classList.add('auth-live2d-host--fallback');
       return;
+    }
+
+    if (!(await waitForShellVisible())) {
+      if (attempt < 5) {
+        await wait(200);
+        return doMount(attempt + 1);
+      }
     }
 
     await destroy();
@@ -246,10 +290,10 @@
     try {
       await waitForHostSize(host);
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      if (destroyed || gen !== mountGen) return;
+      if (destroyed || gen !== mountGen || !isGateOpen()) return;
 
       const meta = await window.api.live2dGetModel();
-      if (destroyed || gen !== mountGen) return;
+      if (destroyed || gen !== mountGen || !isGateOpen()) return;
       if (!meta?.ok || !meta.modelUrl) {
         console.warn('[auth-live2d]', meta?.message || 'Модель не найдена');
         host.classList.add('auth-live2d-host--fallback');
@@ -280,10 +324,10 @@
       model = await Promise.race([
         loadPromise,
         new Promise((_, reject) => {
-          window.setTimeout(() => reject(new Error('Таймаут загрузки Live2D')), 60000);
+          window.setTimeout(() => reject(new Error('Таймаут загрузки Live2D')), 25000);
         }),
       ]);
-      if (destroyed || gen !== mountGen) return;
+      if (destroyed || gen !== mountGen || !isGateOpen()) return;
 
       app.stage.addChild(model);
       model.autoUpdate = true;
@@ -303,27 +347,54 @@
       console.warn('[auth-live2d]', err?.message || err);
       await destroy();
       host.classList.add('auth-live2d-host--fallback');
-      if (attempt < 2) {
-        await wait(400 * (attempt + 1));
-        return mount(attempt + 1);
+      if (attempt < 3) {
+        await wait(500 * (attempt + 1));
+        return doMount(attempt + 1);
       }
     }
   }
 
-  function scheduleMount() {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => mount());
+  function mount(attempt = 0) {
+    if (mountInFlight) return mountInFlight;
+    mountInFlight = doMount(attempt).finally(() => {
+      mountInFlight = null;
     });
+    return mountInFlight;
   }
 
-  function wait(ms) {
-    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  function scheduleMount() {
+    if (scheduleTimer) window.clearTimeout(scheduleTimer);
+    scheduleTimer = window.setTimeout(() => {
+      scheduleTimer = 0;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => mount());
+      });
+    }, 80);
   }
+
+  function ensureVisible() {
+    if (!isGateOpen()) return;
+    if (isMountedReady()) {
+      fitModel();
+      app?.render?.();
+      return;
+    }
+    scheduleMount();
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') ensureVisible();
+  });
+
+  window.addEventListener('focus', () => {
+    ensureVisible();
+  });
 
   window.AuthLive2d = {
     mount,
     scheduleMount,
     destroy,
+    ensureVisible,
     reactError,
     reactSuccess,
     reactNeutral,

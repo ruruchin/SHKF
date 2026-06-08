@@ -1,6 +1,6 @@
 {
   "name": "shkf",
-  "version": "1.2.25",
+  "version": "1.2.26",
   "description": "SHKF — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",
@@ -26,7 +26,6 @@
     "seed:supabase": "node supabase/seed-users.mjs",
     "seed:employees": "node supabase/seed-employees.mjs",
     "seed:app-users": "node supabase/seed-app-users.mjs",
-    "seed:test-user": "node supabase/seed-test-user.mjs",
     "pik-folder:build-mobbin": "node scripts/build-pik-folder-mobbin-catalog.mjs",
     "ml:export-dataset": "node scripts/export-agent-training-dataset.mjs",
     "ml:export-chat": "node scripts/export-konstancia-chat-dataset.mjs",

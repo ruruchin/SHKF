@@ -20,7 +20,7 @@
   background: var(--shell);
 }
 
-[data-theme="mobbin"] .sidebar {
+[data-theme="mobbin"] .sidebar:not(.sidebar-rail) {
   width: 232px;
   padding: 14px 10px;
   border: none;
@@ -29,6 +29,23 @@
   background: var(--sidebar);
   box-shadow: none;
   backdrop-filter: none;
+}
+
+[data-theme="mobbin"] .sidebar.sidebar-rail {
+  width: var(--sidebar-rail-w, 56px);
+  min-width: var(--sidebar-rail-w, 56px);
+  padding: 10px 6px 8px;
+  border: none;
+  border-right: none;
+  border-radius: var(--sidebar-rail-radius, 28px);
+  background: var(--sidebar-rail-bg, #fff);
+  box-shadow: var(--sidebar-rail-shadow);
+}
+
+[data-theme="mobbin"] .sidebar.sidebar-rail.is-expanded {
+  width: var(--sidebar-rail-expanded-w, 200px);
+  padding: 12px 8px 10px;
+  border-radius: var(--sidebar-rail-radius-expanded, 22px);
 }
 
 
