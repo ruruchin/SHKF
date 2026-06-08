@@ -31,18 +31,6 @@
   backdrop-filter: none;
 }
 
-[data-theme="mobbin"] .sidebar.sidebar-rail {
-  width: var(--sidebar-rail-w, 52px);
-  padding: 8px 4px 6px;
-  margin-right: 0;
-  border-right: 1px solid var(--border);
-  border-radius: 0;
-}
-
-[data-theme="mobbin"] .sidebar.sidebar-rail.is-expanded {
-  width: var(--sidebar-rail-expanded-w, 196px);
-  padding: 10px 8px 8px;
-}
 
 [data-theme="mobbin"] .panel {
   border: none;

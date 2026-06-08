@@ -53,7 +53,7 @@
     if (profile) {
       window.AuthLive2d?.destroy?.();
     } else {
-      window.AuthLive2d?.mount?.();
+      window.AuthLive2d?.scheduleMount?.() || window.AuthLive2d?.mount?.();
     }
 
     const chip = $('settings-auth-chip');

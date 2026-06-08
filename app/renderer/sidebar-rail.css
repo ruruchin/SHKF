@@ -1,25 +1,52 @@
-/* Icon rail sidebar — Mobbin-style narrow nav with optional expand */
+/* Floating pill icon rail — unified nav chrome for all themes */
 
 :root {
-  --sidebar-rail-w: 52px;
-  --sidebar-rail-expanded-w: 196px;
+  --sidebar-rail-w: 56px;
+  --sidebar-rail-expanded-w: 200px;
   --sidebar-rail-icon: 36px;
+  --sidebar-rail-radius: 28px;
+  --sidebar-rail-radius-expanded: 22px;
+  --sidebar-rail-bg: #ffffff;
+  --sidebar-rail-border: rgba(15, 23, 42, 0.08);
+  --sidebar-rail-shadow: 0 4px 24px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --sidebar-rail-fg: #3f3f46;
+  --sidebar-rail-fg-muted: #a1a1aa;
+  --sidebar-rail-divider: rgba(15, 23, 42, 0.08);
+  --sidebar-rail-hover: rgba(15, 23, 42, 0.05);
+  --sidebar-rail-active-bg: color-mix(in srgb, var(--accent, #f97316) 10%, #ffffff);
+  --sidebar-rail-active-border: color-mix(in srgb, var(--accent, #f97316) 48%, #f5d0b8);
+}
+
+.shell:has(.sidebar-rail) {
+  gap: 10px;
 }
 
 .sidebar-rail {
   width: var(--sidebar-rail-w);
-  padding: 8px 4px 6px;
-  margin-right: 0;
-  border-radius: 0;
-  background: color-mix(in srgb, var(--panel) 92%, var(--shell));
-  border: none;
-  border-right: 1px solid var(--border);
-  transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1), padding 0.28s ease;
+  flex-shrink: 0;
+  align-self: stretch;
+  margin: 0;
+  padding: 10px 6px 8px;
+  border-radius: var(--sidebar-rail-radius);
+  background: var(--sidebar-rail-bg);
+  border: 1px solid var(--sidebar-rail-border);
+  border-right: none;
+  box-shadow: var(--sidebar-rail-shadow);
+  color: var(--sidebar-rail-fg);
+  transition:
+    width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    padding 0.28s ease,
+    border-radius 0.28s ease;
   overflow: hidden;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background-image: none;
 }
 
 .sidebar-rail.is-expanded {
   width: var(--sidebar-rail-expanded-w);
+  border-radius: var(--sidebar-rail-radius-expanded);
+  padding: 12px 8px 10px;
 }
 
 .sidebar-rail-top {
@@ -49,6 +76,9 @@
   display: none;
   font-size: 14px;
   letter-spacing: 0.08em;
+  color: var(--sidebar-rail-fg);
+  background: none;
+  -webkit-text-fill-color: currentColor;
 }
 
 .sidebar-rail.is-expanded .brand {
@@ -91,8 +121,8 @@
 .sidebar-rail.is-expanded .sidebar-user-card {
   margin: 0 4px;
   padding: 8px 10px;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--elevated) 55%, transparent);
+  border: 1px solid var(--sidebar-rail-border);
+  background: rgba(15, 23, 42, 0.03);
   justify-content: flex-start;
   border-radius: 14px;
 }
@@ -119,6 +149,15 @@
   width: 38px;
   height: 38px;
   flex-basis: 38px;
+}
+
+.sidebar-rail .sidebar-user-name {
+  color: var(--sidebar-rail-fg);
+}
+
+.sidebar-rail .sidebar-user-position,
+.sidebar-rail .sidebar-user-chevron {
+  color: var(--sidebar-rail-fg-muted);
 }
 
 .sidebar-rail .sidebar-update-wrap {
@@ -154,6 +193,7 @@
 .sidebar-rail .nav-group-label {
   display: none;
   padding: 8px 12px 4px;
+  color: var(--sidebar-rail-fg-muted);
 }
 
 .sidebar-rail.is-expanded .nav-group-label {
@@ -168,6 +208,8 @@
 .sidebar-rail .nav-divider {
   width: calc(var(--sidebar-rail-icon) - 8px);
   margin: 6px auto;
+  background: var(--sidebar-rail-divider);
+  opacity: 1;
 }
 
 .sidebar-rail:not(.is-expanded) .nav-item {
@@ -179,8 +221,8 @@
   min-height: 0;
   padding: 0;
   margin: 0 auto 3px;
-  border-radius: 10px;
-  border: 1px solid transparent;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
 }
 
 .sidebar-rail .nav-item {
@@ -191,8 +233,9 @@
   min-height: var(--sidebar-rail-icon);
   padding: 0;
   margin-bottom: 3px;
-  border-radius: 10px;
-  border: 1px solid transparent;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  color: var(--sidebar-rail-fg-muted);
 }
 
 .sidebar-rail.is-expanded .nav-group {
@@ -216,7 +259,7 @@
 
 .sidebar-rail:not(.is-expanded) .sidebar-user-card:hover,
 .sidebar-rail:not(.is-expanded) .sidebar-user-card.is-empty:hover {
-  background: color-mix(in srgb, var(--text) 5%, transparent);
+  background: var(--sidebar-rail-hover);
   border: none;
   transform: none;
 }
@@ -251,6 +294,8 @@
 .sidebar-rail .nav-item .nav-icon {
   width: 20px;
   height: 20px;
+  opacity: 0.85;
+  color: var(--sidebar-rail-fg-muted);
 }
 
 .sidebar-rail .nav-item .nav-item-avatar,
@@ -269,31 +314,25 @@
 }
 
 .sidebar-rail .nav-item:hover:not(.active) {
-  background: color-mix(in srgb, var(--text) 5%, transparent);
+  background: var(--sidebar-rail-hover);
+  border-color: transparent;
+  color: var(--sidebar-rail-fg);
   transform: none;
+  box-shadow: none;
 }
 
 .sidebar-rail .nav-item.active {
   font-weight: 600;
-  background: color-mix(in srgb, var(--text) 8%, var(--panel));
-  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  background: var(--sidebar-rail-active-bg);
+  border-color: var(--sidebar-rail-active-border);
   box-shadow: none;
-  color: var(--text);
+  color: var(--sidebar-rail-fg);
 }
 
-[data-theme="mobbin"] .sidebar-rail .nav-item.active {
-  background: color-mix(in srgb, var(--brand-accent) 10%, #fff);
-  border-color: color-mix(in srgb, var(--brand-accent) 18%, var(--border));
-  color: var(--brand-ink);
-}
-
-.sidebar-rail .nav-item.active svg {
+.sidebar-rail .nav-item.active svg,
+.sidebar-rail .nav-item.active .nav-icon {
   opacity: 1;
-  color: var(--text);
-}
-
-[data-theme="mobbin"] .sidebar-rail .nav-item.active svg {
-  color: var(--brand-accent);
+  color: var(--sidebar-rail-fg);
 }
 
 .sidebar-rail .nav-item-badge {
@@ -304,7 +343,7 @@
   height: 8px;
   border-radius: 999px;
   background: #3b82f6;
-  border: 2px solid var(--panel);
+  border: 2px solid var(--sidebar-rail-bg);
   pointer-events: none;
 }
 
@@ -323,7 +362,7 @@
   gap: 6px;
   margin-top: auto;
   padding-top: 8px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--sidebar-rail-divider);
 }
 
 .sidebar-rail.is-expanded .sidebar-rail-footer {
@@ -341,14 +380,14 @@
   border: none;
   border-radius: 12px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--sidebar-rail-fg-muted);
   cursor: pointer;
   transition: background 0.16s ease, color 0.16s ease;
 }
 
 .sidebar-rail-foot-btn:hover {
-  background: color-mix(in srgb, var(--text) 6%, transparent);
-  color: var(--text);
+  background: var(--sidebar-rail-hover);
+  color: var(--sidebar-rail-fg);
 }
 
 .sidebar-rail.is-expanded #sidebar-rail-toggle svg {
@@ -364,8 +403,8 @@
   transform: translateY(-50%) translateX(-4px);
   padding: 6px 10px;
   border-radius: 10px;
-  background: var(--text);
-  color: var(--panel);
+  background: #18181b;
+  color: #fafafa;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -391,8 +430,8 @@
   transform: translateY(-50%);
   padding: 6px 10px;
   border-radius: 10px;
-  background: var(--text);
-  color: var(--panel);
+  background: #18181b;
+  color: #fafafa;
   font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
@@ -405,6 +444,95 @@
 .sidebar-rail:not(.is-expanded) .sidebar-user-card[data-tooltip]:hover::after {
   opacity: 1;
   visibility: visible;
+}
+
+/* ——— Theme resets: same pill in every theme ——— */
+[data-theme] .sidebar.sidebar-rail,
+[data-theme^="custom-"] .sidebar.sidebar-rail {
+  background: var(--sidebar-rail-bg);
+  background-image: none;
+  border: 1px solid var(--sidebar-rail-border);
+  border-right: none;
+  box-shadow: var(--sidebar-rail-shadow);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-theme="mobbin"] .shell:has(.sidebar-rail) {
+  padding: 10px 0 10px 10px;
+  gap: 10px;
+}
+
+[data-theme="mobbin"] .sidebar.sidebar-rail {
+  border-right: none;
+  border-radius: var(--sidebar-rail-radius);
+}
+
+[data-theme="studio"] .sidebar.sidebar-rail {
+  padding: 10px 6px 8px;
+  border-radius: var(--sidebar-rail-radius);
+}
+
+[data-theme="studio"] .sidebar.sidebar-rail.is-expanded {
+  padding: 12px 8px 10px;
+  border-radius: var(--sidebar-rail-radius-expanded);
+}
+
+[data-theme="anime"] .sidebar.sidebar-rail .brand-name,
+[data-theme="manga"] .sidebar.sidebar-rail .brand-name,
+[data-theme="mangaplus"] .sidebar.sidebar-rail .brand-name,
+[data-theme^="custom-"] .sidebar.sidebar-rail .brand-name {
+  color: var(--sidebar-rail-fg);
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+[data-theme="studio"] .sidebar.sidebar-rail .nav-item.active,
+[data-theme="manga"] .sidebar.sidebar-rail .nav-item.active,
+[data-theme="mangaplus"] .sidebar.sidebar-rail .nav-item.active,
+[data-theme="anime"] .sidebar.sidebar-rail .nav-item.active,
+[data-theme="mobbin"] .sidebar.sidebar-rail .nav-item.active,
+[data-theme^="custom-"] .sidebar.sidebar-rail .nav-item.active {
+  background: var(--sidebar-rail-active-bg);
+  border: 1.5px solid var(--sidebar-rail-active-border);
+  color: var(--sidebar-rail-fg);
+  box-shadow: none;
+}
+
+[data-theme="studio"] .sidebar.sidebar-rail .nav-item.active svg,
+[data-theme="manga"] .sidebar.sidebar-rail .nav-item.active svg,
+[data-theme="mangaplus"] .sidebar.sidebar-rail .nav-item.active svg,
+[data-theme="anime"] .sidebar.sidebar-rail .nav-item.active svg,
+[data-theme="mobbin"] .sidebar.sidebar-rail .nav-item.active svg,
+[data-theme^="custom-"] .sidebar.sidebar-rail .nav-item.active svg {
+  color: var(--sidebar-rail-fg);
+  opacity: 1;
+}
+
+[data-theme="manga"] .sidebar.sidebar-rail .nav-item:hover:not(.active),
+[data-theme="mangaplus"] .sidebar.sidebar-rail .nav-item:hover:not(.active),
+[data-theme="anime"] .sidebar.sidebar-rail .nav-item:hover:not(.active),
+[data-theme^="custom-"] .sidebar.sidebar-rail .nav-item:hover:not(.active) {
+  background: var(--sidebar-rail-hover);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+[data-theme="mobbin"] .sidebar.sidebar-rail:not(.is-expanded) .sidebar-user-card,
+[data-theme="mobbin"] .sidebar.sidebar-rail:not(.is-expanded) .sidebar-user-card:hover {
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+[data-theme="studio"] .sidebar.sidebar-rail .nav-item::before {
+  display: none;
+}
+
+[data-theme="studio"] .sidebar.sidebar-rail .nav-item:hover:not(.active) {
+  transform: none;
 }
 
 html[data-no-anim] .sidebar-rail,

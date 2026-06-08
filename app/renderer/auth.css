@@ -88,9 +88,19 @@
 }
 
 .auth-live2d-canvas {
+  position: relative;
+  z-index: 2;
   display: block;
   width: 100% !important;
   height: 100% !important;
+}
+
+.auth-live2d-host--ready {
+  background: transparent;
+}
+
+.auth-live2d-host--fallback::after {
+  z-index: 1;
 }
 
 .auth-card {

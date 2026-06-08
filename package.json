@@ -1,6 +1,6 @@
 {
   "name": "shkf",
-  "version": "1.2.23",
+  "version": "1.2.24",
   "description": "SHKF — hotkeys, Make and templates for Figma",
   "type": "module",
   "main": "app/main.js",
@@ -15,6 +15,10 @@
     "build": "node scripts/electron-build.js nsis",
     "build:portable": "node scripts/electron-build.js portable",
     "build:all": "node scripts/electron-build.js all",
+    "build:linux": "bash scripts/linux-build.sh",
+    "build:linux:appimage": "bash scripts/linux-build.sh appimage",
+    "build:linux:deb": "bash scripts/linux-build.sh deb",
+    "build:linux:docker": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/linux-build-docker.ps1",
     "server": "node server/index.js",
     "site:dev": "npm --prefix site run dev",
     "site:build": "npm --prefix site run build",
@@ -130,6 +134,52 @@
       "shortcutName": "SHKF",
       "artifactName": "SHKF-Setup-${version}.exe",
       "deleteAppDataOnUninstall": false
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Utility",
+      "icon": "app/renderer/assets/brand/logo.png",
+      "artifactName": "SHKF-${version}-${arch}.${ext}",
+      "executableName": "shkf",
+      "synopsis": "SHKF — hotkeys, Make and templates for Figma",
+      "description": "SHKF desktop app with Konstancia agent, Kanban, and Figma tools.",
+      "desktop": {
+        "Name": "SHKF",
+        "Comment": "SHKF — hotkeys, Make and templates for Figma",
+        "Categories": "Utility;Development;",
+        "StartupWMClass": "SHKF"
+      }
+    },
+    "deb": {
+      "packageName": "shkf",
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libdrm2",
+        "libgbm1",
+        "libasound2"
+      ]
+    },
+    "appImage": {
+      "artifactName": "SHKF-${version}-${arch}.AppImage"
     }
   },
   "dependencies": {

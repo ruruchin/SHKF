@@ -1,0 +1,78 @@
+name: Build Linux installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'AppImage, deb, or both'
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - appimage
+          - deb
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      - name: Rebuild native modules for Electron
+        run: npx electron-builder install-app-deps
+
+      - name: Cache electron-builder binaries
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: ${{ runner.os }}-electron-builder-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-electron-builder-
+
+      - name: Resolve build target
+        id: target
+        run: |
+          case "${{ inputs.target }}" in
+            appimage) echo "linux_target=AppImage" >> "$GITHUB_OUTPUT" ;;
+            deb) echo "linux_target=deb" >> "$GITHUB_OUTPUT" ;;
+            *) echo "linux_target=AppImage deb" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Build Linux packages
+        run: npx electron-builder --linux ${{ steps.target.outputs.linux_target }} --publish never
+
+      - name: List release artifacts
+        run: ls -lh release/
+
+      - name: Upload AppImage
+        if: inputs.target == 'all' || inputs.target == 'appimage'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shkf-linux-appimage
+          path: release/*.AppImage
+          if-no-files-found: error
+
+      - name: Upload deb
+        if: inputs.target == 'all' || inputs.target == 'deb'
+        uses: actions/upload-artifact@v4
+        with:
+          name: shkf-linux-deb
+          path: release/*.deb
+          if-no-files-found: error

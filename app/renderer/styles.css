@@ -361,8 +361,8 @@ body {
 }
 
 .sidebar.sidebar-rail {
-  width: var(--sidebar-rail-w, 52px);
-  padding: 8px 4px 6px;
+  width: var(--sidebar-rail-w, 56px);
+  padding: 10px 6px 8px;
 }
 
 .main-wrap {

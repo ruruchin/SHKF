@@ -27,8 +27,35 @@
     neutral: [],
   };
 
+  const PIXI = window.PIXI;
+  const live2d = PIXI?.live2d;
+  const Live2DModel = live2d?.Live2DModel;
+
+  try {
+    live2d?.startUpCubism4?.({ logFunction: () => {} });
+    if (Live2DModel && PIXI?.Ticker) Live2DModel.registerTicker(PIXI.Ticker);
+  } catch (err) {
+    console.warn('[auth-live2d] Cubism init:', err?.message || err);
+  }
+
   function ready() {
-    return Boolean(window.Live2DCubismCore && window.PIXI?.live2d?.Live2DModel && window.api?.live2dGetModel);
+    return Boolean(window.Live2DCubismCore && Live2DModel && window.api?.live2dGetModel);
+  }
+
+  async function waitForReady(maxAttempts = 30) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if (ready()) return true;
+      await wait(100);
+    }
+    return false;
+  }
+
+  async function waitForHostSize(host, maxAttempts = 40) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      if ((host.clientWidth || 0) > 40 && (host.clientHeight || 0) > 40) return true;
+      await wait(50);
+    }
+    return (host.clientWidth || 0) > 0 && (host.clientHeight || 0) > 0;
   }
 
   function clearEmotionTimer() {
@@ -196,15 +223,20 @@
     hostEl = null;
   }
 
-  async function mount() {
+  async function mount(attempt = 0) {
     const gate = document.getElementById('auth-gate');
     const host = document.getElementById('auth-live2d-host');
     if (!gate || gate.classList.contains('hidden') || !host) return;
-    if (!ready()) {
+    if (app && hostEl === host && host.classList.contains('auth-live2d-host--ready')) return;
+
+    if (!(await waitForReady())) {
+      if (attempt < 2) {
+        await wait(250);
+        return mount(attempt + 1);
+      }
       host.classList.add('auth-live2d-host--fallback');
       return;
     }
-    if (app && hostEl === host) return;
 
     await destroy();
     destroyed = false;
@@ -212,23 +244,17 @@
     const gen = ++mountGen;
 
     try {
+      await waitForHostSize(host);
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      if (destroyed || gen !== mountGen) return;
+
       const meta = await window.api.live2dGetModel();
       if (destroyed || gen !== mountGen) return;
       if (!meta?.ok || !meta.modelUrl) {
+        console.warn('[auth-live2d]', meta?.message || 'Модель не найдена');
         host.classList.add('auth-live2d-host--fallback');
         return;
       }
-
-      const PIXI = window.PIXI;
-      const Live2DModel = PIXI.live2d.Live2DModel;
-      PIXI.live2d.startUpCubism4?.({ logFunction: () => {} });
-      Live2DModel.registerTicker(PIXI.Ticker);
-
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      if (destroyed || gen !== mountGen) return;
-
-      const width = Math.max(host.clientWidth, 360);
-      const height = Math.max(host.clientHeight, 480);
 
       canvas = document.createElement('canvas');
       canvas.className = 'auth-live2d-canvas';
@@ -240,30 +266,54 @@
         antialias: true,
         autoDensity: true,
         resolution: Math.min(window.devicePixelRatio || 1, 2),
-        width,
-        height,
+        resizeTo: host,
       });
-      if (app && !app.cancelResize) app.cancelResize = () => {};
+      if (!app?.stage) throw new Error('Pixi Application не инициализировался');
+      if (!app.cancelResize) app.cancelResize = () => {};
 
-      model = await Live2DModel.from(meta.modelUrl);
+      if (live2d?.cubism4Ready) await live2d.cubism4Ready;
+
+      const loadPromise = Live2DModel.from(meta.modelUrl, {
+        autoInteract: false,
+        autoUpdate: false,
+      });
+      model = await Promise.race([
+        loadPromise,
+        new Promise((_, reject) => {
+          window.setTimeout(() => reject(new Error('Таймаут загрузки Live2D')), 60000);
+        }),
+      ]);
       if (destroyed || gen !== mountGen) return;
 
       app.stage.addChild(model);
+      model.autoUpdate = true;
       bindModelUpdate();
       bindCursorTracking();
       fitModel();
       playIdle();
+      app.render();
 
       resizeObserver = new ResizeObserver(() => fitModel());
       resizeObserver.observe(host);
 
       host.classList.add('auth-live2d-host--ready');
       host.classList.remove('auth-live2d-host--fallback');
+      host.removeAttribute('aria-hidden');
     } catch (err) {
       console.warn('[auth-live2d]', err?.message || err);
-      host.classList.add('auth-live2d-host--fallback');
       await destroy();
+      host.classList.add('auth-live2d-host--fallback');
+      if (attempt < 2) {
+        await wait(400 * (attempt + 1));
+        return mount(attempt + 1);
+      }
     }
+  }
+
+  function scheduleMount() {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => mount());
+    });
   }
 
   function wait(ms) {
@@ -272,6 +322,7 @@
 
   window.AuthLive2d = {
     mount,
+    scheduleMount,
     destroy,
     reactError,
     reactSuccess,
