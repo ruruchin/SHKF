@@ -38,6 +38,15 @@
   height: 100%;
 }
 
+.agent-layout--with-side {
+  flex-direction: row;
+}
+
+.agent-layout--with-side .agent-main {
+  flex: 1;
+  min-width: 0;
+}
+
 .agent-sidebar {
   width: 272px;
   flex-shrink: 0;
@@ -2342,13 +2351,73 @@ body.agent-settings-open #agent-settings-menu {
 
 .agent-followup:hover:not(:disabled) {
   transform: translateY(-1px);
-  border-color: rgba(232, 93, 59, 0.3);
+  border-color: rgba(18, 18, 18, 0.16);
   box-shadow: 0 4px 16px rgba(18, 18, 18, 0.06);
 }
 
 .agent-followup:hover:not(:disabled) .agent-followup-icon {
+  background: rgba(18, 18, 18, 0.08);
+  color: var(--agent-ink);
+}
+
+.agent-followup--task {
+  border-left: 3px solid rgba(232, 93, 59, 0.55);
+}
+
+.agent-followup--task:hover:not(:disabled) {
+  border-color: rgba(232, 93, 59, 0.35);
+}
+
+.agent-followup--task:hover:not(:disabled) .agent-followup-icon {
   background: var(--agent-accent);
   color: #fff;
+}
+
+.agent-followup--music {
+  border-left: 3px solid #ffcc00;
+}
+
+.agent-followup--music:hover:not(:disabled) {
+  border-color: rgba(255, 204, 0, 0.45);
+}
+
+.agent-followup--music:hover:not(:disabled) .agent-followup-icon {
+  background: #ffcc00;
+  color: #121212;
+}
+
+.agent-followup--resource {
+  border-left: 3px solid #3b82f6;
+}
+
+.agent-followup--resource:hover:not(:disabled) {
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.agent-followup--resource:hover:not(:disabled) .agent-followup-icon {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.agent-followup--chat {
+  border-left: 3px solid rgba(18, 18, 18, 0.12);
+}
+
+.agent-followup--team {
+  border-left: 3px solid #6366f1;
+}
+
+.agent-followup--team:hover:not(:disabled) {
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+.agent-followup--team:hover:not(:disabled) .agent-followup-icon {
+  background: #6366f1;
+  color: #fff;
+}
+
+.agent-followup--chat:hover:not(:disabled) {
+  border-color: rgba(18, 18, 18, 0.2);
 }
 
 .agent-followup:active:not(:disabled) {
@@ -3105,6 +3174,22 @@ body.agent-settings-open #agent-settings-menu {
 
 [data-theme="dark"] .agent-followup {
   background: #242424;
+}
+
+[data-theme="dark"] .agent-followup--chat {
+  border-left-color: rgba(245, 245, 244, 0.14);
+}
+
+[data-theme="dark"] .agent-followup--task {
+  border-left-color: rgba(232, 93, 59, 0.65);
+}
+
+[data-theme="dark"] .agent-followup--music {
+  border-left-color: #ffcc00;
+}
+
+[data-theme="dark"] .agent-followup--resource {
+  border-left-color: #60a5fa;
 }
 
 [data-theme="dark"] .agent-md-pre {

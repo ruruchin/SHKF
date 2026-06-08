@@ -11,6 +11,7 @@ import { copyTemplateToClipboard, copyUserTemplateToClipboard } from './template
 import { UserLibrary } from './user-library.js';
 import { CustomThemeStore } from './custom-theme-store.js';
 import { NotesStore } from './notes-store.js';
+import { AgentCalendarStore } from './agent-calendar-store.js';
 import { normalizeConfig, patchSettings, DEFAULT_APP_SETTINGS, prepareSettingsForDisk } from '../shared/app-settings.js';
 import { normalizeCustomTheme, isCustomThemeId } from '../shared/custom-themes.js';
 import { mergeBannerMockupConfig, buildPresetsWithTemplates } from '../shared/banner-mockups.js';
@@ -42,12 +43,13 @@ function keysMatch(required, down) {
 }
 
 export class HotkeyService extends EventEmitter {
-  constructor(configPath, userLibraryPaths, customThemeAssetsDir, notesLibraryPath) {
+  constructor(configPath, userLibraryPaths, customThemeAssetsDir, notesLibraryPath, agentCalendarPath) {
     super();
     this.configPath = configPath;
     this.userLibrary = new UserLibrary(userLibraryPaths.libraryPath, userLibraryPaths.assetsDir);
     this.customThemes = new CustomThemeStore(customThemeAssetsDir);
     this.notesStore = new NotesStore(notesLibraryPath);
+    this.calendarStore = new AgentCalendarStore(agentCalendarPath);
     this.config = this.loadConfig();
     this.listener = null;
     this.running = false;
@@ -527,6 +529,22 @@ export class HotkeyService extends EventEmitter {
   deleteNote(id) {
     const result = this.notesStore.deleteNote(id);
     this.emit('notes-updated', this.notesStore.getAll());
+    return result;
+  }
+
+  listCalendarEvents(options = {}) {
+    return this.calendarStore.list(options);
+  }
+
+  upsertCalendarEvent(payload) {
+    const item = this.calendarStore.upsert(payload);
+    this.emit('agent-calendar-updated', this.calendarStore.list());
+    return item;
+  }
+
+  deleteCalendarEvent(id) {
+    const result = this.calendarStore.delete(id);
+    this.emit('agent-calendar-updated', this.calendarStore.list());
     return result;
   }
 

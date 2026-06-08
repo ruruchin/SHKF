@@ -42,6 +42,13 @@ export function getCustomThemeAssetsDir(appDir) {
   return path.join(base, 'custom-theme-assets');
 }
 
+export function getAgentCalendarPath(appDir) {
+  const base = app.isPackaged
+    ? app.getPath('userData')
+    : path.join(appDir, '..', 'config');
+  return path.join(base, 'agent-calendar.json');
+}
+
 export function getNotesLibraryPath(appDir) {
   const base = app.isPackaged
     ? app.getPath('userData')

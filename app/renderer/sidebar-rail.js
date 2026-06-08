@@ -18,7 +18,6 @@
     mail: 'Почта',
     github: 'GitHub',
     outline: 'Outline',
-    notes: 'Записи',
     setup: 'Figma',
     settings: 'Настройки',
   };

@@ -412,14 +412,66 @@
       || t === QUICK.split;
   }
 
+  function isTaskCommentFollowupText(text) {
+    const t = String(text || '');
+    return /уточн|заказчик|вопрос\w*\s+заказчик|риск|оцен|разбить|с\s+чего\s+начать|промпт|баннер|лендинг|figma\s*make|прочитай\s+описание\s+задач/i.test(t)
+      || t === QUICK.analyze
+      || t === QUICK.split;
+  }
+
+  function formatColleagueSendLabel(profile = {}) {
+    const name = String(profile.full_name || '').trim();
+    const username = String(profile.username || '').trim();
+    if (name && username) return `Отправить · ${name} (@${username})`;
+    if (name) return `Отправить · ${name}`;
+    if (username) return `Отправить · @${username}`;
+    return 'Отправить · коллеге';
+  }
+
+  function findTeamMessageCandidate(label, teamMessagePending) {
+    if (!teamMessagePending?.candidates?.length) return null;
+    return teamMessagePending.candidates.find((profile) => formatColleagueSendLabel(profile) === label) || null;
+  }
+
+  function classifyFollowupKind(text, hasTask, teamMessagePending = null) {
+    const raw = String(text || '').trim();
+    if (!raw || /^отмена$/i.test(raw)) return 'chat';
+    if (/^да\s*[—-]\s*включить/i.test(raw)) return 'music';
+    if (/^да\s*[—-]\s*открыть/i.test(raw)) return 'resource';
+    if (/^Отправить\s+·/i.test(raw) || findTeamMessageCandidate(raw, teamMessagePending)) return 'team';
+    if (hasTask && isTaskCommentFollowupText(raw)) return 'task';
+    return 'chat';
+  }
+
   function resolveFollowupsForDisplay(followups, task, showFollowups, options = {}) {
     if (!showFollowups || !followups?.length) {
-      return { followups: null, taskId: null, chatFollowups: false };
+      return { followups: null, taskId: null, chatFollowups: false, teamMessagePending: null };
     }
-    if (options.chatFollowups || !task?.id) {
-      return { followups: followups.slice(0, 3), taskId: null, chatFollowups: true };
+    const limit = options.teamMessagePending ? 5 : 3;
+    const sliced = followups.slice(0, limit);
+    if (options.chatFollowups || options.teamMessagePending || !task?.id) {
+      return {
+        followups: sliced,
+        taskId: null,
+        chatFollowups: true,
+        teamMessagePending: options.teamMessagePending || null,
+      };
     }
-    return { followups: followups.slice(0, 3), taskId: task.id, chatFollowups: false };
+    const hasTaskComments = sliced.some((q) => classifyFollowupKind(q, true) === 'task');
+    if (hasTaskComments) {
+      return {
+        followups: sliced,
+        taskId: task.id,
+        chatFollowups: false,
+        teamMessagePending: null,
+      };
+    }
+    return {
+      followups: sliced,
+      taskId: null,
+      chatFollowups: true,
+      teamMessagePending: options.teamMessagePending || null,
+    };
   }
 
   function $(id) {
@@ -2054,15 +2106,45 @@
     });
   }
 
-  function buildFollowupsHtml(followups, taskId, animate = true, chatFollowups = false) {
+  function buildFollowupsHtml(followups, taskId, animate = true, teamMessagePending = null) {
     if (!followups?.length) return '';
-    const tid = chatFollowups ? 0 : (Number(taskId) || 0);
+    const tid = Number(taskId) || 0;
     const sendIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>';
-    const items = followups.slice(0, 3).map((q, idx) => {
-      const attr = chatFollowups ? 'data-agent-chat-prompt' : 'data-agent-task-comment';
+    const chatIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>';
+    const musicIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>';
+    const resourceIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+    const teamIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>';
+    const kindIcons = { task: sendIcon, chat: chatIcon, music: musicIcon, resource: resourceIcon, team: teamIcon };
+    const kindTitles = {
+      task: 'Отправить в комментарий задачи Redmine',
+      chat: 'Отправить в чат Konstancia',
+      music: 'Включить в Яндекс Музыке',
+      resource: 'Открыть на компьютере',
+      team: 'Отправить личное сообщение коллеге от вашего имени',
+    };
+    const items = followups.map((q, idx) => {
+      const kind = classifyFollowupKind(q, tid > 0, teamMessagePending);
+      let dataAttr = '';
+      if (kind === 'task') {
+        dataAttr = `data-agent-task-comment="${escapeAttr(q)}" data-agent-task-id="${tid}"`;
+      } else if (kind === 'music') {
+        dataAttr = `data-agent-music-action="${escapeAttr(q)}"`;
+      } else if (kind === 'resource') {
+        dataAttr = `data-agent-resource-action="${escapeAttr(q)}"`;
+      } else if (kind === 'team') {
+        const candidate = findTeamMessageCandidate(q, teamMessagePending);
+        if (candidate) {
+          dataAttr = `data-agent-team-send-recipient="${escapeAttr(candidate.id)}" data-agent-team-send-body="${escapeAttr(teamMessagePending?.body || '')}"`;
+        } else {
+          dataAttr = `data-agent-chat-prompt="${escapeAttr(q)}"`;
+        }
+      } else {
+        dataAttr = `data-agent-chat-prompt="${escapeAttr(q)}"`;
+      }
+      const effectiveKind = kind === 'team' && !dataAttr.includes('data-agent-team-send-recipient') ? 'chat' : kind;
       return (
-        `<button type="button" class="agent-followup" ${attr}="${escapeAttr(q)}"${tid ? ` data-agent-task-id="${tid}"` : ''} style="--fu-i:${idx}" title="${escapeAttr(q)}">`
-        + `<span class="agent-followup-icon">${sendIcon}</span>`
+        `<button type="button" class="agent-followup agent-followup--${effectiveKind}" ${dataAttr} style="--fu-i:${idx}" title="${escapeAttr(kindTitles[effectiveKind])}">`
+        + `<span class="agent-followup-icon">${kindIcons[effectiveKind]}</span>`
         + `<span class="agent-followup-text">${escapeHtml(q)}</span>`
         + '</button>'
       );
@@ -3341,14 +3423,17 @@
           prepared.followups,
           task,
           msg.showFollowups === true,
-          { chatFollowups: msg.chatFollowups === true },
+          {
+            chatFollowups: msg.chatFollowups === true,
+            teamMessagePending: msg.teamMessagePending || null,
+          },
         );
         addMessage('assistant', enhanceAssistantHtml(prepared.content), msg.meta || null, {
           pushHistory: false,
           animate: false,
           followups: display.followups,
           taskId: display.taskId,
-          chatFollowups: display.chatFollowups,
+          teamMessagePending: display.teamMessagePending,
         });
       }
     });
@@ -3452,7 +3537,7 @@
       pushHistory = true,
       followups = null,
       taskId = null,
-      chatFollowups = false,
+      teamMessagePending = null,
       animate = true,
       learnedChunkIds = null,
     } = opts;
@@ -3477,7 +3562,7 @@
         <div class="${bubbleClass}">${html}</div>
         ${meta ? `<div class="agent-msg-meta">${escapeHtml(meta)}</div>` : ''}
         ${role === 'assistant' ? buildFeedbackHtml(learnedChunkIds) : ''}
-        ${role === 'assistant' ? buildFollowupsHtml(followups, taskId, animate, chatFollowups) : ''}
+        ${role === 'assistant' ? buildFollowupsHtml(followups, taskId, animate, teamMessagePending) : ''}
       </div>`;
 
     messagesEl.appendChild(wrap);
@@ -5336,6 +5421,8 @@
           kanbanTasks: kanbanPayload,
           allowFollowups,
           skipTaskRequirement: options.skipTaskRequirement === true,
+          confirmMusicPlay: options.confirmMusicPlay === true,
+          confirmTeamSend: options.confirmTeamSend || null,
           images,
           role: window.RoleNav?.getRole?.() || null,
         });
@@ -5376,11 +5463,21 @@
           : (result.model
             ? `${isKonstanciaProvider() || String(result.model).includes('konstancia') ? 'Konstancia' : 'GigaChat'} · ${result.model}`
             : null));
+      const forceChatFollowups = isPikRef
+        || !!result.taskOptionalPrompt
+        || !!result.musicAction
+        || !!result.pendingMusicQuery
+        || result.directMeta === 'Яндекс Музыка'
+        || result.directMeta === 'Команда'
+        || !!result.desktopAction;
       const display = resolveFollowupsForDisplay(
         replyFollowups,
         task,
         allowFollowups || !!result.followups?.length || !!result.taskOptionalPrompt,
-        { chatFollowups: isPikRef || !!result.taskOptionalPrompt },
+        {
+          chatFollowups: forceChatFollowups,
+          teamMessagePending: result.teamMessagePending || null,
+        },
       );
 
       const laborHtml = Array.isArray(result.laborEntries) && result.laborEntries.length
@@ -5398,7 +5495,7 @@
       const msgWrap = addMessage('assistant', assistantBody, meta, {
         followups: display.followups,
         taskId: display.taskId,
-        chatFollowups: display.chatFollowups,
+        teamMessagePending: display.teamMessagePending,
         learnedChunkIds: result.learnedChunkIds || null,
         emotionCtx: {
           userText: text,
@@ -5438,13 +5535,17 @@
           }
         }
       }
+      if (result.calendarAction) {
+        window.refreshAgentSidePanel?.();
+      }
       chatHistory.push({
         role: 'assistant',
         content: prepared.content,
         meta,
         followups: prepared.followups,
         taskId: task?.id || null,
-        chatFollowups: isPikRef && !!display.followups?.length,
+        chatFollowups: display.chatFollowups && !!display.followups?.length,
+        teamMessagePending: display.teamMessagePending || null,
         showFollowups: allowFollowups && !!display.followups?.length,
       });
       saveHistory();
@@ -5906,6 +6007,34 @@
       const btn = event.target.closest('[data-agent-task-comment]');
       if (btn && !btn.disabled) {
         postQuestionToRedmine(btn);
+        return;
+      }
+      const musicBtn = event.target.closest('[data-agent-music-action]');
+      if (musicBtn && !musicBtn.disabled) {
+        const action = musicBtn.getAttribute('data-agent-music-action');
+        if (action) sendMessage(action, { confirmMusicPlay: true });
+        return;
+      }
+      const resourceBtn = event.target.closest('[data-agent-resource-action]');
+      if (resourceBtn && !resourceBtn.disabled) {
+        const action = resourceBtn.getAttribute('data-agent-resource-action');
+        if (action) {
+          const cmd = action.replace(/^да\s*[—-]\s*открыть\s+/i, 'открой ');
+          sendMessage(cmd);
+        }
+        return;
+      }
+      const teamBtn = event.target.closest('[data-agent-team-send-recipient]');
+      if (teamBtn && !teamBtn.disabled) {
+        const recipientId = teamBtn.getAttribute('data-agent-team-send-recipient');
+        const body = teamBtn.getAttribute('data-agent-team-send-body');
+        const label = teamBtn.querySelector('.agent-followup-text')?.textContent?.trim() || 'Отправить';
+        if (recipientId && body) {
+          sendMessage(label, {
+            skipTaskRequirement: true,
+            confirmTeamSend: { recipientId, body },
+          });
+        }
         return;
       }
       const chatBtn = event.target.closest('[data-agent-chat-prompt]');

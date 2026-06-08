@@ -8,20 +8,18 @@
   let activeTypeFilter = 'all';
 
   const PAGE_RESULT_LIMIT = 50;
-  const GROUP_ORDER = ['template', 'notes', 'action', 'figma', 'settings'];
+  const GROUP_ORDER = ['template', 'action', 'figma', 'settings'];
 
   const SECTION_LABELS = {
     template: 'Templates',
     figma: 'Figma',
     settings: 'Настройки',
-    notes: 'Записи',
     action: 'Действия',
   };
 
   const FILTER_CHIPS = [
     { id: 'all', label: 'Все' },
     { id: 'template', label: 'Templates' },
-    { id: 'notes', label: 'Записи' },
     { id: 'action', label: 'Действия' },
     { id: 'settings', label: 'Разделы' },
   ];
@@ -38,7 +36,6 @@
     { id: 'page-mail', type: 'settings', title: 'Почта', subtitle: 'Zimbra · веб-почта', keywords: 'mail почта zimbra email письма', page: 'mail' },
     { id: 'page-github', type: 'settings', title: 'GitHub', subtitle: 'Репозитории, PR, code review', keywords: 'github гитхаб git репозиторий pull request pr код review ревью', page: 'github' },
     { id: 'page-outline', type: 'settings', title: 'Outline', subtitle: 'База знаний · документация команды', keywords: 'outline аутлайн документация база знаний wiki вики docs', page: 'outline' },
-    { id: 'page-notes', type: 'notes', title: 'Записи', subtitle: 'Заметки и закладки', keywords: 'notes записи заметки закладки bookmarks блокнот', page: 'notes' },
     { id: 'page-figma', type: 'figma', title: 'Подключение Figma', subtitle: 'Плагин, CDP, запуск', keywords: 'figma подключение плагин cdp', page: 'setup' },
     { id: 'page-settings', type: 'settings', title: 'Настройки', subtitle: 'Тема, порты, окно, Make', keywords: 'настройки тема порт config settings', page: 'settings' },
     { id: 'setting-theme', type: 'settings', title: 'Тема оформления', subtitle: 'Dark, Nord, Dracula, Anime…', keywords: 'theme тема dark light anime nord dracula appearance', page: 'settings' },
@@ -211,10 +208,8 @@
       }
     }
 
-    if (window.RoleNav?.isPageAllowed?.('notes')) {
-      for (const entry of window.getNotesSearchEntries?.() || []) {
-        items.push(entry);
-      }
+    for (const entry of window.getNotesSearchEntries?.() || []) {
+      items.push(entry);
     }
 
     searchIndex = items;
@@ -249,7 +244,6 @@
     if (pageId === 'agent') window.activateAgentPage?.();
     if (pageId === 'mail') window.activateMailPage?.();
     if (pageId === 'github' || pageId === 'outline') window.activateWebtab?.(pageId);
-    if (pageId === 'notes') window.activateNotesPage?.();
     if (pageId === 'pikfolder') window.activatePikFolderPage?.();
   }
 
@@ -260,8 +254,10 @@
 
     navigateToPage(entry.page);
 
-    if (entry.noteId || entry.bookmarkId) {
-      setTimeout(() => window.openNotesEntry?.(entry), 50);
+    if (entry.noteId) {
+      setTimeout(() => window.openAgentNotesEntry?.(entry.noteId), 80);
+    } else if (entry.bookmarkId) {
+      setTimeout(() => window.openAgentNotesEntry?.(entry.bookmarkId, 'bookmark'), 80);
     } else if (entry.hotkeyId && window.openHotkeyDetail) {
       setTimeout(() => window.openHotkeyDetail(entry.hotkeyId), 50);
     } else if (entry.templateId && window.api?.copyTemplate) {

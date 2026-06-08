@@ -1,0 +1,242 @@
+.agent-side-panel {
+  width: min(340px, 34vw);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-left: 1px solid var(--agent-line);
+  background: var(--agent-surface);
+}
+
+.agent-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--agent-line);
+}
+
+.agent-side-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--agent-ink);
+}
+
+.agent-side-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(18, 18, 18, 0.05);
+}
+
+.agent-side-tab {
+  border: 0;
+  background: transparent;
+  color: var(--agent-muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.agent-side-tab.is-active {
+  background: #fff;
+  color: var(--agent-ink);
+  box-shadow: 0 1px 4px rgba(18, 18, 18, 0.08);
+}
+
+.agent-side-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 14px 16px;
+  overflow: hidden;
+}
+
+.agent-side-pane.hidden {
+  display: none;
+}
+
+.agent-side-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.agent-side-add {
+  border: 1px solid var(--agent-line);
+  background: #fff;
+  color: var(--agent-ink);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.agent-side-add:hover {
+  border-color: rgba(232, 93, 59, 0.35);
+}
+
+.agent-side-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-side-empty {
+  margin: 0;
+  padding: 16px 4px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--agent-muted);
+}
+
+.agent-calendar-item {
+  position: relative;
+  padding: 10px 28px 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--agent-line);
+  background: #fff;
+}
+
+.agent-calendar-item-when {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--agent-accent);
+  margin-bottom: 4px;
+}
+
+.agent-calendar-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--agent-ink);
+}
+
+.agent-calendar-item-body {
+  margin: 4px 0 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--agent-muted);
+}
+
+.agent-calendar-item-del {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--agent-muted);
+  cursor: pointer;
+}
+
+.agent-calendar-item-del:hover {
+  background: rgba(232, 93, 59, 0.12);
+  color: var(--agent-accent);
+}
+
+.agent-side-note-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--agent-line);
+  background: #fff;
+  cursor: pointer;
+}
+
+.agent-side-note-item.is-active {
+  border-color: rgba(232, 93, 59, 0.35);
+  box-shadow: 0 2px 10px rgba(18, 18, 18, 0.05);
+}
+
+.agent-side-note-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--agent-ink);
+}
+
+.agent-side-note-preview {
+  font-size: 11px;
+  color: var(--agent-muted);
+  line-height: 1.35;
+}
+
+.agent-side-note-editor {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.agent-side-note-editor.hidden {
+  display: none;
+}
+
+.agent-side-note-editor input,
+.agent-side-note-editor textarea {
+  width: 100%;
+  border: 1px solid var(--agent-line);
+  border-radius: 12px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+  color: var(--agent-ink);
+  box-sizing: border-box;
+}
+
+.agent-side-note-editor textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.agent-layout--with-side .agent-main {
+  margin-right: 0;
+}
+
+.agent-layout--with-side .agent-shell {
+  max-width: min(760px, calc(100% - 24px));
+}
+
+@media (max-width: 1180px) {
+  .agent-side-panel {
+    display: none;
+  }
+
+  .agent-layout--with-side .agent-shell {
+    max-width: min(900px, calc(100% - 32px));
+  }
+}
+
+[data-theme="dark"] .agent-side-panel {
+  background: #1c1c1c;
+}
+
+[data-theme="dark"] .agent-calendar-item,
+[data-theme="dark"] .agent-side-note-item,
+[data-theme="dark"] .agent-side-add,
+[data-theme="dark"] .agent-side-note-editor input,
+[data-theme="dark"] .agent-side-note-editor textarea {
+  background: #242424;
+}
+
+[data-theme="dark"] .agent-side-tab.is-active {
+  background: #2a2a2a;
+}

@@ -104,6 +104,15 @@ contextBridge.exposeInMainWorld('api', {
   teamChatUnpinMessage: (payload) => ipcRenderer.invoke('team-chat-unpin-message', payload),
   teamChatForwardMessage: (payload) => ipcRenderer.invoke('team-chat-forward-message', payload),
   agentSendMessage: (payload) => ipcRenderer.invoke('agent-send-message', payload),
+  agentSendTeamDm: (payload) => ipcRenderer.invoke('agent-send-team-dm', payload),
+  agentCalendarList: (payload) => ipcRenderer.invoke('agent-calendar-list', payload),
+  agentCalendarUpsert: (payload) => ipcRenderer.invoke('agent-calendar-upsert', payload),
+  agentCalendarDelete: (payload) => ipcRenderer.invoke('agent-calendar-delete', payload),
+  onAgentCalendarUpdated: (callback) => {
+    const handler = (_event, payload) => callback?.(payload);
+    ipcRenderer.on('agent-calendar-updated', handler);
+    return () => ipcRenderer.removeListener('agent-calendar-updated', handler);
+  },
   agentPlayYandexMusic: (payload) => ipcRenderer.invoke('agent-play-yandex-music', payload),
   agentPickImage: () => ipcRenderer.invoke('agent-pick-image'),
   agentTestConnection: () => ipcRenderer.invoke('agent-test-connection'),

@@ -390,7 +390,7 @@
         title: n.title || 'Заметка',
         subtitle: stripHtml(n.contentHtml).slice(0, 80) || 'Заметка',
         keywords: `заметки notes ${(n.tags || []).join(' ')}`,
-        page: 'notes',
+        page: 'agent',
         noteId: n.id,
       });
     }
@@ -401,7 +401,7 @@
         title: b.title || 'Закладка',
         subtitle: b.url || 'Закладка',
         keywords: `закладки bookmarks ${(b.tags || []).join(' ')}`,
-        page: 'notes',
+        page: 'agent',
         bookmarkId: b.id,
       });
     }

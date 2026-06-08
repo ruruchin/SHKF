@@ -33,11 +33,11 @@
   };
 
   const ROLE_PAGES = {
-    designer: ['search', 'pikfolder', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'mail', 'agent', 'teamchat', 'notes', 'setup', 'settings'],
-    frontend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'teamchat', 'settings'],
-    backend: ['search', 'metask', 'mail', 'github', 'outline', 'notes', 'agent', 'teamchat', 'settings'],
-    pm: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'teamchat', 'notes', 'settings'],
-    full: ['search', 'pikfolder', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'agent', 'teamchat', 'mail', 'github', 'outline', 'notes', 'setup', 'settings'],
+    designer: ['search', 'pikfolder', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'mail', 'agent', 'teamchat', 'setup', 'settings'],
+    frontend: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'teamchat', 'settings'],
+    backend: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'teamchat', 'settings'],
+    pm: ['search', 'metask', 'mail', 'github', 'outline', 'agent', 'teamchat', 'settings'],
+    full: ['search', 'pikfolder', 'templates', 'nanobanana', 'magnific', 'bannermockup', 'metask', 'agent', 'teamchat', 'mail', 'github', 'outline', 'setup', 'settings'],
   };
 
   const ROLE_DEFAULT_PAGE = {
@@ -103,7 +103,6 @@
     if (pageId === 'bannermockup') window.activateBannerMockupPage?.();
     if (pageId === 'mail') window.activateMailPage?.();
     if (pageId === 'github' || pageId === 'outline') window.activateWebtab?.(pageId);
-    if (pageId === 'notes') window.activateNotesPage?.();
     if (pageId === 'search') window.activateSearchPage?.();
     if (pageId === 'pikfolder') window.activatePikFolderPage?.();
     return true;

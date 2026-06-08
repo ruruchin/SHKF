@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="demos.css" />
   <link rel="stylesheet" href="hotkeys-ui.css" />
   <link rel="stylesheet" href="agent.css" />
+  <link rel="stylesheet" href="agent-side-panel.css" />
   <link rel="stylesheet" href="agent-vtuber.css" />
   <link rel="stylesheet" href="onboarding.css" />
   <link rel="stylesheet" href="templates.css" />
@@ -284,10 +285,6 @@
           <button class="nav-item" data-page="outline">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5z"/><path d="M8 7.5h8M8 11h6"/></svg>
             Outline
-          </button>
-          <button class="nav-item" data-page="notes">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 016.5 3H20v18H6.5A2.5 2.5 0 004 18.5z"/><path d="M8 7h8M8 11h6M8 15h8"/></svg>
-            Записи
           </button>
         </div>
 
@@ -1148,7 +1145,7 @@
         <section class="page" id="page-agent">
           <div class="agent-chat agent-chat--gemini">
             <div class="agent-status-banner hidden" id="agent-status-banner"></div>
-            <div class="agent-layout">
+            <div class="agent-layout agent-layout--with-side">
               <div class="agent-vtuber-float hidden" id="agent-vtuber-float" data-mode="hero" aria-hidden="true">
                 <div class="agent-vtuber-stage">
                   <video class="agent-vtuber-video hidden" id="agent-vtuber-video" autoplay playsinline muted></video>
@@ -1366,6 +1363,31 @@
               </footer>
             </div>
               </div>
+              <aside class="agent-side-panel" id="agent-side-panel" aria-label="Календарь и записи">
+                <div class="agent-side-head">
+                  <h3 class="agent-side-title">План</h3>
+                  <div class="agent-side-tabs" role="tablist" aria-label="Календарь и записи">
+                    <button type="button" class="agent-side-tab is-active" data-agent-side-tab="calendar" role="tab" aria-selected="true">Календарь</button>
+                    <button type="button" class="agent-side-tab" data-agent-side-tab="notes" role="tab" aria-selected="false">Записи</button>
+                  </div>
+                </div>
+                <div class="agent-side-pane" id="agent-side-calendar" data-side-pane="calendar">
+                  <div class="agent-side-toolbar">
+                    <button type="button" class="agent-side-add" id="agent-calendar-add">+ Запись</button>
+                  </div>
+                  <div class="agent-side-scroll" id="agent-calendar-list"></div>
+                </div>
+                <div class="agent-side-pane hidden" id="agent-side-notes" data-side-pane="notes">
+                  <div class="agent-side-toolbar">
+                    <button type="button" class="agent-side-add" id="agent-side-note-add">+ Заметка</button>
+                  </div>
+                  <div class="agent-side-scroll" id="agent-side-notes-list"></div>
+                  <div class="agent-side-note-editor hidden" id="agent-side-note-editor">
+                    <input type="text" id="agent-side-note-title-input" placeholder="Название" aria-label="Название записи" />
+                    <textarea id="agent-side-note-content" rows="5" placeholder="Текст записи…" aria-label="Текст записи"></textarea>
+                  </div>
+                </div>
+              </aside>
             </div>
           </div>
         </section>
@@ -2672,6 +2694,7 @@
   <script src="auth-live2d.js"></script>
   <script src="agent-vtuber.js"></script>
   <script src="agent.js"></script>
+  <script src="agent-side-panel.js"></script>
   <script src="templates.js"></script>
   <script src="pill-notify-ui.js"></script>
   <script src="kanban-notify.js"></script>

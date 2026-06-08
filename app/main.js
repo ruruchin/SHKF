@@ -68,6 +68,13 @@ import {
   stripDesktopToolFromResponse,
 } from '../shared/desktop-agent-intent.js';
 import { executeDesktopAction } from '../server/desktop-agent-service.js';
+import { parseCalendarIntent, formatCalendarEventWhen } from '../shared/agent-calendar-intent.js';
+import {
+  parseTeamMessageIntent,
+  matchColleaguesByQuery,
+  formatColleagueSendLabel,
+} from '../shared/agent-team-message-intent.js';
+import { buildDmTitle } from '../shared/team-chat.js';
 import { createMetaskReadOnly } from '../server/metask-readonly.js';
 import { TaskKnowledgeService } from '../server/task-knowledge-service.js';
 import { ProcessAnalyticsService } from '../server/process-analytics-service.js';
@@ -101,6 +108,7 @@ import {
   getUserLibraryPaths,
   getCustomThemeAssetsDir,
   getNotesLibraryPath,
+  getAgentCalendarPath,
   getNanobananaGalleryPath,
 } from './paths.js';
 import { NanobananaService, resolveModelForResolution } from '../server/nanobanana-service.js';
@@ -165,6 +173,7 @@ const pluginPath = getPluginPath(__dirname);
 const userLibraryPaths = getUserLibraryPaths(__dirname);
 const customThemeAssetsDir = getCustomThemeAssetsDir(__dirname);
 const notesLibraryPath = getNotesLibraryPath(__dirname);
+const agentCalendarPath = getAgentCalendarPath(__dirname);
 const nanobananaGalleryPath = getNanobananaGalleryPath(__dirname);
 const designReferencesSeedPath = path.join(__dirname, '../config/design-references.seed.json');
 const pikFolderSeedPath = path.join(__dirname, '../config/pik-folder.seed.json');
@@ -231,7 +240,7 @@ const SPLASH_HEIGHT = 380;
 const KEYBOARD_WIDTH = 1280;
 const KEYBOARD_HEIGHT = 680;
 let tray = null;
-const service = new HotkeyService(configPath, userLibraryPaths, customThemeAssetsDir, notesLibraryPath);
+const service = new HotkeyService(configPath, userLibraryPaths, customThemeAssetsDir, notesLibraryPath, agentCalendarPath);
 const authService = new AuthService(app.getPath('userData'));
 const cloudSettingsService = new CloudSettingsService(authService);
 const metaskService = new MetaskService();
@@ -1300,6 +1309,13 @@ service.on('config-changed', (c) => {
 });
 service.on('library-updated', (data) => broadcast('library-updated', data));
 service.on('notes-updated', (data) => broadcast('notes-updated', data));
+service.on('agent-calendar-updated', (data) => broadcast('agent-calendar-updated', data));
+
+async function sendTeamDmMessage(recipientId, body) {
+  const dm = await teamChatService.openDmRoom(recipientId);
+  if (!dm?.ok) return dm;
+  return teamChatService.sendMessage({ roomId: dm.room.id, body });
+}
 
 const DEFAULT_WIDTH = 1180;
 const DEFAULT_HEIGHT = 720;
@@ -2246,6 +2262,117 @@ app.whenReady().then(() => {
         laborEntries: null,
         learnedChunkIds: [],
         direct: true,
+      };
+    }
+
+    const calendarIntent = parseCalendarIntent(messageText);
+    if (calendarIntent) {
+      const event = service.upsertCalendarEvent({ ...calendarIntent, source: 'agent' });
+      return {
+        ok: true,
+        content: `Записала в календарь: **${event.title}** — ${formatCalendarEventWhen(event)}.`,
+        laborEntries: null,
+        learnedChunkIds: [],
+        direct: true,
+        directMeta: 'Календарь',
+        calendarAction: event,
+      };
+    }
+
+    const confirmTeam = payload?.confirmTeamSend;
+    if (confirmTeam?.recipientId && confirmTeam?.body) {
+      const colleaguesResult = await teamChatService.listColleagues();
+      const confirmId = String(confirmTeam.recipientId).trim();
+      const confirmBody = String(confirmTeam.body).trim();
+      const sent = await sendTeamDmMessage(confirmId, confirmBody);
+      if (!sent?.ok) {
+        return {
+          ok: true,
+          content: `Не удалось отправить: ${sent?.message || 'ошибка чата'}.`,
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Команда',
+        };
+      }
+      const recipient = (colleaguesResult.colleagues || []).find((p) => String(p.id) === confirmId);
+      return {
+        ok: true,
+        content: `Отправила **${buildDmTitle(recipient || {})}**: «${confirmBody}»`,
+        laborEntries: null,
+        learnedChunkIds: [],
+        direct: true,
+        directMeta: 'Команда',
+        teamMessageAction: { recipientId: confirmId, body: confirmBody },
+      };
+    }
+
+    const teamIntent = parseTeamMessageIntent(messageText);
+    if (teamIntent) {
+      const colleaguesResult = await teamChatService.listColleagues();
+      if (!colleaguesResult.ok) {
+        return {
+          ok: true,
+          content: `Не удалось отправить сообщение коллеге: ${colleaguesResult.message || 'нет входа в аккаунт'}.`,
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Команда',
+        };
+      }
+
+      const matches = matchColleaguesByQuery(colleaguesResult.colleagues, teamIntent.recipientQuery);
+      if (!matches.length) {
+        return {
+          ok: true,
+          content: `Не нашла коллегу «${teamIntent.recipientQuery}» среди зарегистрированных пользователей.`,
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Команда',
+        };
+      }
+
+      if (matches.length === 1) {
+        const recipient = matches[0];
+        const sent = await sendTeamDmMessage(recipient.id, teamIntent.messageBody);
+        if (!sent?.ok) {
+          return {
+            ok: true,
+            content: `Не удалось отправить **${buildDmTitle(recipient)}**: ${sent?.message || 'ошибка чата'}.`,
+            laborEntries: null,
+            learnedChunkIds: [],
+            direct: true,
+            directMeta: 'Команда',
+          };
+        }
+        return {
+          ok: true,
+          content: `Отправила **${buildDmTitle(recipient)}**: «${teamIntent.messageBody}»`,
+          laborEntries: null,
+          learnedChunkIds: [],
+          direct: true,
+          directMeta: 'Команда',
+          teamMessageAction: { recipientId: recipient.id, body: teamIntent.messageBody },
+        };
+      }
+
+      return {
+        ok: true,
+        content: `Нашла несколько «${teamIntent.recipientQuery}». Кому отправить сообщение «${teamIntent.messageBody}»?`,
+        followups: matches.slice(0, 5).map((profile) => formatColleagueSendLabel(profile)),
+        teamMessagePending: {
+          body: teamIntent.messageBody,
+          candidates: matches.slice(0, 5).map((profile) => ({
+            id: profile.id,
+            full_name: profile.full_name,
+            username: profile.username,
+          })),
+        },
+        laborEntries: null,
+        learnedChunkIds: [],
+        direct: true,
+        directMeta: 'Команда',
       };
     }
 
@@ -3817,6 +3944,25 @@ app.whenReady().then(() => {
   ipcMain.handle('notes-delete-note', (_e, id) => service.deleteNote(id));
   ipcMain.handle('notes-open-url', (_e, url) => {
     if (url) shell.openExternal(url);
+  });
+
+  ipcMain.handle('agent-calendar-list', (_e, payload) => ({
+    ok: true,
+    events: service.listCalendarEvents(payload || {}),
+  }));
+  ipcMain.handle('agent-calendar-upsert', (_e, payload) => ({
+    ok: true,
+    event: service.upsertCalendarEvent(payload || {}),
+  }));
+  ipcMain.handle('agent-calendar-delete', (_e, payload) => {
+    if (payload?.id) service.deleteCalendarEvent(payload.id);
+    return { ok: true };
+  });
+  ipcMain.handle('agent-send-team-dm', async (_e, payload) => {
+    const recipientId = String(payload?.recipientId || '').trim();
+    const body = String(payload?.body || '').trim();
+    if (!recipientId || !body) return { ok: false, message: 'Укажите получателя и текст' };
+    return sendTeamDmMessage(recipientId, body);
   });
 
   ipcMain.handle('update-app-settings', (_e, updates) => {

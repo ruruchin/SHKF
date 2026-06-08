@@ -96,6 +96,7 @@ export function shouldExecuteMusicPlay(text, { confirm = false } = {}) {
   if (confirm) return true;
   const raw = String(text || '').trim();
   if (parseMusicExecuteFollowup(raw)) return true;
+  if (isPlayMusicIntent(raw) && parseMusicPlayQuery(raw)) return true;
   if (/^(?:да,?\s*)?включи(?:ть)?\s+(?:уже\s+)?(?:в\s+)?яндекс/i.test(raw)) return true;
   return false;
 }

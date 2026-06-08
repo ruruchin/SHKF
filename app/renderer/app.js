@@ -443,7 +443,6 @@ function bindEvents() {
       if (btn.dataset.page === 'bannermockup') window.activateBannerMockupPage?.();
       if (btn.dataset.page === 'mail') window.activateMailPage?.();
       if (btn.dataset.page === 'github' || btn.dataset.page === 'outline') window.activateWebtab?.(btn.dataset.page);
-      if (btn.dataset.page === 'notes') window.activateNotesPage?.();
       if (btn.dataset.page === 'search') window.activateSearchPage?.();
       if (btn.dataset.page === 'pikfolder') window.activatePikFolderPage?.();
     };
